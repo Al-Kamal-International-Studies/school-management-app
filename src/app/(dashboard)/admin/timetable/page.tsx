@@ -1,0 +1,59 @@
+import { listClassesForSelect, getClassSchedule } from "./queries";
+import { NewEntryForm } from "./NewEntryForm";
+import { DeleteEntryButton } from "./DeleteEntryButton";
+import { ClassSelect } from "./ClassSelect";
+import { WeeklyScheduleGrid, type ScheduleEntry } from "@/components/timetable/WeeklyScheduleGrid";
+import { EmptyState } from "@/components/ui/Table";
+import { FadeUp } from "@/components/motion/FadeUp";
+
+export default async function AdminTimetablePage({ searchParams }: { searchParams: Promise<{ class?: string }> }) {
+  const { class: classParam } = await searchParams;
+  const classes = await listClassesForSelect();
+  const selectedClassId = classParam ?? classes[0]?.id;
+  const schedule = selectedClassId ? await getClassSchedule(selectedClassId) : null;
+
+  const entries: ScheduleEntry[] =
+    schedule?.entries.map((e) => ({
+      id: e.id,
+      day_of_week: e.day_of_week,
+      start_time: e.start_time,
+      end_time: e.end_time,
+      subjectName: e.subjectName,
+      teacherName: e.teacherName,
+      room: e.room,
+      actions: <DeleteEntryButton id={e.id} />,
+    })) ?? [];
+
+  return (
+    <div className="space-y-8">
+      <FadeUp>
+        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">Timetable</h1>
+        <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">Build the weekly schedule for each class.</p>
+      </FadeUp>
+
+      <FadeUp delay={0.06}>
+        <ClassSelect classes={classes} selectedClassId={selectedClassId} />
+      </FadeUp>
+
+      {!selectedClassId ? (
+        <EmptyState title="No classes yet" description="Create a class first, then come back to build its timetable." />
+      ) : (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
+          <FadeUp delay={0.12} className="card h-fit p-6">
+            <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">Add a period</h2>
+            {schedule && schedule.assignableSubjects.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-navy-400">
+                Assign a teacher to at least one subject for this class before building its timetable.
+              </p>
+            ) : (
+              <NewEntryForm classId={selectedClassId} assignableSubjects={schedule?.assignableSubjects ?? []} />
+            )}
+          </FadeUp>
+          <FadeUp delay={0.18}>
+            <WeeklyScheduleGrid entries={entries} />
+          </FadeUp>
+        </div>
+      )}
+    </div>
+  );
+}

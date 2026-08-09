@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: theme("fontFamily.sans");
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased dark:bg-navy-950 dark:text-navy-50;
+    line-height: 1.6;
+  }
+  p {
+    @apply leading-relaxed;
+  }
+  ::selection {
+    @apply bg-gold-200 text-navy-900 dark:bg-gold-600/50 dark:text-white;
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: theme("fontFamily.display");
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] focus-visible:ring-offset-white dark:focus-visible:ring-offset-navy-950;
+  }
+  .btn-primary {
+    @apply btn bg-navy-800 text-white shadow-soft hover:bg-navy-700 hover:shadow-card focus-visible:ring-gold-400 dark:bg-navy-600 dark:hover:bg-navy-500;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-navy-800 border border-slate-200 shadow-soft hover:border-navy-200 hover:bg-navy-50 focus-visible:ring-navy-400 dark:bg-navy-900 dark:text-navy-50 dark:border-navy-700 dark:hover:border-navy-500 dark:hover:bg-navy-800;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white shadow-soft hover:bg-red-700 focus-visible:ring-red-400;
+  }
+  .btn-gold {
+    @apply btn bg-gold-gradient text-navy-900 shadow-gold hover:brightness-105 focus-visible:ring-gold-500;
+  }
+
+  .input {
+    @apply block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-soft transition-all duration-150 placeholder:text-slate-400 focus:border-navy-400 focus:outline-none focus:ring-2 focus:ring-navy-100 dark:border-navy-700 dark:bg-navy-900 dark:text-navy-50 dark:placeholder:text-navy-500 dark:focus:border-gold-400 dark:focus:ring-navy-800;
+  }
+  .label {
+    @apply mb-2 block text-sm font-medium text-slate-700 dark:text-navy-200;
+  }
+  .card {
+    @apply rounded-2xl border border-slate-200/70 bg-white shadow-card transition-shadow duration-200 dark:border-navy-800 dark:bg-navy-900;
+  }
+  .card-hover {
+    @apply hover:shadow-card-hover;
+  }
+
+  .card table tbody tr {
+    @apply transition-colors duration-150 hover:bg-navy-50/40 dark:hover:bg-white/5;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .bg-grid {
+    background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.08) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+}
