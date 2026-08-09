@@ -34,11 +34,18 @@ create policy "users can update their own profile"
     is_admin()
     or (
       id = auth.uid()
-      and (role, is_active, archived_at, archived_by, title, email, date_of_birth)
-          is not distinct from (
-            select role, is_active, archived_at, archived_by, title, email, date_of_birth
-            from profiles where id = auth.uid()
-          )
+      -- Postgres's IS DISTINCT FROM does not support a multi-column row
+      -- constructor compared against a multi-column subquery (only `=`/`<>`
+      -- do, and those don't have the NULL-safe semantics needed here) — so
+      -- this is one scalar subquery per column rather than a single row
+      -- comparison. Verbose, but each line is unambiguously correct.
+      and role is not distinct from (select p.role from profiles p where p.id = auth.uid())
+      and is_active is not distinct from (select p.is_active from profiles p where p.id = auth.uid())
+      and archived_at is not distinct from (select p.archived_at from profiles p where p.id = auth.uid())
+      and archived_by is not distinct from (select p.archived_by from profiles p where p.id = auth.uid())
+      and title is not distinct from (select p.title from profiles p where p.id = auth.uid())
+      and email is not distinct from (select p.email from profiles p where p.id = auth.uid())
+      and date_of_birth is not distinct from (select p.date_of_birth from profiles p where p.id = auth.uid())
     )
   );
 
@@ -59,9 +66,10 @@ create policy "students can update their own pending submission"
   with check (
     student_id = auth.uid()
     and status in ('pending', 'submitted')
-    and (grade, feedback) is not distinct from (
-      select grade, feedback from assignment_submissions where id = assignment_submissions.id
-    )
+    -- Same fix as the profiles policy above: one scalar subquery per
+    -- column, not a row constructor against a multi-column subquery.
+    and grade is not distinct from (select s.grade from assignment_submissions s where s.id = assignment_submissions.id)
+    and feedback is not distinct from (select s.feedback from assignment_submissions s where s.id = assignment_submissions.id)
   );
 
 -- ----------------------------------------------------------------------------
