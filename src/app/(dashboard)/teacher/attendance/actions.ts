@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAuditEvent } from "@/lib/audit/log";
 import type { AttendanceStatus } from "@/lib/types/database.types";
 
 export interface ActionState {
@@ -44,6 +45,11 @@ export async function markAttendanceAction(_prevState: ActionState, formData: Fo
   const supabase = await createClient();
   const { error } = await supabase.from("attendance_records").upsert(rows, { onConflict: "student_id,date" });
   if (error) return { error: error.message };
+
+  // One entry per bulk-mark action, not one per student row — this can
+  // cover an entire class roster in a single submit, and a log entry per
+  // student would flood the audit log without adding useful signal.
+  await logAuditEvent(me.id, "mark_attendance", "attendance_records", classId, { date, student_count: rows.length });
 
   revalidatePath("/teacher/attendance");
   return { success: true };

@@ -30,7 +30,10 @@ export async function getCurrentProfile(): Promise<Profile | null> {
  * it. Redirects unauthenticated users to /login, and authenticated users of
  * the wrong role to their own dashboard — this is enforced again by RLS at
  * the database layer, so a guessed URL can never leak data even if a guard
- * here is missed.
+ * here is missed. Admins additionally must complete MFA (see
+ * requireAdminMfaVerified below) before reaching anywhere past this point —
+ * checked here (not just on /admin/* routes) so an admin can't dodge it by
+ * visiting a shared route like /settings or /profile instead.
  */
 export async function requireRole(...roles: UserRole[]): Promise<Profile> {
   const profile = await getCurrentProfile();
@@ -47,7 +50,38 @@ export async function requireRole(...roles: UserRole[]): Promise<Profile> {
     redirect(dashboardPathForRole(profile.role));
   }
 
+  if (profile.role === "admin") {
+    await requireAdminMfaVerified();
+  }
+
   return profile;
+}
+
+/**
+ * Redirects an admin to /mfa/setup (no factor enrolled yet — mandatory
+ * first-time setup) or /mfa/verify (factor exists, this session hasn't
+ * verified it yet) until they're at aal2. Never called for non-admins.
+ *
+ * Fails OPEN, not closed, on an error from the AAL check itself (e.g. a
+ * transient Supabase Auth hiccup) — logged, not thrown. This is a
+ * deliberate choice: an availability outage in one Auth sub-API turning
+ * into "the admin cannot get into their own school's app at all" is a
+ * worse failure mode than skipping the MFA gate for that one request.
+ * Every other layer (RLS, requireRole's own role/is_active checks) still
+ * fully applies regardless.
+ */
+export async function requireAdminMfaVerified(): Promise<void> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+  if (error || !data) {
+    console.error("requireAdminMfaVerified: AAL check failed, failing open:", error?.message);
+    return;
+  }
+
+  if (data.currentLevel === "aal2") return;
+
+  redirect(data.nextLevel === "aal2" ? "/mfa/verify" : "/mfa/setup");
 }
 
 export function dashboardPathForRole(role: UserRole): string {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAuditEvent } from "@/lib/audit/log";
 
 export interface ActionState {
   error?: string;
@@ -27,8 +28,14 @@ export async function recordGradeAction(_prevState: ActionState, formData: FormD
   if (parsed.data.marks_obtained > parsed.data.marks_total) return { error: "Marks obtained cannot exceed marks total." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("grades").insert({ ...parsed.data, teacher_id: me.id });
+  const { data: created, error } = await supabase.from("grades").insert({ ...parsed.data, teacher_id: me.id }).select("id").single();
   if (error) return { error: error.message };
+
+  await logAuditEvent(me.id, "record_grade", "grades", created.id, {
+    student_id: parsed.data.student_id,
+    assessment_name: parsed.data.assessment_name,
+    marks: `${parsed.data.marks_obtained}/${parsed.data.marks_total}`,
+  });
 
   revalidatePath("/teacher/grades");
   return { success: true };

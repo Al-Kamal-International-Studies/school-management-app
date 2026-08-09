@@ -41,6 +41,26 @@ export async function changeOwnPasswordAction(_prevState: ActionState, formData:
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { error: error.message };
 
+  // A changed password should invalidate any other session using the old
+  // one — standard practice, and closes the gap noted in docs/SECURITY.md
+  // §2 ("reset doesn't force-revoke other sessions"). Best-effort: the
+  // password change itself already succeeded, so a failure here shouldn't
+  // block returning success to the user.
+  const { error: signOutError } = await supabase.auth.signOut({ scope: "others" });
+  if (signOutError) console.error("changeOwnPasswordAction: signOut(others) failed:", signOutError.message);
+
+  return { success: true };
+}
+
+/** Signs out every session for this account except the current one. */
+export async function signOutOtherSessionsAction(): Promise<ActionState> {
+  const me = await getCurrentProfile();
+  if (!me) return { error: "You must be signed in." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signOut({ scope: "others" });
+  if (error) return { error: error.message };
+
   return { success: true };
 }
 

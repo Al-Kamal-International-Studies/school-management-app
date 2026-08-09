@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAuditEvent } from "@/lib/audit/log";
 
 export interface ActionState {
   error?: string;
@@ -56,6 +57,11 @@ export async function submitProgressEntryAction(_prevState: ActionState, formDat
   );
 
   if (error) return { error: error.message };
+
+  await logAuditEvent(me.id, "submit_progress_entry", "monthly_progress_entries", parsed.data.student_id, {
+    subject_id: parsed.data.subject_id,
+    month: parsed.data.month,
+  });
 
   revalidatePath("/teacher/progress");
   return { success: true };

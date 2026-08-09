@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAuditEvent } from "@/lib/audit/log";
 
 export interface ActionState {
   error?: string;
@@ -24,12 +25,18 @@ export async function createAssignmentAction(_prevState: ActionState, formData: 
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("assignments").insert({
-    ...parsed.data,
-    description: parsed.data.description || null,
-    teacher_id: me.id,
-  });
+  const { data: created, error } = await supabase
+    .from("assignments")
+    .insert({
+      ...parsed.data,
+      description: parsed.data.description || null,
+      teacher_id: me.id,
+    })
+    .select("id")
+    .single();
   if (error) return { error: error.message };
+
+  await logAuditEvent(me.id, "create_assignment", "assignments", created.id, { title: parsed.data.title, due_date: parsed.data.due_date });
 
   revalidatePath("/teacher/assignments");
   return { success: true };
@@ -43,7 +50,7 @@ const gradeSchema = z.object({
 });
 
 export async function gradeSubmissionAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  await requireRole("teacher");
+  const me = await requireRole("teacher");
   const parsed = gradeSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
 
@@ -59,6 +66,11 @@ export async function gradeSubmissionAction(_prevState: ActionState, formData: F
     { onConflict: "assignment_id,student_id" }
   );
   if (error) return { error: error.message };
+
+  await logAuditEvent(me.id, "grade_submission", "assignment_submissions", parsed.data.assignment_id, {
+    student_id: parsed.data.student_id,
+    grade: parsed.data.grade,
+  });
 
   revalidatePath(`/teacher/assignments/${parsed.data.assignment_id}`);
   return { success: true };

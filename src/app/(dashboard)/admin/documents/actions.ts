@@ -17,11 +17,25 @@ const metaSchema = z.object({
   student_id: z.string().optional(),
 });
 
+const ALLOWED_DOCUMENT_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
 /**
  * Uploads to the private "documents" Storage bucket via the service-role
  * admin client (the bucket has no public policies — see migration
  * 0011_operations.sql). The `documents` table row is what actually governs
  * who can later fetch a signed URL for the file (see getDocumentUrl.ts).
+ *
+ * The type/size checks below are for a friendly error message only — the
+ * real, unbypassable enforcement is server-side on the bucket itself
+ * (file_size_limit/allowed_mime_types, migration
+ * 0020_storage_upload_limits.sql), since a check only here could be
+ * skipped by calling the Storage API directly.
  */
 export async function uploadDocumentAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const me = await requireRole("admin");
@@ -29,6 +43,7 @@ export async function uploadDocumentAction(_prevState: ActionState, formData: Fo
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload." };
   if (file.size > 10 * 1024 * 1024) return { error: "File must be under 10MB." };
+  if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) return { error: "Use a PDF, Word document, JPG, or PNG file." };
 
   const parsed = metaSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };

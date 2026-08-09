@@ -8,6 +8,8 @@ import { ThemeSwitch } from "@/components/settings/ThemeSwitch";
 import { LanguageCards } from "@/components/i18n/LanguageCards";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { PushNotificationToggle } from "@/components/settings/PushNotificationToggle";
+import { MfaSettingsCard } from "@/components/mfa/MfaSettingsCard";
+import { SignOutOtherSessionsButton } from "@/components/settings/SignOutOtherSessionsButton";
 
 const CONTACT_PHONE = "052 772 7246";
 const CONTACT_EMAIL = "info@alkamalinternational.com";
@@ -43,6 +45,22 @@ export default async function SettingsPage() {
           <ChangePasswordForm minLength={me.role === "admin" ? 15 : 12} />
         </Card>
       </FadeUp>
+
+      <FadeUp delay={0.16}>
+        <Card>
+          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">Sessions</h2>
+          <SignOutOtherSessionsButton />
+        </Card>
+      </FadeUp>
+
+      {me.role === "admin" && (
+        <FadeUp delay={0.17}>
+          <Card>
+            <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">Two-factor authentication</h2>
+            <MfaSettingsCard />
+          </Card>
+        </FadeUp>
+      )}
 
       <FadeUp delay={0.18}>
         <Card>

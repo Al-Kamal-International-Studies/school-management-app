@@ -51,5 +51,11 @@ export async function completePasswordResetAction(_prevState: ActionState, formD
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { error: error.message };
 
+  // Same reasoning as changeOwnPasswordAction (settings/actions.ts): a
+  // password reset should invalidate whatever session(s) prompted it in
+  // the first place (e.g. a compromised account). Best-effort.
+  const { error: signOutError } = await supabase.auth.signOut({ scope: "others" });
+  if (signOutError) console.error("completePasswordResetAction: signOut(others) failed:", signOutError.message);
+
   return { success: true };
 }
