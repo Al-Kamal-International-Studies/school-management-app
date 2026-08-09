@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAuditEvent } from "@/lib/audit/log";
 
 export interface ActionState {
   error?: string;
@@ -23,8 +24,14 @@ export async function createEventAction(_prevState: ActionState, formData: FormD
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("events").insert({ ...parsed.data, description: parsed.data.description || null, created_by: me.id });
+  const { data: created, error } = await supabase
+    .from("events")
+    .insert({ ...parsed.data, description: parsed.data.description || null, created_by: me.id })
+    .select("id")
+    .single();
   if (error) return { error: error.message };
+
+  await logAuditEvent(me.id, "create_event", "events", created.id, { title: parsed.data.title, event_type: parsed.data.event_type });
 
   revalidatePath("/admin/events");
   revalidatePath("/calendar");
@@ -32,10 +39,11 @@ export async function createEventAction(_prevState: ActionState, formData: FormD
 }
 
 export async function deleteEventAction(id: string) {
-  await requireRole("admin");
+  const me = await requireRole("admin");
   const supabase = await createClient();
   const { error } = await supabase.from("events").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  await logAuditEvent(me.id, "delete_event", "events", id);
   revalidatePath("/admin/events");
   revalidatePath("/calendar");
 }

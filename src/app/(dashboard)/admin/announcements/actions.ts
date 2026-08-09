@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToUsers } from "@/lib/push/send";
+import { logAuditEvent } from "@/lib/audit/log";
 
 export interface ActionState {
   error?: string;
@@ -23,8 +24,14 @@ export async function createAnnouncementAction(_prevState: ActionState, formData
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("announcements").insert({ ...parsed.data, created_by: me.id });
+  const { data: created, error } = await supabase
+    .from("announcements")
+    .insert({ ...parsed.data, created_by: me.id })
+    .select("id")
+    .single();
   if (error) return { error: error.message };
+
+  await logAuditEvent(me.id, "create_announcement", "announcements", created.id, { title: parsed.data.title, audience: parsed.data.audience });
 
   // Best-effort push — never blocks the announcement from being saved.
   const admin = createAdminClient();
@@ -45,9 +52,10 @@ export async function createAnnouncementAction(_prevState: ActionState, formData
 }
 
 export async function deleteAnnouncementAction(id: string) {
-  await requireRole("admin");
+  const me = await requireRole("admin");
   const supabase = await createClient();
   const { error } = await supabase.from("announcements").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  await logAuditEvent(me.id, "delete_announcement", "announcements", id);
   revalidatePath("/admin/announcements");
 }

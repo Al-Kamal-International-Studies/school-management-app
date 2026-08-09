@@ -48,6 +48,16 @@ if (!email || !password || !name) {
   process.exit(1);
 }
 
+// Admin accounts get the stricter 15-char minimum (see
+// src/lib/security/password.ts / docs/SECURITY.md F5). This script is a
+// plain Node ESM script (no TS transpilation), so the check is inlined
+// rather than imported — keep it in sync with MIN_PASSWORD_LENGTH_ADMIN if
+// that constant ever changes.
+if (password.length < 15) {
+  console.error("Password must be at least 15 characters for an admin account.");
+  process.exit(1);
+}
+
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

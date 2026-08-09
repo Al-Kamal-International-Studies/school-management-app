@@ -262,6 +262,12 @@ export type AuditLog = {
   created_at: string;
 };
 
+export type RateLimitEvent = {
+  id: string;
+  bucket: string;
+  created_at: string;
+};
+
 export type DmConversation = {
   id: string;
   participant_a: string;
@@ -428,6 +434,12 @@ export type Database = {
         Row: ParentStudent;
         Insert: Partial<ParentStudent> & { parent_id: string; student_id: string };
         Update: Partial<ParentStudent>;
+        Relationships: [];
+      };
+      rate_limit_events: {
+        Row: RateLimitEvent;
+        Insert: Partial<RateLimitEvent> & { bucket: string };
+        Update: Partial<RateLimitEvent>;
         Relationships: [];
       };
     };

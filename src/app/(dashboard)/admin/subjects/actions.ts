@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAuditEvent } from "@/lib/audit/log";
 
 export interface ActionState {
   error?: string;
@@ -18,24 +19,27 @@ const subjectSchema = z.object({
 });
 
 export async function createSubjectAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  await requireRole("admin");
+  const me = await requireRole("admin");
   const parsed = subjectSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("subjects").insert(parsed.data);
+  const { data: created, error } = await supabase.from("subjects").insert(parsed.data).select("id").single();
   if (error) {
     return { error: error.code === "23505" ? "A subject with this code already exists." : error.message };
   }
+
+  await logAuditEvent(me.id, "create_subject", "subjects", created.id, parsed.data);
 
   revalidatePath("/admin/subjects");
   return {};
 }
 
 export async function deleteSubjectAction(id: string) {
-  await requireRole("admin");
+  const me = await requireRole("admin");
   const supabase = await createClient();
   const { error } = await supabase.from("subjects").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  await logAuditEvent(me.id, "delete_subject", "subjects", id);
   revalidatePath("/admin/subjects");
 }

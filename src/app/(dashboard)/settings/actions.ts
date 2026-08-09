@@ -3,30 +3,34 @@
 import { z } from "zod";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { passwordZodSchema, MIN_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH_ADMIN } from "@/lib/security/password";
 
 export interface ActionState {
   error?: string;
   success?: boolean;
 }
 
-const passwordSchema = z
-  .object({
-    password: z.string().min(8, "Password must be at least 8 characters."),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match.",
-    path: ["confirmPassword"],
-  });
-
 /**
  * Self-service password change — any role. Uses the regular (non-admin)
  * Supabase client so it only ever affects the currently-authenticated
  * user's own account (supabase.auth.updateUser always targets the caller).
+ * Minimum length is role-aware (admins hold more powerful accounts, so they
+ * get the stricter 15-char floor) — see docs/SECURITY.md F5.
  */
 export async function changeOwnPasswordAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const me = await getCurrentProfile();
   if (!me) return { error: "You must be signed in." };
+
+  const minLength = me.role === "admin" ? MIN_PASSWORD_LENGTH_ADMIN : MIN_PASSWORD_LENGTH;
+  const passwordSchema = z
+    .object({
+      password: passwordZodSchema(minLength),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords do not match.",
+      path: ["confirmPassword"],
+    });
 
   const parsed = passwordSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) {

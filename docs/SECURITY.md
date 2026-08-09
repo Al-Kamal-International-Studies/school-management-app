@@ -1,6 +1,6 @@
 # Security Hardening — Al Kamal International Studies School App
 
-**Status:** Living document, Phase 1 in progress.
+**Status:** Phase 1 code complete and verified (typecheck/lint/build clean, live-tested in browser). **⚠️ The four new SQL migrations (0016–0019) are written but NOT YET APPLIED to the live Supabase database** — same manual process as every prior migration in this project: Supabase Dashboard → SQL Editor → paste and run `0016_authz_hardening.sql`, then `0017_close_bopla_gaps.sql`, then `0018_rate_limiting.sql`, then `0019_verify_student_class_membership.sql`, **in that exact order**, confirming each succeeds before running the next. Until that's done, the two CRITICAL findings below (F1, F2) are fixed in the migration files but **still live and exploitable in the actual database.**
 **Started:** 2026-08-10. **Owner:** whoever is driving development (currently Claude, at Muhammad's direction).
 **Input:** a 16-section security checklist + test plan supplied by "the programming team." This document is the filtered, evidence-based response to it — what applies to *this* app, what doesn't, what was already correct, what was actually broken, and the order it's being fixed in.
 
@@ -23,7 +23,7 @@ Before filtering a generic checklist against a real app, the checklist's assumpt
 | # | Section | Verdict | Why |
 |---|---|---|---|
 | 1 | Identity & access control | **Applies — mostly already in place, gaps fixed in Phase 1** | RBAC (admin/teacher/student/parent) exists and is enforced server-side + RLS. BOLA/BOPLA: found and fixing 2 real holes (§2). Admin functions are already separated. MFA: not built — **Phase 2**. Session/device management (list, manual revoke): not built — **Phase 2**. Forced logout on deactivate/role-change: **Phase 1 fix**. |
-| 2 | Passwords & login | **Applies — fixing now** | No forced rotation/complexity rules already (correct, matches current NIST). Hashing is Supabase Auth's problem (bcrypt via GoTrue), not app code. Enumeration protection already correct on login + forgot-password. Gaps: 8-char minimum everywhere (want 12/15), no breach-list screening, no rate limiting, reset doesn't force-revoke other sessions. **Phase 1.** |
+| 2 | Passwords & login | **Applies — fixing now** | No forced rotation/complexity rules already (correct, matches current NIST). Hashing is Supabase Auth's problem (bcrypt via GoTrue), not app code. Enumeration protection already correct on login + forgot-password. Gaps: 8-char minimum everywhere (want 12/15), no breach-list screening, no rate limiting — **Phase 1**. "Reset must invalidate other sessions": the installed Supabase SDK has no revoke-by-user-id call (only ban, which blocks future refresh, not an already-issued token — see `lib/auth/accountAccess.ts`'s doc comment), so a real fix here needs either a dashboard session-timeout setting or a verified server-side session table approach — **moved to Phase 2** rather than ship a half-measure. |
 | 3 | Session & token security | **Applies, adapted — mostly already correct** | Tokens live in httpOnly cookies via `@supabase/ssr` (server.ts/client.ts), never `localStorage` — confirmed by reading both client files, not assumed. Access-token expiry/refresh rotation is a Supabase project setting (needs a dashboard check, not app code — see §5). Server-side revocation: **Phase 1 fix**. Device fingerprint/risk scoring for admin sessions: **Phase 2+, low priority** for a single-school app with 2 admin accounts. |
 | 4 | Mobile app storage security | **Not applicable as written; web-equivalent already correct** | No OS-level app sandbox exists to secure — this is a browser tab. The real equivalent (no tokens/secrets in `localStorage`, sessionStorage, or logs) was checked directly and holds. Service worker deliberately doesn't cache HTML or API responses (Part 1 §12) so there's no "cached sensitive data" surface to clear on logout. Screen-capture blocking, root/jailbreak checks: not meaningful for a web page. |
 | 5 | Data encryption & cryptography | **Mostly platform-handled / N-A** | No hand-rolled crypto anywhere in the codebase (confirmed — VAPID keys are standard-generated via the `web-push` library, nothing else crypto-shaped exists). No MD5/SHA-1 usage found. TLS is Supabase's problem today and the host's problem at deployment (**Phase 3**). Encrypting specific columns (DOB, phone) at the application layer beyond Postgres's at-rest encryption is a real engineering undertaking (key management, breaks searchability) that isn't proportionate for a free-tier single-school deployment right now — flagged as a conscious deferral, not a silent skip, revisit if the data sensitivity profile changes. |
@@ -67,6 +67,8 @@ Ranked by actual exploitability, with file references. These are not hypothetica
 `grades`, `assignments`, `exams`, `attendance_records`, `monthly_progress_entries` — each has an INSERT policy that verifies the teacher actually teaches that class+subject (via `class_subject_teachers`), but the matching UPDATE policy only re-checks `teacher_id = auth.uid()`, not the class/subject/student relationship. A teacher could take a row they legitimately own and re-point its `student_id`/`class_id` to a student outside their assignment. Narrower than F1/F2 (needs an existing owned row, teacher-only, doesn't escalate privilege) but the same root cause.
 **Fix:** mirror each INSERT policy's ownership `exists(...)` check into the corresponding UPDATE policy's `with check`.
 
+**F4b (same family as F4, found during the full Server Action sweep).** `grades`, `attendance_records`, `monthly_progress_entries`, and `assignment_submissions`' teacher-grading policy all verified "does this teacher teach this class+subject" but never verified the specific `student_id` being written is actually enrolled in that class — a teacher could write a grade/attendance/progress row for an arbitrary student UUID as long as they supplied a `class_id` they legitimately teach. `teacher_remarks`/`behaviour_log` already did this correctly (join through `students` to confirm membership); migration `0019_verify_student_class_membership.sql` brings the other five policies up to the same standard.
+
 ### 🟡 MEDIUM
 
 **F5. Password minimum is 8 characters everywhere; no breached-password screening.** Checklist wants 12 general / 15 admin, plus a compromised-password check. Currently identical (and weak) at every entry point: `admin/users/actions.ts`, `settings/actions.ts`, `reset-password/page.tsx` (client-side check only, easily bypassed by calling the Supabase client directly from devtools), `scripts/create-admin.mjs` (no check at all).
@@ -75,7 +77,7 @@ Ranked by actual exploitability, with file references. These are not hypothetica
 
 **F7. `audit_logs` can be forged by any user, for themselves.** `0011_operations.sql:85-86` allows any authenticated user to insert an audit log row with `actor_id = auth.uid()` — meaning a user could pollute their own audit trail with fabricated entries via a direct API call. The app's own `logAuditEvent()` helper relies on this policy today (uses the regular client, not the service-role client).
 
-**F8. Audit logging covers 4 of ~20 admin-mutating action files.** Only `admin/users/actions.ts`, `admin/documents/actions.ts`, `admin/leave-requests/actions.ts` call `logAuditEvent()`. Announcements, events, classes, subjects, timetable, and feedback-status changes are currently unlogged.
+**F8. ~~Audit logging covers 4 of ~20 admin-mutating action files.~~ Fixed.** Was: only `admin/users/actions.ts`, `admin/documents/actions.ts`, `admin/leave-requests/actions.ts` called `logAuditEvent()`. Now also wired into: user edits, class create/update/assign-teacher/remove-teacher, subject create/delete, event create/delete, announcement create/delete, timetable entry create/delete, and feedback status changes. Not wired into teacher-side mutations (grades/attendance/progress/remarks) yet — those are higher-volume, routine actions rather than admin/destructive ones; extending to them is a Phase 2 item (see roadmap), to avoid flooding the log with routine gradebook entries before deciding what's actually worth surfacing to an admin reviewing it.
 
 **F9. No security headers.** `next.config.mjs` sets nothing beyond `reactStrictMode` — no CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, or `Permissions-Policy`.
 
@@ -83,6 +85,7 @@ Ranked by actual exploitability, with file references. These are not hypothetica
 
 **F10.** `feedback` INSERT policy lets a user set their own initial `status` (e.g. start pre-marked `resolved`) — cosmetic, doesn't expose or corrupt anyone else's data.
 **F11.** `chatbot_conversations.persona` is editable post-creation by its owner — cosmetic.
+**F12.** Document uploads (`admin/documents/actions.ts`) cap file size (10MB) but don't allowlist content-type server-side — relies on the browser-supplied `file.type`. Lower risk than it might look (upload is admin-only, not a public or multi-role surface), but still a real gap — folded into the Phase 2 file-upload validation pass.
 
 ### ✅ Verified already correct (no action needed)
 
@@ -123,7 +126,7 @@ R = read, W = write/create, U = update, D = delete, — = no access. "Own" = row
 | Archive ("delete") a user | Admin only | Type-to-confirm dialog | ✅ Yes | Yes (DB row survives) |
 | Deactivate a user | Admin only | Button + role check | ✅ Yes | Yes |
 | Delete a document | Admin only | — | ✅ Yes | No (file removed from storage) |
-| Delete an announcement/event/class/subject | Admin only | — | ❌ No (F8) | Depends |
+| Delete an announcement/event/class/subject | Admin only | — | ✅ Yes (fixed, F8) | Depends |
 | True hard-delete of a person | Not exposed in-app at all | — | — | N/A by design |
 
 ---
@@ -136,7 +139,7 @@ R = read, W = write/create, U = update, D = delete, — = no access. "Own" = row
 
 **Phase 2 — next pass, larger standalone features, not started:**
 - Admin MFA (TOTP via Supabase Auth's native MFA API — enroll/challenge/recovery-codes UI, login flow gains a challenge step for admin accounts).
-- Active-sessions list + manual "revoke this session" UI (self-service, Settings page).
+- Active-sessions list + manual "revoke this session" UI (self-service, Settings page) — this is also the real fix for "force logout of other sessions after password reset/change," since it gives a verified, SDK-supported way to enumerate and kill sessions rather than the ban-only approximation Phase 1 uses for account deactivation.
 - File upload validation pass (avatar + document type/size limits, both client and server side).
 - Extend audit logging to teacher-side mutations (grades/attendance/progress edits), matching the checklist's explicit ask.
 - Announcements/parent-audience gap (small migration + UI, flagged in HANDOVER_2 §19/§20, adjacent to this work but a product change, not a security fix).

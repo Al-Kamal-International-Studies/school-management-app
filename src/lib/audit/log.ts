@@ -1,15 +1,20 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Records an admin-action audit entry. Deliberately best-effort: a logging
  * failure should never block the actual action, so errors are swallowed
  * (not surfaced to the caller) rather than thrown.
  *
- * Instrumented on the highest-risk actions — account creation,
- * activate/deactivate, archive, and leave-request review — not every
- * mutation in the app; extend this list as needed.
+ * Uses the service-role client on purpose (see migration
+ * 0016_authz_hardening.sql) — audit_logs has no authenticated-role INSERT
+ * policy at all, so a regular RLS-scoped client would always be denied.
+ * This makes the log tamper-resistant: no user session, including an
+ * admin's own, can write a fabricated entry via a direct API call. Callers
+ * still pass `actorId` explicitly (from the already-verified
+ * `requireRole()` result), not derived from the client, so entries stay
+ * accurately attributed.
  */
 export async function logAuditEvent(
   actorId: string,
@@ -19,7 +24,7 @@ export async function logAuditEvent(
   details?: Record<string, unknown>
 ) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     await supabase.from("audit_logs").insert({
       actor_id: actorId,
       action,

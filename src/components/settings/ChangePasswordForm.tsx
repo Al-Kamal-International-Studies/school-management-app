@@ -20,7 +20,7 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
   );
 }
 
-export function ChangePasswordForm() {
+export function ChangePasswordForm({ minLength = 12 }: { minLength?: number }) {
   const [state, formAction] = useActionState(changeOwnPasswordAction, initialState);
   const { dict } = useLocale();
 
@@ -39,7 +39,7 @@ export function ChangePasswordForm() {
         name="password"
         type="password"
         autoComplete="new-password"
-        minLength={8}
+        minLength={minLength}
         required
       />
       <Input
@@ -47,7 +47,7 @@ export function ChangePasswordForm() {
         name="confirmPassword"
         type="password"
         autoComplete="new-password"
-        minLength={8}
+        minLength={minLength}
         required
       />
       <SubmitButton label={dict.common.save} pendingLabel={dict.common.saving} />

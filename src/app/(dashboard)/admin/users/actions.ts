@@ -7,6 +7,9 @@ import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { setAccountBanned } from "@/lib/auth/accountAccess";
+import { passwordZodSchema, MIN_PASSWORD_LENGTH } from "@/lib/security/password";
+import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
 
 export interface ActionState {
   error?: string;
@@ -16,7 +19,10 @@ const createUserSchema = z.object({
   role: z.enum(["teacher", "student", "parent"]),
   full_name: z.string().min(2, "Full name is required."),
   email: z.string().email("Enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  // This form only ever creates teacher/student/parent accounts (see the
+  // role enum above — there is no path to create an admin here), so the
+  // regular (non-admin) minimum applies. See docs/SECURITY.md F5.
+  password: passwordZodSchema(MIN_PASSWORD_LENGTH),
   phone: z.string().optional(),
   // teacher-only
   employee_id: z.string().optional(),
@@ -35,6 +41,13 @@ const createUserSchema = z.object({
 
 export async function createUserAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const me = await requireRole("admin");
+
+  // Keyed by the acting admin, not the new account — this protects against
+  // a compromised/malicious admin session mass-creating accounts, not
+  // against a legitimate admin's normal onboarding pace.
+  const bucket = `create_user:${me.id}`;
+  const { limited } = await checkRateLimit(bucket, { maxAttempts: 20, windowSeconds: 60 * 60 });
+  if (limited) return { error: "Too many accounts created recently. Wait a while before creating more." };
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = createUserSchema.safeParse(raw);
@@ -121,6 +134,7 @@ export async function createUserAction(_prevState: ActionState, formData: FormDa
     }
   }
 
+  await recordRateLimitAttempt(bucket);
   await logAuditEvent(me.id, `create_${data.role}_account`, "profiles", userId, { email: data.email, full_name: data.full_name });
 
   revalidatePath("/admin/users");
@@ -136,7 +150,7 @@ const updateUserSchema = z.object({
 });
 
 export async function updateUserAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  await requireRole("admin");
+  const me = await requireRole("admin");
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = updateUserSchema.safeParse(raw);
@@ -165,6 +179,8 @@ export async function updateUserAction(_prevState: ActionState, formData: FormDa
     }
   }
 
+  await logAuditEvent(me.id, "update_user", "profiles", data.id, { full_name: data.full_name });
+
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${data.id}`);
   redirect("/admin/users");
@@ -175,6 +191,9 @@ export async function setUserActiveAction(userId: string, isActive: boolean) {
   const supabase = await createClient();
   const { error } = await supabase.from("profiles").update({ is_active: isActive }).eq("id", userId);
   if (error) throw new Error(error.message);
+  // Ban at the Auth level too when deactivating, so the account can't sign
+  // back in or refresh an existing session — see lib/auth/accountAccess.ts.
+  await setAccountBanned(userId, !isActive);
   await logAuditEvent(me.id, isActive ? "activate_account" : "deactivate_account", "profiles", userId);
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${userId}`);
@@ -195,6 +214,7 @@ export async function archiveUserAction(userId: string) {
     .update({ is_active: false, archived_at: new Date().toISOString(), archived_by: me.id })
     .eq("id", userId);
   if (error) throw new Error(error.message);
+  await setAccountBanned(userId, true);
   await logAuditEvent(me.id, "archive_account", "profiles", userId);
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${userId}`);

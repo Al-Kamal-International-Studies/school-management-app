@@ -13,7 +13,7 @@ const CONTACT_PHONE = "052 772 7246";
 const CONTACT_EMAIL = "info@alkamalinternational.com";
 
 export default async function SettingsPage() {
-  await requireRole("admin", "teacher", "student", "parent");
+  const me = await requireRole("admin", "teacher", "student", "parent");
   const dict = await getDictionary(await getLocale());
 
   return (
@@ -40,7 +40,7 @@ export default async function SettingsPage() {
       <FadeUp delay={0.15}>
         <Card>
           <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.changePassword}</h2>
-          <ChangePasswordForm />
+          <ChangePasswordForm minLength={me.role === "admin" ? 15 : 12} />
         </Card>
       </FadeUp>
 
