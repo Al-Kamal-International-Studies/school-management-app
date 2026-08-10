@@ -27,3 +27,6 @@ next-env.d.ts
 # supabase local dev
 supabase/.branches
 supabase/.temp
+
+# bulk-onboard.mjs output — real generated temp passwords, never commit
+scripts/output/
