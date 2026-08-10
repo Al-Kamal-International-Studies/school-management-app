@@ -2,6 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getDeviceIdCookie, isDeviceApproved } from "@/lib/auth/deviceCookie";
 import type { Profile, UserRole } from "@/lib/types/database.types";
 
 /**
@@ -31,10 +32,11 @@ export async function getCurrentProfile(): Promise<Profile | null> {
  * the wrong role to their own dashboard — this is enforced again by RLS at
  * the database layer, so a guessed URL can never leak data even if a guard
  * here is missed. Every role must clear must_change_password (see
- * /force-password-change) before anything else, and admins additionally
- * must complete MFA (see requireAdminMfaVerified below) — both checked here
- * (not just on specific routes) so neither can be dodged by visiting a
- * shared route like /settings or /profile instead.
+ * /force-password-change) and be on a registered device (see
+ * requireDeviceApproved below) before anything else, and admins
+ * additionally must complete MFA (see requireAdminMfaVerified below) — all
+ * checked here (not just on specific routes) so none of them can be dodged
+ * by visiting a shared route like /settings or /profile instead.
  */
 export async function requireRole(...roles: UserRole[]): Promise<Profile> {
   const profile = await getCurrentProfile();
@@ -55,11 +57,32 @@ export async function requireRole(...roles: UserRole[]): Promise<Profile> {
     redirect("/force-password-change");
   }
 
+  await requireDeviceApproved(profile.id);
+
   if (profile.role === "admin") {
     await requireAdminMfaVerified();
   }
 
   return profile;
+}
+
+/**
+ * Redirects to /devices/manage if the current browser isn't one of this
+ * user's registered devices. Two ways to land here: hitting the 3-device
+ * cap at login (completeLogin.ts routes here directly instead of the
+ * dashboard), or a device that WAS registered getting removed (from
+ * Settings, on another device) while this session is still live — Supabase
+ * has no way to force-expire that specific other session's token (see
+ * lib/auth/accountAccess.ts's doc comment for the same platform
+ * limitation), so this check is what actually makes "remove a device" mean
+ * something: the next time that device navigates anywhere, it lands here
+ * instead of the dashboard.
+ */
+async function requireDeviceApproved(userId: string): Promise<void> {
+  const deviceId = await getDeviceIdCookie();
+  if (!(await isDeviceApproved(userId, deviceId))) {
+    redirect("/devices/manage");
+  }
 }
 
 /**

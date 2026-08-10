@@ -1,12 +1,11 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAuthClient } from "@/lib/supabase/authClient";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { dashboardPathForRole } from "@/lib/auth";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
 import { setAccountBanned } from "@/lib/auth/accountAccess";
 import { logAuditEvent } from "@/lib/audit/log";
+import { completeLogin } from "@/lib/auth/completeLogin";
 
 export interface LoginState {
   error?: string;
@@ -25,6 +24,7 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "");
+  const remember = formData.get("remember") === "on";
 
   if (!email || !password) {
     return { error: "Enter your email and password." };
@@ -40,7 +40,10 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     return { error: "Too many failed attempts. Wait a few minutes and try again." };
   }
 
-  const supabase = await createClient();
+  // createAuthClient (not the plain createClient) so "Remember me" can
+  // control whether the resulting session cookies persist across browser
+  // restarts or clear when it closes — see its doc comment.
+  const supabase = await createAuthClient(remember);
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
@@ -76,7 +79,7 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, is_active, failed_login_attempts")
+    .select("id, role, is_active, failed_login_attempts")
     .eq("id", data.user.id)
     .single();
 
@@ -90,15 +93,5 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     return { error: "This account has been deactivated. Contact your administrator." };
   }
 
-  // Successful login — reset the counter (best-effort; a failure here
-  // shouldn't block a legitimate sign-in). Uses the service-role client
-  // since failed_login_attempts is pinned against direct self-service
-  // writes by the profiles RLS policy (0022_account_security_columns.sql),
-  // same reasoning as must_change_password in force-password-change/actions.ts.
-  if (profile.failed_login_attempts > 0) {
-    const admin = createAdminClient();
-    await admin.from("profiles").update({ failed_login_attempts: 0 }).eq("id", data.user.id);
-  }
-
-  redirect(next || dashboardPathForRole(profile.role));
+  return completeLogin(profile, next);
 }

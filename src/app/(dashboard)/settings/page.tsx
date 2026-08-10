@@ -10,6 +10,7 @@ import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { PushNotificationToggle } from "@/components/settings/PushNotificationToggle";
 import { MfaSettingsCard } from "@/components/mfa/MfaSettingsCard";
 import { SignOutOtherSessionsButton } from "@/components/settings/SignOutOtherSessionsButton";
+import { DeviceList } from "@/components/settings/DeviceList";
 
 const CONTACT_PHONE = "052 772 7246";
 const CONTACT_EMAIL = "info@alkamalinternational.com";
@@ -47,9 +48,15 @@ export default async function SettingsPage() {
       </FadeUp>
 
       <FadeUp delay={0.16}>
-        <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.sessions}</h2>
-          <SignOutOtherSessionsButton />
+        <Card className="space-y-5">
+          <div>
+            <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.devices.settingsTitle}</h2>
+            <DeviceList />
+          </div>
+          <div className="border-t border-slate-100 pt-5 dark:border-navy-800">
+            <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.sessions}</h2>
+            <SignOutOtherSessionsButton />
+          </div>
         </Card>
       </FadeUp>
 

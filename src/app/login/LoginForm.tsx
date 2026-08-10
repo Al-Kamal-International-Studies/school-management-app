@@ -69,7 +69,16 @@ export function LoginForm({
         hideLabel={dict.login.hidePassword}
       />
 
-      <div className="flex items-center justify-end text-sm">
+      <div className="flex items-center justify-between text-sm">
+        <label className="flex items-center gap-2 text-slate-600 dark:text-navy-300">
+          <input
+            type="checkbox"
+            name="remember"
+            defaultChecked
+            className="h-4 w-4 rounded border-slate-300 text-navy-700 focus:ring-navy-400 dark:border-navy-600 dark:bg-navy-900 dark:focus:ring-gold-400"
+          />
+          {dict.login.rememberMe}
+        </label>
         <Link href="/forgot-password" className="font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
           {dict.login.forgotPassword}
         </Link>
