@@ -2,8 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCALE_COOKIE } from "@/lib/i18n/locales";
 
-// Routes that don't require an authenticated session.
-const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password", "/welcome"];
+// Routes that don't require an authenticated session. /reset-password no
+// longer exists — password resets are admin-mediated now (see
+// src/app/forgot-password/actions.ts) — removed from here deliberately.
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/welcome"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));

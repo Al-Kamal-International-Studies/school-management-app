@@ -16,6 +16,9 @@ export type Profile = {
   is_active: boolean;
   archived_at: string | null;
   archived_by: string | null;
+  // Added by 0022_account_security_columns.sql.
+  failed_login_attempts: number;
+  must_change_password: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -268,6 +271,41 @@ export type RateLimitEvent = {
   created_at: string;
 };
 
+export type PasswordResetRequestStatus = "pending" | "completed" | "dismissed";
+
+export type PasswordResetRequest = {
+  id: string;
+  email: string;
+  status: PasswordResetRequestStatus;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+};
+
+export type UserDevice = {
+  id: string;
+  user_id: string;
+  device_id: string;
+  label: string | null;
+  user_agent: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+};
+
+export type WebauthnCredential = {
+  id: string;
+  user_id: string;
+  credential_id: string;
+  public_key: string;
+  counter: number;
+  device_type: string | null;
+  backed_up: boolean;
+  transports: string[] | null;
+  label: string | null;
+  created_at: string;
+  last_used_at: string | null;
+};
+
 export type DmConversation = {
   id: string;
   participant_a: string;
@@ -440,6 +478,24 @@ export type Database = {
         Row: RateLimitEvent;
         Insert: Partial<RateLimitEvent> & { bucket: string };
         Update: Partial<RateLimitEvent>;
+        Relationships: [];
+      };
+      password_reset_requests: {
+        Row: PasswordResetRequest;
+        Insert: Partial<PasswordResetRequest> & { email: string };
+        Update: Partial<PasswordResetRequest>;
+        Relationships: [];
+      };
+      user_devices: {
+        Row: UserDevice;
+        Insert: Partial<UserDevice> & { user_id: string; device_id: string };
+        Update: Partial<UserDevice>;
+        Relationships: [];
+      };
+      webauthn_credentials: {
+        Row: WebauthnCredential;
+        Insert: Partial<WebauthnCredential> & { user_id: string; credential_id: string; public_key: string };
+        Update: Partial<WebauthnCredential>;
         Relationships: [];
       };
     };

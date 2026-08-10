@@ -25,6 +25,7 @@ import {
   FolderOpen,
   History,
   MessagesSquare,
+  KeyRound,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -45,6 +46,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   admin: [
     { href: "/admin", labelKey: "overview", icon: LayoutDashboard },
     { href: "/admin/users", labelKey: "users", icon: Users },
+    { href: "/admin/password-reset-requests", labelKey: "passwordResetRequests", icon: KeyRound },
     { href: "/admin/classes", labelKey: "classes", icon: School },
     { href: "/admin/subjects", labelKey: "subjects", icon: BookMarked },
     { href: "/admin/timetable", labelKey: "timetable", icon: CalendarClock },

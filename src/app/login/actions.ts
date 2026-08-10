@@ -2,8 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { dashboardPathForRole } from "@/lib/auth";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
+import { setAccountBanned } from "@/lib/auth/accountAccess";
+import { logAuditEvent } from "@/lib/audit/log";
 
 export interface LoginState {
   error?: string;
@@ -11,6 +14,12 @@ export interface LoginState {
 
 const LOGIN_MAX_ATTEMPTS = 10;
 const LOGIN_WINDOW_SECONDS = 15 * 60;
+
+/** Account auto-deactivates after this many *consecutive* failed attempts —
+ * a real, permanent-until-an-admin-fixes-it lockout, separate from and in
+ * addition to the rate limiter above (which just slows down guessing for
+ * 15 minutes and resets itself; this one actually disables the account). */
+const MAX_FAILED_ATTEMPTS = 3;
 
 export async function loginAction(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
@@ -36,12 +45,38 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
 
   if (error) {
     await recordRateLimitAttempt(bucket);
+
+    // No session exists at this point (the sign-in attempt itself failed),
+    // so the failed_login_attempts counter has to be read/written through
+    // the service-role client, looked up by email. This only ever touches
+    // an *existing* account's own counter — an attempt against an email
+    // with no account matches nothing here and just falls through to the
+    // generic "incorrect" response below, same as always.
+    const admin = createAdminClient();
+    const { data: target } = await admin
+      .from("profiles")
+      .select("id, failed_login_attempts, is_active")
+      .eq("email", email)
+      .is("archived_at", null)
+      .maybeSingle();
+
+    if (target && target.is_active) {
+      const attempts = target.failed_login_attempts + 1;
+      if (attempts >= MAX_FAILED_ATTEMPTS) {
+        await admin.from("profiles").update({ failed_login_attempts: attempts, is_active: false }).eq("id", target.id);
+        await setAccountBanned(target.id, true);
+        await logAuditEvent(target.id, "auto_deactivate_failed_logins", "profiles", target.id, { attempts });
+        return { error: "This account has been deactivated after 3 failed attempts. Contact your administrator." };
+      }
+      await admin.from("profiles").update({ failed_login_attempts: attempts }).eq("id", target.id);
+    }
+
     return { error: "Incorrect email or password." };
   }
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, is_active")
+    .select("role, is_active, failed_login_attempts")
     .eq("id", data.user.id)
     .single();
 
@@ -53,6 +88,16 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
   if (!profile.is_active) {
     await supabase.auth.signOut();
     return { error: "This account has been deactivated. Contact your administrator." };
+  }
+
+  // Successful login — reset the counter (best-effort; a failure here
+  // shouldn't block a legitimate sign-in). Uses the service-role client
+  // since failed_login_attempts is pinned against direct self-service
+  // writes by the profiles RLS policy (0022_account_security_columns.sql),
+  // same reasoning as must_change_password in force-password-change/actions.ts.
+  if (profile.failed_login_attempts > 0) {
+    const admin = createAdminClient();
+    await admin.from("profiles").update({ failed_login_attempts: 0 }).eq("id", data.user.id);
   }
 
   redirect(next || dashboardPathForRole(profile.role));

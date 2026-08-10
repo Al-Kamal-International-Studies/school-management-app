@@ -2,11 +2,13 @@ import { notFound } from "next/navigation";
 import { getUserDetail, listClassesForSelect, listStudentsForParentLink } from "../queries";
 import { createClient } from "@/lib/supabase/server";
 import { EditUserForm } from "./EditUserForm";
+import { AdminSetPasswordForm } from "./AdminSetPasswordForm";
 import { Badge } from "@/components/ui/Badge";
 import { ToggleActiveButton } from "../ToggleActiveButton";
 import { ArchiveUserButton } from "./ArchiveUserButton";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { MIN_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH_ADMIN } from "@/lib/security/password";
 
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -50,6 +52,14 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           allStudents={allStudents}
           linkedChildIds={linkedChildIds}
           dict={dict}
+        />
+      </div>
+
+      <div className="card space-y-4 p-6">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.adminUsers.setPassword}</h2>
+        <AdminSetPasswordForm
+          userId={detail.profile.id}
+          minLength={detail.profile.role === "admin" ? MIN_PASSWORD_LENGTH_ADMIN : MIN_PASSWORD_LENGTH}
         />
       </div>
     </div>

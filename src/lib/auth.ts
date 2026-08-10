@@ -30,10 +30,11 @@ export async function getCurrentProfile(): Promise<Profile | null> {
  * it. Redirects unauthenticated users to /login, and authenticated users of
  * the wrong role to their own dashboard — this is enforced again by RLS at
  * the database layer, so a guessed URL can never leak data even if a guard
- * here is missed. Admins additionally must complete MFA (see
- * requireAdminMfaVerified below) before reaching anywhere past this point —
- * checked here (not just on /admin/* routes) so an admin can't dodge it by
- * visiting a shared route like /settings or /profile instead.
+ * here is missed. Every role must clear must_change_password (see
+ * /force-password-change) before anything else, and admins additionally
+ * must complete MFA (see requireAdminMfaVerified below) — both checked here
+ * (not just on specific routes) so neither can be dodged by visiting a
+ * shared route like /settings or /profile instead.
  */
 export async function requireRole(...roles: UserRole[]): Promise<Profile> {
   const profile = await getCurrentProfile();
@@ -48,6 +49,10 @@ export async function requireRole(...roles: UserRole[]): Promise<Profile> {
 
   if (!roles.includes(profile.role)) {
     redirect(dashboardPathForRole(profile.role));
+  }
+
+  if (profile.must_change_password) {
+    redirect("/force-password-change");
   }
 
   if (profile.role === "admin") {

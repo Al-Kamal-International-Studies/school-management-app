@@ -8,11 +8,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
 import { setAccountBanned } from "@/lib/auth/accountAccess";
-import { passwordZodSchema, MIN_PASSWORD_LENGTH } from "@/lib/security/password";
+import { passwordZodSchema, MIN_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH_ADMIN } from "@/lib/security/password";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
 
 export interface ActionState {
   error?: string;
+  success?: boolean;
 }
 
 const createUserSchema = z.object({
@@ -79,14 +80,16 @@ export async function createUserAction(_prevState: ActionState, formData: FormDa
 
   const userId = created.user.id;
 
-  // Profile row is created by the on_auth_user_created trigger; set phone
-  // and date of birth here since they're not part of user_metadata.
-  if (data.phone || data.date_of_birth) {
-    await admin
-      .from("profiles")
-      .update({ phone: data.phone || null, date_of_birth: data.date_of_birth || null })
-      .eq("id", userId);
-  }
+  // Profile row is created by the on_auth_user_created trigger; set phone,
+  // date of birth, and must_change_password here since none of those are
+  // part of user_metadata. must_change_password is unconditional — every
+  // admin-created account gets a password the admin chose, not the person
+  // themselves, so they're always prompted to set their own on first login
+  // (requireRole()'s /force-password-change gate).
+  await admin
+    .from("profiles")
+    .update({ phone: data.phone || null, date_of_birth: data.date_of_birth || null, must_change_password: true })
+    .eq("id", userId);
 
   if (data.role === "teacher") {
     const { error } = await admin.from("teachers").insert({
@@ -189,7 +192,15 @@ export async function updateUserAction(_prevState: ActionState, formData: FormDa
 export async function setUserActiveAction(userId: string, isActive: boolean) {
   const me = await requireRole("admin");
   const supabase = await createClient();
-  const { error } = await supabase.from("profiles").update({ is_active: isActive }).eq("id", userId);
+  // Reactivating also resets the failed-login counter — otherwise an
+  // account auto-deactivated at 3 failed attempts would immediately re-trip
+  // the same lockout on its very next mistyped password after an admin
+  // brings it back. Only relevant going from inactive -> active; harmless
+  // to always include (it's just already 0 in the deactivate direction).
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_active: isActive, failed_login_attempts: 0 })
+    .eq("id", userId);
   if (error) throw new Error(error.message);
   // Ban at the Auth level too when deactivating, so the account can't sign
   // back in or refresh an existing session — see lib/auth/accountAccess.ts.
@@ -218,4 +229,47 @@ export async function archiveUserAction(userId: string) {
   await logAuditEvent(me.id, "archive_account", "profiles", userId);
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${userId}`);
+}
+
+/**
+ * Admin sets a new password for someone else's account directly — no email
+ * link, no token. Uses the service-role admin API (updateUserById), the
+ * only way to set another user's password at all (Supabase's regular
+ * updateUser() always targets the caller). Forces must_change_password so
+ * the recipient is prompted to pick their own password the next time they
+ * sign in (see requireRole()'s /force-password-change gate), and resolves
+ * any pending password-reset request for that email so it drops out of the
+ * /admin/password-reset-requests inbox automatically.
+ */
+export async function adminSetUserPasswordAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const me = await requireRole("admin");
+
+  const schema = z.object({ id: z.string().uuid(), password: z.string() });
+  const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: "Invalid form data." };
+
+  const admin = createAdminClient();
+  const { data: target } = await admin.from("profiles").select("role, email").eq("id", parsed.data.id).single();
+  if (!target) return { error: "Account not found." };
+
+  const minLength = target.role === "admin" ? MIN_PASSWORD_LENGTH_ADMIN : MIN_PASSWORD_LENGTH;
+  const passwordCheck = passwordZodSchema(minLength).safeParse(parsed.data.password);
+  if (!passwordCheck.success) return { error: passwordCheck.error.issues[0]?.message ?? "Invalid password." };
+
+  const { error } = await admin.auth.admin.updateUserById(parsed.data.id, { password: passwordCheck.data });
+  if (error) return { error: error.message };
+
+  await admin.from("profiles").update({ must_change_password: true }).eq("id", parsed.data.id);
+
+  await admin
+    .from("password_reset_requests")
+    .update({ status: "completed", resolved_at: new Date().toISOString(), resolved_by: me.id })
+    .eq("email", target.email)
+    .eq("status", "pending");
+
+  await logAuditEvent(me.id, "admin_set_password", "profiles", parsed.data.id);
+  revalidatePath(`/admin/users/${parsed.data.id}`);
+  revalidatePath("/admin/password-reset-requests");
+
+  return { success: true };
 }
