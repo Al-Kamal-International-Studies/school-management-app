@@ -1,0 +1,23 @@
+## Phase 4 (docs/SECURITY.md) — automated dependency update PRs + security
+## advisory alerts for this repo's npm dependencies. GitHub's secret
+## scanning and default Dependabot security alerts don't need any config
+## file at all (just "Enable" in repo Settings -> Security -> Code security
+## once the repo exists) -- this file adds the extra step of Dependabot
+## opening PRs automatically to bump vulnerable/outdated packages, not just
+## alerting.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    # Security updates always get a PR regardless of this limit/schedule.
+    groups:
+      # Batch routine minor/patch bumps into one PR instead of one per
+      # package -- a single-maintainer project doesn't need 15 separate
+      # dependency PRs a week for non-security bumps.
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"

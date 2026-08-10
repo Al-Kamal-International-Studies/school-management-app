@@ -1,0 +1,33 @@
+## Phase 4 (docs/SECURITY.md) — static analysis (SAST) via GitHub's native
+## CodeQL. Scans this app's own TypeScript/JavaScript for common
+## vulnerability patterns (injection, unsafe regex, etc.) — complements
+## Dependabot (which only covers third-party dependencies, not this
+## project's own code).
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, independent of any push — catches newly-published query
+    # patterns against unchanged code, not just new commits.
+    - cron: "0 6 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - uses: github/codeql-action/analyze@v3

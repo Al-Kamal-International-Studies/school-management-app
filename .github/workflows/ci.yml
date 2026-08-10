@@ -1,0 +1,51 @@
+## Phase 4 (docs/SECURITY.md) — automates this project's own established
+## verification discipline (see HANDOVER.md section 13: "Always run
+## typecheck && lint && build before considering any change done") instead
+## of relying on it being run by hand every time. Runs on every PR and on
+## pushes to main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Typecheck, lint, build, audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        # Placeholder values, not real secrets — next build never needs a
+        # live Supabase connection for this app (every route is server-
+        # rendered on demand, nothing is statically prerendered against the
+        # database; confirmed by npm run build's own route output). Real
+        # runtime env vars live in Vercel's project settings, not here.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        run: npm run build
+
+      - name: Dependency audit
+        # High/critical only — matches docs/VULNERABILITY_RESPONSE.md's
+        # "judge by actual exploitability" philosophy rather than failing
+        # CI on low-severity noise in dev-only dependencies.
+        run: npm audit --audit-level=high
