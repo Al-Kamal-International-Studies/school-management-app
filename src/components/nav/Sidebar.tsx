@@ -187,13 +187,6 @@ export function Sidebar({
         <div className="relative border-t border-white/10 p-3">
           <ul>{renderItem({ href: "/settings", labelKey: "settings", icon: SettingsIcon })}</ul>
         </div>
-        <div className="relative border-t border-white/10 p-4">
-          <p className="text-[11px] leading-relaxed text-navy-300">
-            Al Kamal International Studies
-            <br />
-            School Management System
-          </p>
-        </div>
       </nav>
     </>
   );

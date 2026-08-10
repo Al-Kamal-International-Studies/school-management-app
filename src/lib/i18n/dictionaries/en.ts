@@ -61,6 +61,9 @@ const en = {
     signingIn: "Signing in…",
     footer: "Accounts are created by your school administrator. Contact them if you need access.",
     deactivated: "This account has been deactivated. Please contact your administrator.",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    rememberMe: "Remember me on this device",
   },
   authBranding: {
     tagline: "Knowledge is Light",

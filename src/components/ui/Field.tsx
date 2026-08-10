@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { Listbox } from "@/components/ui/Listbox";
 
 interface FieldWrapperProps {
   label: string;
@@ -62,9 +63,9 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 export function Select({ label, name, error, hint, className, children, ...props }: SelectProps) {
   return (
     <FieldWrapper label={label} htmlFor={name} error={error} hint={hint}>
-      <select id={name} name={name} className={cn("input bg-white", className)} {...props}>
+      <Listbox id={name} name={name} className={className} {...props}>
         {children}
-      </select>
+      </Listbox>
     </FieldWrapper>
   );
 }

@@ -33,8 +33,8 @@ export function Logo({
         <LogoMark onLight={onLight} />
       </div>
       {showWordmark && (
-        <div className="leading-tight">
-          <p className={cn("font-display text-[15px] font-semibold tracking-wide", onLight ? "text-navy-900" : "text-white")}>
+        <div className="font-display leading-tight">
+          <p className={cn("text-[15px] font-semibold tracking-wide", onLight ? "text-navy-900" : "text-white")}>
             Al Kamal
           </p>
           <p className={cn("text-[10px] font-medium uppercase tracking-[0.18em]", onLight ? "text-gold-600" : "text-gold-400")}>

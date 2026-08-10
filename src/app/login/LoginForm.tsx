@@ -7,6 +7,7 @@ import { Mail, Lock, ArrowRight } from "lucide-react";
 import { loginAction, type LoginState } from "./actions";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import { PasswordField } from "@/components/ui/PasswordField";
 import { CelebrateOnHover } from "@/components/auth/CelebrateOnHover";
 import type { Dictionary } from "@/lib/i18n/types";
 
@@ -58,22 +59,15 @@ export function LoginForm({
         </div>
       </div>
 
-      <div>
-        <label htmlFor="password" className="label">
-          {dict.login.password}
-        </label>
-        <div className="relative">
-          <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 rtl:left-auto rtl:right-3.5" />
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            className="input pl-10 rtl:pl-3.5 rtl:pr-10"
-          />
-        </div>
-      </div>
+      <PasswordField
+        label={dict.login.password}
+        name="password"
+        icon={Lock}
+        autoComplete="current-password"
+        required
+        showLabel={dict.login.showPassword}
+        hideLabel={dict.login.hidePassword}
+      />
 
       <div className="flex items-center justify-end text-sm">
         <Link href="/forgot-password" className="font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
