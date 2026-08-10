@@ -23,6 +23,16 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 // regardless. Revisit a nonce-based script-src in Phase 2 once there's room
 // to regression-test every animated component individually — see
 // docs/SECURITY.md Phase 2.
+// upgrade-insecure-requests (below) tells the browser to upgrade the page's
+// own outgoing http:// requests to https:// — correct and harmless once
+// actually deployed over HTTPS, but in dev this origin genuinely is plain
+// http://localhost with nothing listening on TLS, so the upgraded request
+// just fails outright. Found live: it broke Next's client-side RSC
+// prefetch/fetch (repeated `ERR_SSL_PROTOCOL_ERROR`) on an unauthenticated
+// client-side navigation to a protected route. Dev-only, so this directive
+// is production-only.
+const upgradeInsecureRequests = isDev ? "" : "upgrade-insecure-requests;";
+
 const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
@@ -34,7 +44,7 @@ const cspHeader = `
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
-  upgrade-insecure-requests;
+  ${upgradeInsecureRequests}
 `
   .replace(/\s{2,}/g, " ")
   .trim();
