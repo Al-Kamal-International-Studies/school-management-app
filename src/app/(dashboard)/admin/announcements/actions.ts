@@ -15,7 +15,7 @@ export interface ActionState {
 const announcementSchema = z.object({
   title: z.string().min(1, "Title is required."),
   body: z.string().min(1, "Message is required."),
-  audience: z.enum(["all", "teacher", "student"]),
+  audience: z.enum(["all", "teacher", "student", "parent"]),
 });
 
 export async function createAnnouncementAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {

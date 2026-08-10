@@ -1,5 +1,7 @@
+import { Megaphone } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { listMyChildren, getChildOverview } from "./queries";
+import { listVisibleAnnouncements } from "@/lib/queries/announcements";
 import { ChildLeaveForm } from "./ChildLeaveForm";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -43,7 +45,7 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
     );
   }
 
-  const overview = await getChildOverview(activeChild.id);
+  const [overview, announcements] = await Promise.all([getChildOverview(activeChild.id), listVisibleAnnouncements(5)]);
   const presentCount = overview.attendance.filter((a) => a.status === "present").length;
   const attendanceRate = overview.attendance.length ? Math.round((presentCount / overview.attendance.length) * 1000) / 10 : null;
 
@@ -103,6 +105,30 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
           </Card>
         </FadeUpItem>
       </FadeUpStagger>
+
+      <FadeUp delay={0.08} className="space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.announcements.title}</h2>
+        {announcements.length === 0 ? (
+          <Card>
+            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.announcements.noAnnouncements}</p>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {announcements.map((a) => (
+              <Card key={a.id} className="flex gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-50 text-gold-700 dark:bg-gold-500/15 dark:text-gold-300">
+                  <Megaphone className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-navy-900 dark:text-white">{a.title}</p>
+                  <p className="mt-0.5 text-sm text-slate-600 dark:text-navy-200">{a.body}</p>
+                  <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{new Date(a.created_at).toLocaleDateString()}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </FadeUp>
 
       <FadeUp delay={0.1} className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.parent.upcomingAssignments}</h2>

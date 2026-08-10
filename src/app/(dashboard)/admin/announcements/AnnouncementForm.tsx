@@ -38,6 +38,7 @@ export function AnnouncementForm() {
         <option value="all">{dict.announcements.audienceAll}</option>
         <option value="teacher">{dict.announcements.audienceTeacher}</option>
         <option value="student">{dict.announcements.audienceStudent}</option>
+        <option value="parent">{dict.announcements.audienceParent}</option>
       </Select>
       <SubmitButton />
     </form>

@@ -10,10 +10,11 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import type { AnnouncementAudience } from "@/lib/types/database.types";
 
-const AUDIENCE_TONE: Record<AnnouncementAudience, "navy" | "green" | "gold"> = {
+const AUDIENCE_TONE: Record<AnnouncementAudience, "navy" | "green" | "gold" | "slate"> = {
   all: "navy",
   teacher: "green",
   student: "gold",
+  parent: "slate",
 };
 
 export default async function AdminAnnouncementsPage() {

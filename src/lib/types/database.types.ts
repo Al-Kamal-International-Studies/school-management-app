@@ -106,7 +106,7 @@ export type MonthlyProgressEntry = {
   updated_at: string;
 };
 
-export type AnnouncementAudience = "all" | "teacher" | "student";
+export type AnnouncementAudience = "all" | "teacher" | "student" | "parent";
 
 export type Announcement = {
   id: string;

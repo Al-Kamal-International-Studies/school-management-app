@@ -13,7 +13,7 @@ export interface ActionState {
 const metaSchema = z.object({
   title: z.string().min(1, "Title is required."),
   category: z.enum(["admit_card", "report_card", "certificate", "policy", "general"]),
-  audience: z.enum(["all", "teacher", "student"]),
+  audience: z.enum(["all", "teacher", "student", "parent"]),
   student_id: z.string().optional(),
 });
 

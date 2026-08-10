@@ -124,6 +124,7 @@ const ar: Dictionary = {
     audienceAll: "الجميع",
     audienceTeacher: "المعلمون",
     audienceStudent: "الطلاب",
+    audienceParent: "أولياء الأمور",
     posted: "تاريخ النشر",
   },
   feedback: {

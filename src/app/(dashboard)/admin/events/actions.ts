@@ -15,7 +15,7 @@ const eventSchema = z.object({
   description: z.string().optional(),
   event_date: z.string().min(1, "Date is required."),
   event_type: z.enum(["event", "holiday", "deadline"]),
-  audience: z.enum(["all", "teacher", "student"]),
+  audience: z.enum(["all", "teacher", "student", "parent"]),
 });
 
 export async function createEventAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {

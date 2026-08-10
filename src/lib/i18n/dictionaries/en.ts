@@ -125,6 +125,7 @@ const en = {
     audienceAll: "Everyone",
     audienceTeacher: "Teachers",
     audienceStudent: "Students",
+    audienceParent: "Parents",
     posted: "Posted",
   },
   feedback: {

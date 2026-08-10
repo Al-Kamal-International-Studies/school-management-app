@@ -45,6 +45,7 @@ export function UploadForm({ students }: { students: { id: string; full_name: st
           <option value="all">{dict.announcements.audienceAll}</option>
           <option value="teacher">{dict.announcements.audienceTeacher}</option>
           <option value="student">{dict.announcements.audienceStudent}</option>
+          <option value="parent">{dict.announcements.audienceParent}</option>
         </Select>
       </div>
       <Select label={dict.documents.forStudent} name="student_id" defaultValue="">
