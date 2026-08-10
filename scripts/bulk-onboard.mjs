@@ -308,21 +308,25 @@ async function main() {
   }
 
   console.log("\n6. class_subject_teachers");
+  // There's a unique constraint on (class_id, subject_id) — only one
+  // teacher can hold a given class+subject slot at a time — so every
+  // pre-existing conflicting row has to be cleared *before* any new insert
+  // targeting that same slot, regardless of which teacher currently holds
+  // it. Both clears happen up front for that reason.
+  if (fathimaId) {
+    await clearAssignment(classIds[1], subjectIds.socialStudies, fathimaId); // old Fathima/Grade1/SocialStudies row
+  }
+  const testTeacherId = await findProfileIdByEmail("testteacher@alkamalinternational.com");
+  if (testTeacherId) {
+    await clearAssignment(classIds[1], subjectIds.math, testTeacherId); // old TestTeacher/Grade1/Math row
+  }
+
   if (fathimaId) {
     console.log(" Fathima — Grade 1 (ENG, MATH, SCI, ICT/Computer Science)");
-    await clearAssignment(classIds[1], subjectIds.socialStudies, fathimaId); // old, conflicting assignment
     await assign(classIds[1], subjectIds.english, fathimaId, "Fathima -> Grade1 English");
     await assign(classIds[1], subjectIds.math, fathimaId, "Fathima -> Grade1 Math");
     await assign(classIds[1], subjectIds.science, fathimaId, "Fathima -> Grade1 Science");
     await assign(classIds[1], subjectIds.computerScience, fathimaId, "Fathima -> Grade1 Computer Science");
-  }
-
-  // Pre-existing test-teacher assignment that conflicts with the above —
-  // removed regardless of whose id it was under, since the new spec has
-  // Fathima owning Grade 1 Math exclusively.
-  const testTeacherId = await findProfileIdByEmail("testteacher@alkamalinternational.com");
-  if (testTeacherId) {
-    await clearAssignment(classIds[1], subjectIds.math, testTeacherId);
   }
 
   console.log(" Muneeba — Grade 6 & 7 (ENG, MATH, SCI, ICT/Computer Science)");
