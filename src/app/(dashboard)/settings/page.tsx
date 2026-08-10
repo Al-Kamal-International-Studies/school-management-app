@@ -11,6 +11,7 @@ import { PushNotificationToggle } from "@/components/settings/PushNotificationTo
 import { MfaSettingsCard } from "@/components/mfa/MfaSettingsCard";
 import { SignOutOtherSessionsButton } from "@/components/settings/SignOutOtherSessionsButton";
 import { DeviceList } from "@/components/settings/DeviceList";
+import { BiometricSettingsCard } from "@/components/settings/BiometricSettingsCard";
 
 const CONTACT_PHONE = "052 772 7246";
 const CONTACT_EMAIL = "info@alkamalinternational.com";
@@ -44,6 +45,14 @@ export default async function SettingsPage() {
         <Card>
           <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.changePassword}</h2>
           <ChangePasswordForm minLength={me.role === "admin" ? 15 : 12} />
+        </Card>
+      </FadeUp>
+
+      <FadeUp delay={0.155}>
+        <Card>
+          <h2 className="mb-1 text-sm font-semibold text-navy-900 dark:text-white">{dict.biometrics.settingsTitle}</h2>
+          <p className="mb-4 text-xs text-slate-500 dark:text-navy-400">{dict.biometrics.settingsDescription}</p>
+          <BiometricSettingsCard />
         </Card>
       </FadeUp>
 

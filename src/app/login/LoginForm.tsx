@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { Mail, Lock, ArrowRight } from "lucide-react";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { CelebrateOnHover } from "@/components/auth/CelebrateOnHover";
+import { BiometricSignInButton } from "@/components/auth/BiometricSignInButton";
 import type { Dictionary } from "@/lib/i18n/types";
 
 const initialState: LoginState = {};
@@ -35,56 +36,64 @@ export function LoginForm({
   dict: Dictionary;
 }) {
   const [state, formAction] = useActionState(loginAction, initialState);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const rememberRef = useRef<HTMLInputElement>(null);
 
   return (
-    <form action={formAction} className="space-y-4">
-      {next && <input type="hidden" name="next" value={next} />}
-      {deactivated && <Alert tone="error">{dict.login.deactivated}</Alert>}
-      {state.error && <Alert tone="error">{state.error}</Alert>}
+    <div className="space-y-4">
+      <form action={formAction} className="space-y-4">
+        {next && <input type="hidden" name="next" value={next} />}
+        {deactivated && <Alert tone="error">{dict.login.deactivated}</Alert>}
+        {state.error && <Alert tone="error">{state.error}</Alert>}
 
-      <div>
-        <label htmlFor="email" className="label">
-          {dict.login.email}
-        </label>
-        <div className="relative">
-          <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 rtl:left-auto rtl:right-3.5" />
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="input pl-10 rtl:pl-3.5 rtl:pr-10"
-          />
+        <div>
+          <label htmlFor="email" className="label">
+            {dict.login.email}
+          </label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 rtl:left-auto rtl:right-3.5" />
+            <input
+              ref={emailRef}
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              className="input pl-10 rtl:pl-3.5 rtl:pr-10"
+            />
+          </div>
         </div>
-      </div>
 
-      <PasswordField
-        label={dict.login.password}
-        name="password"
-        icon={Lock}
-        autoComplete="current-password"
-        required
-        showLabel={dict.login.showPassword}
-        hideLabel={dict.login.hidePassword}
-      />
+        <PasswordField
+          label={dict.login.password}
+          name="password"
+          icon={Lock}
+          autoComplete="current-password"
+          required
+          showLabel={dict.login.showPassword}
+          hideLabel={dict.login.hidePassword}
+        />
 
-      <div className="flex items-center justify-between text-sm">
-        <label className="flex items-center gap-2 text-slate-600 dark:text-navy-300">
-          <input
-            type="checkbox"
-            name="remember"
-            defaultChecked
-            className="h-4 w-4 rounded border-slate-300 text-navy-700 focus:ring-navy-400 dark:border-navy-600 dark:bg-navy-900 dark:focus:ring-gold-400"
-          />
-          {dict.login.rememberMe}
-        </label>
-        <Link href="/forgot-password" className="font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
-          {dict.login.forgotPassword}
-        </Link>
-      </div>
+        <div className="flex items-center justify-between text-sm">
+          <label className="flex items-center gap-2 text-slate-600 dark:text-navy-300">
+            <input
+              ref={rememberRef}
+              type="checkbox"
+              name="remember"
+              defaultChecked
+              className="h-4 w-4 rounded border-slate-300 text-navy-700 focus:ring-navy-400 dark:border-navy-600 dark:bg-navy-900 dark:focus:ring-gold-400"
+            />
+            {dict.login.rememberMe}
+          </label>
+          <Link href="/forgot-password" className="font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
+            {dict.login.forgotPassword}
+          </Link>
+        </div>
 
-      <SubmitButton dict={dict} />
-    </form>
+        <SubmitButton dict={dict} />
+      </form>
+
+      <BiometricSignInButton emailRef={emailRef} rememberRef={rememberRef} next={next} />
+    </div>
   );
 }
