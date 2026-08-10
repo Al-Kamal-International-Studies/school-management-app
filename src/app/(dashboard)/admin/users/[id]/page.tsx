@@ -5,11 +5,14 @@ import { EditUserForm } from "./EditUserForm";
 import { Badge } from "@/components/ui/Badge";
 import { ToggleActiveButton } from "../ToggleActiveButton";
 import { ArchiveUserButton } from "./ArchiveUserButton";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import { getLocale } from "@/lib/i18n/getLocale";
 
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const detail = await getUserDetail(id);
   if (!detail) notFound();
+  const dict = await getDictionary(await getLocale());
 
   const classes = detail.profile.role === "student" ? await listClassesForSelect() : [];
 
@@ -30,9 +33,9 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           <p className="text-sm text-slate-500 dark:text-navy-400">{detail.profile.email}</p>
         </div>
         <div className="flex items-center gap-3">
-          {detail.profile.archived_at && <Badge tone="red">Archived</Badge>}
+          {detail.profile.archived_at && <Badge tone="red">{dict.common.archived}</Badge>}
           <Badge tone={detail.profile.is_active ? "green" : "red"}>
-            {detail.profile.is_active ? "Active" : "Deactivated"}
+            {detail.profile.is_active ? dict.common.active : dict.common.deactivated}
           </Badge>
           <ToggleActiveButton userId={detail.profile.id} isActive={detail.profile.is_active} />
           {!detail.profile.archived_at && <ArchiveUserButton userId={detail.profile.id} />}
@@ -46,6 +49,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           classes={classes}
           allStudents={allStudents}
           linkedChildIds={linkedChildIds}
+          dict={dict}
         />
       </div>
     </div>

@@ -48,7 +48,7 @@ export default async function SettingsPage() {
 
       <FadeUp delay={0.16}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">Sessions</h2>
+          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.sessions}</h2>
           <SignOutOtherSessionsButton />
         </Card>
       </FadeUp>
@@ -56,7 +56,7 @@ export default async function SettingsPage() {
       {me.role === "admin" && (
         <FadeUp delay={0.17}>
           <Card>
-            <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">Two-factor authentication</h2>
+            <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.twoFactorAuth}</h2>
             <MfaSettingsCard />
           </Card>
         </FadeUp>
@@ -64,7 +64,7 @@ export default async function SettingsPage() {
 
       <FadeUp delay={0.18}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">Notifications</h2>
+          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.notifications}</h2>
           <PushNotificationToggle />
         </Card>
       </FadeUp>

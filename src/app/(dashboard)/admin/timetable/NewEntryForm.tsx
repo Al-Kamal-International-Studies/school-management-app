@@ -6,15 +6,17 @@ import { createTimetableEntryAction, type ActionState } from "./actions";
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { DAY_NAMES } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { getDayNames } from "@/lib/utils";
 
 const initialState: ActionState = {};
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const { dict } = useLocale();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Adding…" : "Add period"}
+      {pending ? dict.common.adding : dict.adminTimetable.addPeriod}
     </Button>
   );
 }
@@ -27,6 +29,7 @@ export function NewEntryForm({
   assignableSubjects: { subjectId: string; subjectName: string; teacherId: string; teacherName: string }[];
 }) {
   const [state, formAction] = useActionState(createTimetableEntryAction, initialState);
+  const { dict } = useLocale();
 
   return (
     <form action={formAction} className="space-y-4">
@@ -34,7 +37,7 @@ export function NewEntryForm({
       <input type="hidden" name="class_id" value={classId} />
 
       <Select
-        label="Subject (teacher assigned automatically)"
+        label={dict.adminTimetable.subjectTeacherAuto}
         name="subject_teacher"
         required
         defaultValue=""
@@ -46,7 +49,7 @@ export function NewEntryForm({
         }}
       >
         <option value="" disabled>
-          Choose subject
+          {dict.adminTimetable.chooseSubject}
         </option>
         {assignableSubjects.map((a) => (
           <option key={a.subjectId} value={`${a.subjectId}|${a.teacherId}`}>
@@ -57,8 +60,8 @@ export function NewEntryForm({
       <input type="hidden" name="subject_id" />
       <input type="hidden" name="teacher_id" />
 
-      <Select label="Day" name="day_of_week" required defaultValue="1">
-        {DAY_NAMES.slice(1).map((name, i) => (
+      <Select label={dict.adminTimetable.day} name="day_of_week" required defaultValue="1">
+        {getDayNames(dict).slice(1).map((name, i) => (
           <option key={name} value={i + 1}>
             {name}
           </option>
@@ -66,10 +69,10 @@ export function NewEntryForm({
       </Select>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Input label="Start time" name="start_time" type="time" required />
-        <Input label="End time" name="end_time" type="time" required />
+        <Input label={dict.adminTimetable.startTime} name="start_time" type="time" required />
+        <Input label={dict.adminTimetable.endTime} name="end_time" type="time" required />
       </div>
-      <Input label="Room (optional)" name="room" />
+      <Input label={dict.adminTimetable.roomOptional} name="room" />
 
       <SubmitButton />
     </form>

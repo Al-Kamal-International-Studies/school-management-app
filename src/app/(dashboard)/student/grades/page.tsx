@@ -42,7 +42,7 @@ export default async function StudentGradesPage() {
             <Tbody>
               {all.map((g) => (
                 <tr key={g.id}>
-                  <Td className="font-medium text-slate-900 dark:text-white">{subjectMap.get(g.subject_id) ?? "Unknown"}</Td>
+                  <Td className="font-medium text-slate-900 dark:text-white">{subjectMap.get(g.subject_id) ?? dict.common.unknown}</Td>
                   <Td>{g.assessment_name}</Td>
                   <Td>
                     {g.marks_obtained}/{g.marks_total}

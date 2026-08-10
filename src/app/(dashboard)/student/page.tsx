@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/ui/ProgressRing";
-import { formatTime, jsDayToDbDay, DAY_NAMES } from "@/lib/utils";
+import { formatTime, jsDayToDbDay } from "@/lib/utils";
 import { formatMonth } from "@/lib/progress/calculate";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -35,16 +35,16 @@ export default async function StudentDashboardPage() {
   return (
     <div className="space-y-10">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">Welcome, {profile!.full_name}</h1>
+        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.common.welcome}, {profile!.full_name}</h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">
-          {classRow ? `${classRow.name} - ${classRow.section}` : "No class assigned yet"} · Enrollment #
+          {classRow ? `${classRow.name} - ${classRow.section}` : dict.studentDashboard.noClassAssignedShort} · {dict.studentDashboard.enrollmentHash}
           {student?.enrollment_number}
         </p>
       </FadeUp>
 
       {!classRow && (
         <FadeUp delay={0.06}>
-          <Alert tone="info">You haven't been assigned to a class yet. Contact your school administrator.</Alert>
+          <Alert tone="info">{dict.myTimetable.noClassAssigned}</Alert>
         </FadeUp>
       )}
 
@@ -211,11 +211,11 @@ export default async function StudentDashboardPage() {
       <FadeUp delay={0.28} className="space-y-4">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
           <CalendarClock className="h-4 w-4" />
-          {DAY_NAMES[todayDbDay]}'s schedule
+          {dict.common.todaysSchedule}
         </h2>
         {todaysClasses.length === 0 ? (
           <Card>
-            <p className="text-sm text-slate-500 dark:text-navy-400">No classes scheduled for today.</p>
+            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.common.noClassesToday}</p>
           </Card>
         ) : (
           <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={0.06}>
@@ -227,7 +227,7 @@ export default async function StudentDashboardPage() {
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
                   <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.teacherName}</p>
-                  {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">Room {e.room}</p>}
+                  {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
                 </Card>
               </FadeUpItem>
             ))}

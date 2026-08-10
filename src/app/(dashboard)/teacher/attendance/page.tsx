@@ -66,11 +66,11 @@ export default async function TeacherAttendancePage({
         {!classId ? (
           <Card>
             <p className="text-sm text-slate-500 dark:text-navy-400">
-              You don't have any classes assigned yet, so there's no attendance to mark.
+              {dict.attendance.noClassesAssignedYet}
             </p>
           </Card>
         ) : students.length === 0 ? (
-          <EmptyState title="No students in this class" />
+          <EmptyState title={dict.attendance.noStudentsInClass} />
         ) : (
           <Card>
             <AttendanceForm classId={classId} date={date} students={students} existing={existing} />

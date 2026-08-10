@@ -29,7 +29,7 @@ export function GradeForm({ targets }: { targets: Awaited<ReturnType<typeof list
   const [studentId = "", subjectId = "", classId = ""] = target.split(":");
 
   if (targets.length === 0) {
-    return <Alert tone="info">You don't have any classes/subjects assigned yet.</Alert>;
+    return <Alert tone="info">{dict.common.noClassesOrSubjectsAssigned}</Alert>;
   }
 
   return (

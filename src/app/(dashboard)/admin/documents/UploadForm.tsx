@@ -58,7 +58,7 @@ export function UploadForm({ students }: { students: { id: string; full_name: st
       </Select>
       <div>
         <label htmlFor="file" className="label">
-          File
+          {dict.documents.file}
         </label>
         <input id="file" name="file" type="file" required className="input" />
       </div>

@@ -28,7 +28,7 @@ export default async function AdminAnnouncementsPage() {
       <FadeUp>
         <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.announcements.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">
-          Posted announcements appear on the relevant dashboards immediately.
+          {dict.announcements.subtitle}
         </p>
       </FadeUp>
 

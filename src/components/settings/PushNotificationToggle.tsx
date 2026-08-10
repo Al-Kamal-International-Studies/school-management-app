@@ -5,6 +5,7 @@ import { BellRing, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { subscribeToPushAction, unsubscribeFromPushAction } from "@/app/(dashboard)/settings/actions";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 // Web Push application server keys are base64url-encoded; the browser API
 // needs them as a raw Uint8Array.
@@ -25,6 +26,7 @@ export function PushNotificationToggle() {
   const [subscribed, setSubscribed] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { dict } = useLocale();
 
   useEffect(() => {
     // Deferred via a microtask (not called synchronously in the effect
@@ -47,12 +49,12 @@ export function PushNotificationToggle() {
       try {
         const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!publicKey) {
-          setError("Push isn't configured on this deployment yet.");
+          setError(dict.settings.pushNotConfigured);
           return;
         }
         const permission = await Notification.requestPermission();
         if (permission !== "granted") {
-          setError("Notifications permission was denied.");
+          setError(dict.settings.pushPermissionDenied);
           return;
         }
         const reg = await navigator.serviceWorker.ready;
@@ -68,7 +70,7 @@ export function PushNotificationToggle() {
         }
         setSubscribed(true);
       } catch {
-        setError("Couldn't enable notifications on this browser.");
+        setError(dict.settings.pushEnableFailed);
       }
     });
   }
@@ -89,7 +91,7 @@ export function PushNotificationToggle() {
   if (supported === null) return null;
 
   if (!supported) {
-    return <p className="text-sm text-slate-500 dark:text-navy-400">Push notifications aren't supported in this browser.</p>;
+    return <p className="text-sm text-slate-500 dark:text-navy-400">{dict.settings.pushNotSupported}</p>;
   }
 
   return (
@@ -97,7 +99,7 @@ export function PushNotificationToggle() {
       {error && <Alert tone="error">{error}</Alert>}
       <Button type="button" variant={subscribed ? "secondary" : "primary"} loading={pending} onClick={subscribed ? disable : enable}>
         {subscribed ? <BellOff className="h-4 w-4" /> : <BellRing className="h-4 w-4" />}
-        {subscribed ? "Turn off notifications" : "Enable notifications"}
+        {subscribed ? dict.settings.pushTurnOff : dict.settings.pushEnable}
       </Button>
     </div>
   );

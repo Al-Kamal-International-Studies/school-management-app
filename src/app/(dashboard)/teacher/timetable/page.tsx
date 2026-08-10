@@ -3,10 +3,13 @@ import { getMySchedule } from "../queries";
 import { WeeklyScheduleGrid, type ScheduleEntry } from "@/components/timetable/WeeklyScheduleGrid";
 import { EmptyState } from "@/components/ui/Table";
 import { FadeUp } from "@/components/motion/FadeUp";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import { getLocale } from "@/lib/i18n/getLocale";
 
 export default async function TeacherTimetablePage() {
   const profile = await getCurrentProfile();
   const schedule = await getMySchedule(profile!.id);
+  const dict = await getDictionary(await getLocale());
 
   const entries: ScheduleEntry[] = schedule.map((e) => ({
     id: e.id,
@@ -21,14 +24,14 @@ export default async function TeacherTimetablePage() {
   return (
     <div className="space-y-8">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">My timetable</h1>
-        <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">Every class you teach, across the week.</p>
+        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.myTimetable.title}</h1>
+        <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.myTimetable.teacherSubtitle}</p>
       </FadeUp>
       <FadeUp delay={0.08}>
         {entries.length === 0 ? (
-          <EmptyState title="Nothing scheduled yet" description="Your admin hasn't built your timetable yet." />
+          <EmptyState title={dict.myTimetable.nothingScheduledYet} description={dict.myTimetable.teacherEmptyDescription} />
         ) : (
-          <WeeklyScheduleGrid entries={entries} />
+          <WeeklyScheduleGrid entries={entries} dict={dict} />
         )}
       </FadeUp>
     </div>

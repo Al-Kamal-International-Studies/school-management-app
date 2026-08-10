@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+
 export function ClassSelect({
   classes,
   selectedClassId,
@@ -7,10 +9,11 @@ export function ClassSelect({
   classes: { id: string; name: string; section: string }[];
   selectedClassId?: string;
 }) {
+  const { dict } = useLocale();
   return (
     <form method="get" className="max-w-xs">
       <label className="label" htmlFor="class">
-        Class
+        {dict.adminClasses.class}
       </label>
       <select
         id="class"

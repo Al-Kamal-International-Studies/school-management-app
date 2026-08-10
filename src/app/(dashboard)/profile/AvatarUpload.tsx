@@ -7,6 +7,7 @@ import { Camera, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { setAvatarUrlAction } from "./actions";
 import { initials } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const MAX_SIZE_BYTES = 4 * 1024 * 1024; // 4MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -21,6 +22,7 @@ export function AvatarUpload({
   avatarUrl: string | null;
 }) {
   const router = useRouter();
+  const { dict } = useLocale();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(avatarUrl);
   const [uploading, setUploading] = useState(false);
@@ -32,11 +34,11 @@ export function AvatarUpload({
     setError(undefined);
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("Use a JPG, PNG, or WEBP image.");
+      setError(dict.profilePage.avatarInvalidType);
       return;
     }
     if (file.size > MAX_SIZE_BYTES) {
-      setError("Image must be under 4MB.");
+      setError(dict.profilePage.avatarTooLarge);
       return;
     }
 
@@ -109,7 +111,7 @@ export function AvatarUpload({
         onClick={() => inputRef.current?.click()}
         className="mt-3 text-xs font-medium text-navy-600 transition-colors hover:text-navy-800"
       >
-        {uploading ? "Uploading…" : "Change photo"}
+        {uploading ? dict.profilePage.uploading : dict.profilePage.changePhoto}
       </button>
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>

@@ -7,14 +7,15 @@ import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import type { ClassRow, Profile, Student, Teacher } from "@/lib/types/database.types";
+import type { Dictionary } from "@/lib/i18n/types";
 
 const initialState: ActionState = {};
 
-function SubmitButton() {
+function SubmitButton({ dict }: { dict: Dictionary }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : "Save changes"}
+      {pending ? dict.common.saving : dict.common.saveChanges}
     </Button>
   );
 }
@@ -26,6 +27,7 @@ export function EditUserForm({
   classes,
   allStudents,
   linkedChildIds,
+  dict,
 }: {
   profile: Profile;
   student: Student | null;
@@ -33,6 +35,7 @@ export function EditUserForm({
   classes: Pick<ClassRow, "id" | "name" | "section">[];
   allStudents?: { id: string; label: string }[];
   linkedChildIds?: string[];
+  dict: Dictionary;
 }) {
   const [state, formAction] = useActionState(updateUserAction, initialState);
 
@@ -43,22 +46,22 @@ export function EditUserForm({
       <input type="hidden" name="role" value={profile.role} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Input label="Full name" name="full_name" defaultValue={profile.full_name} required />
-        <Input label="Phone" name="phone" defaultValue={profile.phone ?? ""} />
+        <Input label={dict.adminUsers.fullName} name="full_name" defaultValue={profile.full_name} required />
+        <Input label={dict.common.phone} name="phone" defaultValue={profile.phone ?? ""} />
       </div>
 
       <div>
-        <span className="label">Email</span>
-        <p className="text-sm text-slate-500 dark:text-navy-400">{profile.email} (contact Supabase support to change login email)</p>
+        <span className="label">{dict.common.email}</span>
+        <p className="text-sm text-slate-500 dark:text-navy-400">{profile.email} ({dict.adminUsers.emailChangeHint})</p>
       </div>
 
       {profile.role === "student" && (
         <div className="rounded-md border border-slate-200 bg-slate-50 dark:border-navy-700 dark:bg-navy-800/60 p-4 space-y-4">
           <p className="text-sm text-slate-500 dark:text-navy-400">
-            Enrollment number: <span className="font-medium text-slate-700 dark:text-navy-100">{student?.enrollment_number}</span>
+            {dict.adminUsers.enrollmentNumberLabel}: <span className="font-medium text-slate-700 dark:text-navy-100">{student?.enrollment_number}</span>
           </p>
-          <Select label="Class" name="class_id" defaultValue={student?.class_id ?? ""}>
-            <option value="">Unassigned</option>
+          <Select label={dict.adminUsers.class} name="class_id" defaultValue={student?.class_id ?? ""}>
+            <option value="">{dict.adminUsers.unassigned}</option>
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name} - {c.section}
@@ -71,16 +74,16 @@ export function EditUserForm({
       {profile.role === "teacher" && (
         <div className="rounded-md border border-slate-200 bg-slate-50 dark:border-navy-700 dark:bg-navy-800/60 p-4 space-y-4">
           <p className="text-sm text-slate-500 dark:text-navy-400">
-            Employee ID: <span className="font-medium text-slate-700 dark:text-navy-100">{teacher?.employee_id}</span>
+            {dict.adminUsers.employeeId}: <span className="font-medium text-slate-700 dark:text-navy-100">{teacher?.employee_id}</span>
           </p>
-          <Input label="Qualification" name="qualification" defaultValue={teacher?.qualification ?? ""} />
+          <Input label={dict.adminUsers.qualification} name="qualification" defaultValue={teacher?.qualification ?? ""} />
         </div>
       )}
 
       {profile.role === "parent" && allStudents && (
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-navy-700 dark:bg-navy-800/60">
           <label className="label" htmlFor="child_ids">
-            Children (hold Ctrl/Cmd to select multiple)
+            {dict.adminUsers.children}
           </label>
           <select
             id="child_ids"
@@ -99,7 +102,7 @@ export function EditUserForm({
         </div>
       )}
 
-      <SubmitButton />
+      <SubmitButton dict={dict} />
     </form>
   );
 }

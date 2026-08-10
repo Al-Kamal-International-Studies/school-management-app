@@ -1,4 +1,5 @@
-import { DAY_NAMES, formatTime } from "@/lib/utils";
+import { getDayNames, formatTime } from "@/lib/utils";
+import type { Dictionary } from "@/lib/i18n/types";
 
 export interface ScheduleEntry {
   id: string;
@@ -16,7 +17,8 @@ export interface ScheduleEntry {
 // entry saved with day_of_week=7 will still render if present.
 const DAYS_TO_SHOW = [1, 2, 3, 4, 5, 6, 7];
 
-export function WeeklyScheduleGrid({ entries }: { entries: ScheduleEntry[] }) {
+export function WeeklyScheduleGrid({ entries, dict }: { entries: ScheduleEntry[]; dict: Dictionary }) {
+  const dayNames = getDayNames(dict);
   const byDay = new Map<number, ScheduleEntry[]>();
   for (const entry of entries) {
     const list = byDay.get(entry.day_of_week) ?? [];
@@ -35,20 +37,20 @@ export function WeeklyScheduleGrid({ entries }: { entries: ScheduleEntry[] }) {
         const dayEntries = byDay.get(day) ?? [];
         return (
           <div key={day} className="card p-5">
-            <h3 className="mb-4 text-sm font-semibold text-slate-700">{DAY_NAMES[day]}</h3>
+            <h3 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dayNames[day]}</h3>
             {dayEntries.length === 0 ? (
-              <p className="text-xs text-slate-400">No classes</p>
+              <p className="text-xs text-slate-400 dark:text-navy-500">{dict.common.noClasses}</p>
             ) : (
               <ul className="space-y-2.5">
                 {dayEntries.map((e) => (
-                  <li key={e.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs font-medium text-slate-500">
+                  <li key={e.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-navy-700 dark:bg-navy-800/60">
+                    <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
                       {formatTime(e.start_time)} – {formatTime(e.end_time)}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">{e.subjectName}</p>
-                    {e.className && <p className="mt-0.5 text-xs text-slate-500">{e.className}</p>}
-                    {e.teacherName && <p className="mt-0.5 text-xs text-slate-500">{e.teacherName}</p>}
-                    {e.room && <p className="mt-0.5 text-xs text-slate-500">Room {e.room}</p>}
+                    <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">{e.subjectName}</p>
+                    {e.className && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.className}</p>}
+                    {e.teacherName && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.teacherName}</p>}
+                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
                     {e.actions}
                   </li>
                 ))}

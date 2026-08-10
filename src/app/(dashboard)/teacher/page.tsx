@@ -6,7 +6,7 @@ import { listVisibleAnnouncements } from "@/lib/queries/announcements";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
-import { formatTime, jsDayToDbDay, DAY_NAMES } from "@/lib/utils";
+import { formatTime, jsDayToDbDay } from "@/lib/utils";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
@@ -27,22 +27,22 @@ export default async function TeacherDashboardPage() {
     <div className="space-y-10">
       <FadeUp className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">Welcome, {profile!.full_name}</h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{DAY_NAMES[todayDbDay]}'s schedule and your classes.</p>
+          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.common.welcome}, {profile!.full_name}</h1>
+          <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{dict.common.todaysScheduleAndClasses}</p>
         </div>
         <Link href="/teacher/progress" className="shrink-0">
           <Button>
             <ClipboardList className="h-4 w-4" />
-            Submit Progress
+            {dict.teacherDashboard.submitProgress}
           </Button>
         </Link>
       </FadeUp>
 
       <FadeUp delay={0.08} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">Today's schedule</h2>
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.common.todaysSchedule}</h2>
         {todaysClasses.length === 0 ? (
           <Card>
-            <p className="text-sm text-slate-500 dark:text-navy-400">No classes scheduled for today.</p>
+            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.common.noClassesToday}</p>
           </Card>
         ) : (
           <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={0.06}>
@@ -54,7 +54,7 @@ export default async function TeacherDashboardPage() {
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
                   <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.className}</p>
-                  {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">Room {e.room}</p>}
+                  {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
                 </Card>
               </FadeUpItem>
             ))}
@@ -86,19 +86,19 @@ export default async function TeacherDashboardPage() {
       </FadeUp>
 
       <FadeUp delay={0.16} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">My classes</h2>
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.nav.myClasses}</h2>
         {classes.length === 0 ? (
           <EmptyState
-            title="No classes assigned yet"
-            description="Your admin hasn't assigned you to teach a subject in any class yet."
+            title={dict.teacherDashboard.noClassesAssignedYet}
+            description={dict.teacherDashboard.noClassesAssignedDescription}
           />
         ) : (
           <Table>
             <Thead>
               <tr>
-                <Th>Class</Th>
-                <Th>Subject</Th>
-                <Th>Students</Th>
+                <Th>{dict.adminClasses.class}</Th>
+                <Th>{dict.adminClasses.subject}</Th>
+                <Th>{dict.adminClasses.students}</Th>
               </tr>
             </Thead>
             <Tbody>

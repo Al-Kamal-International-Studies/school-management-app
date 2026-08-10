@@ -4,16 +4,19 @@ import { DeleteSubjectButton } from "./DeleteSubjectButton";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
 import { Card } from "@/components/ui/Card";
 import { FadeUp } from "@/components/motion/FadeUp";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import { getLocale } from "@/lib/i18n/getLocale";
 
 export default async function SubjectsPage() {
   const supabase = await createClient();
   const { data: subjects } = await supabase.from("subjects").select("*").order("name");
+  const dict = await getDictionary(await getLocale());
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">Subjects</h1>
-        <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">School-wide subject list used across classes and timetables.</p>
+        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminSubjects.title}</h1>
+        <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.adminSubjects.subtitle}</p>
       </FadeUp>
 
       <FadeUp delay={0.08}>
@@ -24,13 +27,13 @@ export default async function SubjectsPage() {
 
       <FadeUp delay={0.15}>
         {!subjects || subjects.length === 0 ? (
-          <EmptyState title="No subjects yet" description="Add your first subject above." />
+          <EmptyState title={dict.adminSubjects.noSubjectsYet} description={dict.adminSubjects.noSubjectsYetDescription} />
         ) : (
           <Table>
             <Thead>
               <tr>
-                <Th>Name</Th>
-                <Th>Code</Th>
+                <Th>{dict.adminSubjects.name}</Th>
+                <Th>{dict.adminSubjects.code}</Th>
                 <Th></Th>
               </tr>
             </Thead>

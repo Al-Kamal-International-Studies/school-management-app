@@ -43,7 +43,7 @@ export default async function StudentExamsPage() {
               {exams.map((e) => (
                 <tr key={e.id}>
                   <Td className="font-medium text-slate-900 dark:text-white">{e.title}</Td>
-                  <Td>{subjectMap.get(e.subject_id) ?? "Unknown"}</Td>
+                  <Td>{subjectMap.get(e.subject_id) ?? dict.common.unknown}</Td>
                   <Td>
                     <Badge tone={e.exam_type === "quiz" ? "gold" : "navy"}>{e.exam_type}</Badge>
                   </Td>

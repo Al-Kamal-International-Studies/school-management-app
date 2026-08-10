@@ -46,7 +46,7 @@ export default async function MessagesPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-navy-900 dark:text-white">{c.other?.full_name ?? "Unknown"}</p>
+                  <p className="truncate font-medium text-navy-900 dark:text-white">{c.other?.full_name ?? dict.common.unknown}</p>
                 </div>
                 {c.other?.role && <Badge tone="slate">{c.other.role}</Badge>}
               </Card>

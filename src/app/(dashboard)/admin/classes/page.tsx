@@ -3,33 +3,36 @@ import { listClassesWithCounts } from "./queries";
 import { Button } from "@/components/ui/Button";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
 import { FadeUp } from "@/components/motion/FadeUp";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import { getLocale } from "@/lib/i18n/getLocale";
 
 export default async function ClassesPage() {
   const classes = await listClassesWithCounts();
+  const dict = await getDictionary(await getLocale());
 
   return (
     <div className="space-y-8">
       <FadeUp className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">Classes</h1>
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">Sections, homeroom teachers, and enrollment.</p>
+          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminClasses.title}</h1>
+          <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.adminClasses.subtitle}</p>
         </div>
         <Link href="/admin/classes/new">
-          <Button>Create class</Button>
+          <Button>{dict.adminClasses.createClass}</Button>
         </Link>
       </FadeUp>
 
       <FadeUp delay={0.08}>
         {classes.length === 0 ? (
-          <EmptyState title="No classes yet" description="Create your first class/section to start enrolling students." />
+          <EmptyState title={dict.adminClasses.noClassesYet} description={dict.adminClasses.noClassesYetDescription} />
         ) : (
           <Table>
             <Thead>
               <tr>
-                <Th>Class</Th>
-                <Th>Academic year</Th>
-                <Th>Homeroom teacher</Th>
-                <Th>Students</Th>
+                <Th>{dict.adminClasses.class}</Th>
+                <Th>{dict.adminClasses.academicYear}</Th>
+                <Th>{dict.adminClasses.homeroomTeacher}</Th>
+                <Th>{dict.adminClasses.students}</Th>
               </tr>
             </Thead>
             <Tbody>

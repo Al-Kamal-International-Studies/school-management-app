@@ -19,8 +19,8 @@ export default async function ProfilePage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">My profile</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">Manage your personal details and photo.</p>
+        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.profilePage.title}</h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{dict.profilePage.subtitle}</p>
       </FadeUp>
 
       <FadeUp delay={0.08}>
@@ -39,7 +39,7 @@ export default async function ProfilePage() {
           </div>
 
           <div className="pt-7">
-            <ProfileForm profile={profile} />
+            <ProfileForm profile={profile} dict={dict} />
           </div>
         </Card>
       </FadeUp>
@@ -49,20 +49,20 @@ export default async function ProfilePage() {
           <Card>
             <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
               <IdCard className="h-4 w-4 text-navy-500" />
-              Account details
+              {dict.profilePage.accountDetails}
             </h2>
             <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {teacher && (
                 <>
                   <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-500">Employee ID</dt>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-500">{dict.profilePage.employeeId}</dt>
                     <dd className="mt-1.5 text-sm text-slate-700 dark:text-navy-100">{teacher.employee_id}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-500">Qualification</dt>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-500">{dict.profilePage.qualification}</dt>
                     <dd className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-700 dark:text-navy-100">
                       <BookOpen className="h-3.5 w-3.5 text-slate-400 dark:text-navy-500" />
-                      {teacher.qualification || "Not set"}
+                      {teacher.qualification || dict.common.notSet}
                     </dd>
                   </div>
                 </>
@@ -70,14 +70,14 @@ export default async function ProfilePage() {
               {student && (
                 <>
                   <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-500">Enrollment number</dt>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-500">{dict.profilePage.enrollmentNumber}</dt>
                     <dd className="mt-1.5 text-sm text-slate-700 dark:text-navy-100">{student.enrollment_number}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-500">Class</dt>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-500">{dict.profilePage.class}</dt>
                     <dd className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-700 dark:text-navy-100">
                       <School className="h-3.5 w-3.5 text-slate-400 dark:text-navy-500" />
-                      {className || "Not assigned"}
+                      {className || dict.common.notAssigned}
                     </dd>
                   </div>
                   {(student.emergency_contact_name || student.emergency_contact_phone) && (

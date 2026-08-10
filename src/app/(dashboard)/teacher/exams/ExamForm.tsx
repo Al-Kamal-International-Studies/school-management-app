@@ -29,7 +29,7 @@ export function ExamForm({ options }: { options: Awaited<ReturnType<typeof listM
   const [classId = "", subjectId = ""] = target.split(":");
 
   if (options.length === 0) {
-    return <Alert tone="info">You don't have any classes/subjects assigned yet.</Alert>;
+    return <Alert tone="info">{dict.common.noClassesOrSubjectsAssigned}</Alert>;
   }
 
   return (
@@ -60,7 +60,7 @@ export function ExamForm({ options }: { options: Awaited<ReturnType<typeof listM
       </Select>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Input label={dict.exams.examDate} name="exam_date" type="date" required />
-        <Input label="Time" name="start_time" type="time" />
+        <Input label={dict.exams.startTime} name="start_time" type="time" />
         <Input label={dict.exams.room} name="room" />
       </div>
 

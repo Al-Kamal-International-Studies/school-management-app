@@ -28,7 +28,7 @@ export default async function AdminProgressPage({
         <div>
           <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.progress.title}</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">
-            All monthly progress entries submitted by teachers, school-wide.
+            {dict.progress.allEntriesSubtitle}
           </p>
         </div>
         <ExportCsvButton
@@ -41,12 +41,12 @@ export default async function AdminProgressPage({
             score: computeOverallScore(e).toFixed(1),
           }))}
           columns={[
-            { key: "student", header: "Student" },
-            { key: "class", header: "Class" },
-            { key: "subject", header: "Subject" },
-            { key: "teacher", header: "Teacher" },
-            { key: "month", header: "Month" },
-            { key: "score", header: "Overall Score" },
+            { key: "student", header: dict.progress.student },
+            { key: "class", header: dict.progress.class },
+            { key: "subject", header: dict.progress.subject },
+            { key: "teacher", header: dict.progress.teacher },
+            { key: "month", header: dict.progress.month },
+            { key: "score", header: dict.progress.overallScore },
           ]}
           filename="progress"
         />
@@ -85,7 +85,7 @@ export default async function AdminProgressPage({
                 <Th>{dict.progress.student}</Th>
                 <Th>{dict.progress.class}</Th>
                 <Th>{dict.progress.subject}</Th>
-                <Th>Teacher</Th>
+                <Th>{dict.progress.teacher}</Th>
                 <Th>{dict.progress.month}</Th>
                 <Th>{dict.progress.overallScore}</Th>
               </tr>

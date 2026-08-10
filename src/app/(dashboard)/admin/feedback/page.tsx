@@ -24,7 +24,7 @@ export default async function AdminFeedbackPage() {
       <FadeUp>
         <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.feedback.inbox}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">
-          Feedback submitted by teachers and students, stored in-app (email/spreadsheet sync not wired up yet).
+          {dict.feedback.inboxSubtitle}
         </p>
       </FadeUp>
 
@@ -46,7 +46,7 @@ export default async function AdminFeedbackPage() {
               {entries.map((e) => (
                 <tr key={e.id}>
                   <Td>
-                    <p className="font-medium text-slate-900 dark:text-white">{e.user?.full_name ?? "Unknown"}</p>
+                    <p className="font-medium text-slate-900 dark:text-white">{e.user?.full_name ?? dict.common.unknown}</p>
                     <p className="text-xs text-slate-400 dark:text-navy-500">
                       {e.user?.role} · {e.user?.email}
                     </p>

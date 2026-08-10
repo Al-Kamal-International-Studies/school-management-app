@@ -5,6 +5,7 @@ import { LogOut, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { signOutOtherSessionsAction } from "@/app/(dashboard)/settings/actions";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 /**
  * "Sign out everywhere else." The Supabase Auth API version this project
@@ -17,6 +18,7 @@ import { signOutOtherSessionsAction } from "@/app/(dashboard)/settings/actions";
 export function SignOutOtherSessionsButton() {
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<{ error?: string; success?: boolean }>();
+  const { dict } = useLocale();
 
   async function handleClick() {
     setPending(true);
@@ -29,20 +31,19 @@ export function SignOutOtherSessionsButton() {
   return (
     <div className="space-y-3">
       <p className="text-sm text-slate-500 dark:text-navy-400">
-        Signed in somewhere you don't recognize, or just used a shared computer? Sign out of every other session while
-        keeping this one active.
+        {dict.settings.sessionsDescription}
       </p>
       {result?.error && <Alert tone="error">{result.error}</Alert>}
       {result?.success && (
         <Alert tone="success">
           <span className="flex items-center gap-1.5">
-            <Check className="h-4 w-4" /> Done — every other session has been signed out.
+            <Check className="h-4 w-4" /> {dict.settings.signOutOtherSessionsDone}
           </span>
         </Alert>
       )}
       <Button variant="secondary" onClick={handleClick} loading={pending}>
         <LogOut className="h-4 w-4" />
-        Sign out other sessions
+        {dict.settings.signOutOtherSessions}
       </Button>
     </div>
   );

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { logMfaUnenrolledAction } from "@/app/mfa/actions";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 /**
  * Admin-only MFA status + reset. "Reset" removes the current factor and
@@ -20,6 +21,7 @@ import { logMfaUnenrolledAction } from "@/app/mfa/actions";
  */
 export function MfaSettingsCard() {
   const router = useRouter();
+  const { dict } = useLocale();
   const [factorId, setFactorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
@@ -52,7 +54,7 @@ export function MfaSettingsCard() {
     router.push("/mfa/setup");
   }
 
-  if (loading) return <p className="text-sm text-slate-500 dark:text-navy-400">Checking status…</p>;
+  if (loading) return <p className="text-sm text-slate-500 dark:text-navy-400">{dict.settings.mfaCheckingStatus}</p>;
 
   return (
     <div className="space-y-4">
@@ -61,28 +63,27 @@ export function MfaSettingsCard() {
         <div className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-2 text-sm text-navy-900 dark:text-white">
             <ShieldCheck className="h-4 w-4 shrink-0 text-green-600" />
-            Enabled
+            {dict.settings.mfaEnabled}
           </span>
           <Button variant="secondary" onClick={() => setConfirmOpen(true)} loading={resetting}>
-            Reset device
+            {dict.settings.mfaResetDevice}
           </Button>
         </div>
       ) : (
         <span className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
           <ShieldAlert className="h-4 w-4 shrink-0" />
-          Not set up — you'll be asked to set it up on your next visit.
+          {dict.settings.mfaNotSetUp}
         </span>
       )}
       <ConfirmDialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        title="Reset two-factor authentication?"
-        confirmLabel="Reset"
+        title={dict.settings.mfaResetConfirmTitle}
+        confirmLabel={dict.settings.mfaResetConfirmLabel}
         onConfirm={handleReset}
         pending={resetting}
       >
-        This removes your current authenticator and immediately sends you to set up a new one — do this if you're switching
-        devices or lost access to your authenticator app.
+        {dict.settings.mfaResetConfirmBody}
       </ConfirmDialog>
     </div>
   );

@@ -6,14 +6,16 @@ import { assignSubjectTeacherAction, type ActionState } from "../actions";
 import { Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const initialState: ActionState = {};
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const { dict } = useLocale();
   return (
     <Button type="submit" variant="secondary" disabled={pending}>
-      {pending ? "Assigning…" : "Assign"}
+      {pending ? dict.common.assigning : dict.common.assign}
     </Button>
   );
 }
@@ -28,14 +30,15 @@ export function AssignTeacherForm({
   teachers: { id: string; full_name: string }[];
 }) {
   const [state, formAction] = useActionState(assignSubjectTeacherAction, initialState);
+  const { dict } = useLocale();
 
   return (
     <form action={formAction} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
       <input type="hidden" name="class_id" value={classId} />
       <div className="w-full sm:w-48">
-        <Select label="Subject" name="subject_id" required defaultValue="">
+        <Select label={dict.adminClasses.subject} name="subject_id" required defaultValue="">
           <option value="" disabled>
-            Choose subject
+            {dict.adminClasses.chooseSubject}
           </option>
           {subjects.map((s) => (
             <option key={s.id} value={s.id}>
@@ -45,9 +48,9 @@ export function AssignTeacherForm({
         </Select>
       </div>
       <div className="w-full sm:w-48">
-        <Select label="Teacher" name="teacher_id" required defaultValue="">
+        <Select label={dict.adminClasses.teacher} name="teacher_id" required defaultValue="">
           <option value="" disabled>
-            Choose teacher
+            {dict.adminClasses.chooseTeacher}
           </option>
           {teachers.map((t) => (
             <option key={t.id} value={t.id}>

@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { dirForLocale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/types";
 import type { UserRole } from "@/lib/types/database.types";
 
@@ -95,10 +96,6 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
 };
 
-function isRtlDir() {
-  return typeof document !== "undefined" && document.documentElement.dir === "rtl";
-}
-
 export function Sidebar({
   role,
   mobileOpen,
@@ -109,7 +106,8 @@ export function Sidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
-  const { dict } = useLocale();
+  const { dict, locale } = useLocale();
+  const isRtl = dirForLocale(locale) === "rtl";
   const items = NAV_ITEMS[role];
 
   function renderItem(item: NavItem) {
@@ -165,7 +163,7 @@ export function Sidebar({
           // HANDOVER.md-style gotchas — `lg:static` + `h-full` was fragile).
           "lg:sticky lg:top-0 lg:z-0 lg:h-screen lg:w-64 lg:!transform-none"
         )}
-        style={{ transform: mobileOpen ? "translateX(0)" : isRtlDir() ? "translateX(100%)" : "translateX(-100%)" }}
+        style={{ transform: mobileOpen ? "translateX(0)" : isRtl ? "translateX(100%)" : "translateX(-100%)" }}
       >
         <div className="bg-grid pointer-events-none absolute inset-0" />
         <div className="relative flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">

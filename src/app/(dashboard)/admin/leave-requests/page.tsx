@@ -44,7 +44,7 @@ export default async function AdminLeaveRequestsPage() {
             <Tbody>
               {all.map((r) => (
                 <tr key={r.id}>
-                  <Td className="font-medium text-slate-900 dark:text-white">{nameMap.get(r.student_id) ?? "Unknown"}</Td>
+                  <Td className="font-medium text-slate-900 dark:text-white">{nameMap.get(r.student_id) ?? dict.common.unknown}</Td>
                   <Td>{r.start_date}</Td>
                   <Td>{r.end_date}</Td>
                   <Td className="max-w-xs truncate">{r.reason}</Td>

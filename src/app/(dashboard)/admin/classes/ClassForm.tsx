@@ -6,15 +6,17 @@ import { createClassAction, updateClassAction, type ActionState } from "./action
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { ClassRow } from "@/lib/types/database.types";
 
 const initialState: ActionState = {};
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
+  const { dict } = useLocale();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : label}
+      {pending ? dict.common.saving : label}
     </Button>
   );
 }
@@ -28,6 +30,7 @@ export function ClassForm({
 }) {
   const action = classRow ? updateClassAction : createClassAction;
   const [state, formAction] = useActionState(action, initialState);
+  const { dict } = useLocale();
 
   return (
     <form action={formAction} className="space-y-5">
@@ -35,18 +38,18 @@ export function ClassForm({
       {classRow && <input type="hidden" name="id" value={classRow.id} />}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Input label="Class name" name="name" placeholder="Grade 9" defaultValue={classRow?.name} required />
-        <Input label="Section" name="section" placeholder="A" defaultValue={classRow?.section} required />
+        <Input label={dict.adminClasses.className} name="name" placeholder="Grade 9" defaultValue={classRow?.name} required />
+        <Input label={dict.adminClasses.section} name="section" placeholder="A" defaultValue={classRow?.section} required />
       </div>
       <Input
-        label="Academic year"
+        label={dict.adminClasses.academicYear}
         name="academic_year"
         placeholder={String(new Date().getFullYear())}
         defaultValue={classRow?.academic_year ?? String(new Date().getFullYear())}
         required
       />
-      <Select label="Homeroom teacher (optional)" name="homeroom_teacher_id" defaultValue={classRow?.homeroom_teacher_id ?? ""}>
-        <option value="">Unassigned</option>
+      <Select label={dict.adminClasses.homeroomTeacherOptional} name="homeroom_teacher_id" defaultValue={classRow?.homeroom_teacher_id ?? ""}>
+        <option value="">{dict.adminUsers.unassigned}</option>
         {teachers.map((t) => (
           <option key={t.id} value={t.id}>
             {t.full_name}
@@ -54,7 +57,7 @@ export function ClassForm({
         ))}
       </Select>
 
-      <SubmitButton label={classRow ? "Save changes" : "Create class"} />
+      <SubmitButton label={classRow ? dict.common.saveChanges : dict.adminClasses.createClass} />
     </form>
   );
 }
