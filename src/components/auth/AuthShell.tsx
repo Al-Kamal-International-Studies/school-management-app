@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { GraduationCap, ShieldCheck, Sparkles } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { WalkingRobots } from "./WalkingRobots";
+import { AuthBackground } from "./AuthBackground";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { ReactNode } from "react";
 
@@ -17,6 +18,13 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative flex min-h-screen overflow-hidden bg-slate-50 dark:bg-navy-950">
+      {/* Ambient background for the whole shell — sits behind both panels;
+          the branding panel's own opaque gradient covers it there, so in
+          practice this is what makes the form panel (and the entire page
+          on mobile, where the branding panel is hidden) feel designed
+          instead of blank. See AuthBackground.tsx for the layering note. */}
+      <AuthBackground />
+
       {/* Branding panel */}
       <div className="relative hidden w-[45%] max-w-xl flex-col justify-between overflow-hidden bg-navy-gradient p-12 text-white lg:flex">
         <div className="bg-grid pointer-events-none absolute inset-0" />

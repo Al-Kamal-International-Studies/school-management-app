@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dashboardPathForRole } from "@/lib/auth";
-import { getDeviceIdCookie, setDeviceCookie, labelFromUserAgent, MAX_DEVICES } from "@/lib/auth/deviceCookie";
+import { getDeviceIdCookie, setDeviceCookie, labelFromUserAgent, locationFromHeaders, MAX_DEVICES } from "@/lib/auth/deviceCookie";
 import type { Profile } from "@/lib/types/database.types";
 
 /**
@@ -20,6 +20,7 @@ import type { Profile } from "@/lib/types/database.types";
 async function ensureDeviceRegistered(userId: string): Promise<"ok" | "limit_reached"> {
   const deviceId = (await getDeviceIdCookie()) ?? randomUUID();
   const supabase = await createClient();
+  const headersList = await headers();
 
   const { data: existing } = await supabase
     .from("user_devices")
@@ -29,7 +30,13 @@ async function ensureDeviceRegistered(userId: string): Promise<"ok" | "limit_rea
     .maybeSingle();
 
   if (existing) {
-    await supabase.from("user_devices").update({ last_seen_at: new Date().toISOString() }).eq("id", existing.id);
+    // Refreshes location too, not just the timestamp — a laptop that moved
+    // from home to campus since it was first registered should read as
+    // "currently at" its latest known location, not its very first one.
+    await supabase
+      .from("user_devices")
+      .update({ last_seen_at: new Date().toISOString(), location: locationFromHeaders(headersList) })
+      .eq("id", existing.id);
     await setDeviceCookie(deviceId);
     return "ok";
   }
@@ -45,13 +52,13 @@ async function ensureDeviceRegistered(userId: string): Promise<"ok" | "limit_rea
     return "limit_reached";
   }
 
-  const headersList = await headers();
   const userAgent = headersList.get("user-agent");
   await supabase.from("user_devices").insert({
     user_id: userId,
     device_id: deviceId,
     label: labelFromUserAgent(userAgent),
     user_agent: userAgent,
+    location: locationFromHeaders(headersList),
   });
 
   return "ok";

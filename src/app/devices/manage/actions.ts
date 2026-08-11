@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile, dashboardPathForRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getDeviceIdCookie, labelFromUserAgent, MAX_DEVICES } from "@/lib/auth/deviceCookie";
+import { getDeviceIdCookie, labelFromUserAgent, locationFromHeaders, MAX_DEVICES } from "@/lib/auth/deviceCookie";
 
 export interface ActionState {
   error?: string;
@@ -54,8 +54,21 @@ export async function registerCurrentDeviceAction(_prevState: ActionState, _form
     device_id: deviceId,
     label: labelFromUserAgent(userAgent),
     user_agent: userAgent,
+    location: locationFromHeaders(headersList),
   });
   if (error) return { error: error.message };
 
   redirect(dashboardPathForRole(me.role));
+}
+
+/** The escape hatch on /devices/manage: rather than forcing a choice
+ * between "remove one of my other devices" or "get stuck," this signs the
+ * current (still-live — completeLogin() deliberately never signs out on
+ * hitting the cap, see its own doc comment) session out and returns to
+ * /login, so the user can walk away and come back once they've decided
+ * what to remove, or sign in from a device they know is already approved. */
+export async function signOutToLoginAction() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
 }

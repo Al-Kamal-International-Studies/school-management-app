@@ -287,6 +287,7 @@ export type UserDevice = {
   user_id: string;
   device_id: string;
   label: string | null;
+  location: string | null;
   user_agent: string | null;
   first_seen_at: string;
   last_seen_at: string;

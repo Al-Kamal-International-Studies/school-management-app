@@ -40,6 +40,29 @@ export async function isDeviceApproved(userId: string, deviceId: string | undefi
   return !!data;
 }
 
+/** Best-effort "City, Country" from Vercel's built-in geo headers, set on
+ * every request that reaches a Vercel-hosted function based on the
+ * requester's IP — no third-party geolocation API, no new account, zero
+ * added cost (unlike, say, a paid IP-lookup service). Returns null on
+ * localhost/non-Vercel hosting, where these headers don't exist — callers
+ * fall back to an "unknown location" label rather than showing nothing. */
+export function locationFromHeaders(headersList: Headers): string | null {
+  function decode(value: string | null): string | null {
+    if (!value) return null;
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+  const city = decode(headersList.get("x-vercel-ip-city"));
+  const region = decode(headersList.get("x-vercel-ip-country-region"));
+  const country = decode(headersList.get("x-vercel-ip-country"));
+  const primary = city || region;
+  if (primary && country) return `${primary}, ${country}`;
+  return primary || country || null;
+}
+
 /** A short, human-readable label from a raw User-Agent string — good enough
  * to tell devices apart in a list ("Chrome on Windows" vs "Safari on
  * iPhone"), not a full UA-parsing library. Shared by completeLogin.ts

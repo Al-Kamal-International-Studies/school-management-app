@@ -1,4 +1,4 @@
-import { Laptop } from "lucide-react";
+import { Laptop, MapPin } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getDeviceIdCookie } from "@/lib/auth/deviceCookie";
@@ -49,6 +49,10 @@ export async function DeviceList() {
                   </p>
                   <p className="text-xs text-slate-400 dark:text-navy-500">
                     {dict.devices.lastActive}: {new Date(d.last_seen_at).toLocaleString()}
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-400 dark:text-navy-500">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{d.location ?? dict.devices.unknownLocation}</span>
                   </p>
                 </div>
               </div>
