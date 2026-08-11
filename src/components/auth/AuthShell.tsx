@@ -28,6 +28,12 @@ export function AuthShell({ children }: { children: ReactNode }) {
       {/* Branding panel */}
       <div className="relative hidden w-[45%] max-w-xl flex-col justify-between overflow-hidden bg-navy-gradient p-12 text-white lg:flex">
         <div className="bg-grid pointer-events-none absolute inset-0" />
+        {/* These two are genuinely continuous (repeat: Infinity) and purely
+            decorative — Framer Motion is the right tool here, and if a
+            frame ever gets skipped the worst case is a static glow, not
+            missing content. Kept on Framer Motion deliberately; everything
+            below that gates real text was moved off it — see the note by
+            the form-panel wrapper for why. */}
         <motion.div
           className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gold-400/20 blur-3xl"
           animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
@@ -39,46 +45,34 @@ export function AuthShell({ children }: { children: ReactNode }) {
           transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
 
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <div className="animate-fade-in-up">
           <Logo />
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="relative z-10"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-        >
+        <div className="relative z-10 animate-fade-in-up" style={{ animationDelay: "120ms" }}>
           <span className="mb-4 inline-block rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-gold-300">
             {dict.authBranding.tagline}
           </span>
           <p className="font-display text-3xl font-semibold leading-snug text-balance">{dict.authBranding.headline}</p>
           <div className="mt-10 space-y-4">
             {FEATURES.map(({ icon: Icon, text }, i) => (
-              <motion.div
+              <div
                 key={text}
-                className="flex items-center gap-3 text-sm text-navy-100"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
+                className="flex animate-fade-in-up items-center gap-3 text-sm text-navy-100"
+                style={{ animationDelay: `${240 + i * 80}ms` }}
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
                   <Icon className="h-4 w-4 text-gold-300" strokeWidth={1.75} />
                 </span>
                 {text}
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        <motion.p
-          className="relative z-10 text-xs text-navy-200"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-        >
+        <p className="relative z-10 animate-fade-in text-xs text-navy-200" style={{ animationDelay: "480ms" }}>
           © {new Date().getFullYear()} Al Kamal International Studies
-        </motion.p>
+        </p>
       </div>
 
       {/* Form panel */}
@@ -86,14 +80,22 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <div className="mb-8 lg:hidden">
           <Logo onLight />
         </div>
-        <motion.div
-          className="w-full max-w-sm"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: "easeOut" }}
-        >
-          {children}
-        </motion.div>
+        {/* This wraps the actual sign-in form — the one thing on this page
+            that must never fail to become visible. It used to be a
+            motion.div fading in from opacity:0 on mount; that depended on
+            Framer Motion's post-hydration effect actually firing to reach
+            opacity:1, and it was observed getting stuck at its initial
+            (invisible) state in real testing — the JS-driven animation
+            never completed, with no fallback, leaving the login form
+            unreadable. Plain CSS keyframes (already defined in
+            tailwind.config.ts, used elsewhere in the app) don't have that
+            failure mode: the animation is attached the instant the browser
+            parses this element's style, runs on the compositor thread, and
+            — critically — its "not yet started"/"finished" states are both
+            just this element's normal (opaque) CSS, so there is no
+            JS-dependent path to a permanently-invisible form. Same visual
+            effect (fade + slight rise), zero risk of getting stuck. */}
+        <div className="w-full max-w-sm animate-fade-in-up">{children}</div>
       </div>
 
       <WalkingRobots />
