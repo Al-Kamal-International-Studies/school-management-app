@@ -71,8 +71,19 @@ const config: Config = {
         },
       },
       animation: {
-        "fade-in": "fade-in 0.4s ease-out",
-        "fade-in-up": "fade-in-up 0.4s ease-out",
+        // `both` fill-mode is load-bearing, not decoration: without it,
+        // animation-fill-mode defaults to "none", which means a delayed
+        // animation (every staggered FadeUpItem, the login page's tagline/
+        // features/copyright) renders at full opacity the instant the page
+        // paints, then SNAPS to the keyframe's `from` state (opacity:0) the
+        // moment its delay elapses, before fading back up. That reads to a
+        // real user as "the text appears, then disappears" — content
+        // flashing visible and then vanishing — which is exactly the bug
+        // this was reported as. `both` holds the `from` state during the
+        // delay (nothing flashes before its turn) and holds the `to` state
+        // after the animation ends (nothing reverts once it's finished).
+        "fade-in": "fade-in 0.4s ease-out both",
+        "fade-in-up": "fade-in-up 0.4s ease-out both",
       },
     },
   },
