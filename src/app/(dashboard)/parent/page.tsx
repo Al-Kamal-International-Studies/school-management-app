@@ -53,7 +53,7 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
     <div className="space-y-8">
       <FadeUp className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{activeChild.full_name}</h1>
+          <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{activeChild.full_name}</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">
             {activeChild.className ?? dict.common.notAssigned} · #{activeChild.enrollment_number}
           </p>

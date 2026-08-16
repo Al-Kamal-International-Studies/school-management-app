@@ -24,7 +24,7 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-10">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminOverview.title}</h1>
+        <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminOverview.title}</h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{dict.adminOverview.subtitle}</p>
       </FadeUp>
 

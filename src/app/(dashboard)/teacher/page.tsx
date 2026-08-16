@@ -27,7 +27,7 @@ export default async function TeacherDashboardPage() {
     <div className="space-y-10">
       <FadeUp className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.common.welcome}, {profile!.full_name}</h1>
+          <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.common.welcome}, {profile!.full_name}</h1>
           <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{dict.common.todaysScheduleAndClasses}</p>
         </div>
         <Link href="/teacher/progress" className="shrink-0">

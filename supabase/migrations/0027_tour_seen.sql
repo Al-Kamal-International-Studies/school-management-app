@@ -1,0 +1,23 @@
+-- ============================================================================
+-- First-login guided product tour: has the account dismissed/finished it?
+--
+-- has_seen_tour: false for every new account (including every existing
+-- account, via the column default — nobody currently has a value, so
+-- everybody sees the tour exactly once next time they load a dashboard
+-- page, then never again unless they use "Take the tour again" in
+-- Settings). Set to true when the tour is finished OR explicitly skipped
+-- (src/lib/tour/actions.ts's markTourSeenAction) — both count as "don't
+-- nag every login" per the feature spec. Server-side/account-bound on
+-- purpose, not localStorage, since the same person may log in from
+-- multiple devices (see user_devices, 0024) and should only see the tour
+-- once across all of them, not once per device/browser.
+--
+-- Deliberately NOT added to the locked self-update column list in the
+-- "users can update their own profile" RLS policy (0017/0022) — unlike
+-- must_change_password, a user flipping their own has_seen_tour has no
+-- security consequence (at most they skip or replay a walkthrough), so it
+-- stays freely self-updatable via the normal RLS path, both to mark the
+-- tour finished/skipped and to reset it for a manual replay.
+-- ============================================================================
+
+alter table profiles add column if not exists has_seen_tour boolean not null default false;

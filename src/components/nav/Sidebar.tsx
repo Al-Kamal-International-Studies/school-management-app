@@ -127,6 +127,7 @@ export function Sidebar({
         <Link
           href={item.href}
           onClick={onClose}
+          data-tour-nav={item.href}
           className={cn(
             "relative flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors lg:py-2.5",
             active ? "text-white" : "text-navy-200 hover:text-white"

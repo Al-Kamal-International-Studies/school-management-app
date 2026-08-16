@@ -563,6 +563,168 @@ const en = {
     uploading: "Uploading…",
     changePhoto: "Change photo",
   },
+  tour: {
+    next: "Next",
+    back: "Back",
+    skip: "Skip tour",
+    finish: "Finish",
+    stepOf: "Step {current} of {total}",
+    replayTitle: "Guided tour",
+    replayDescription: "Take the guided walkthrough of your dashboard again, anytime.",
+    replayButton: "Take the tour again",
+    welcome: {
+      admin: {
+        title: "Welcome to Al Kamal, Administrator!",
+        body: "Let's take a quick tour of everything you can manage from here — users, classes, timetables, and more.",
+      },
+      teacher: {
+        title: "Welcome to Al Kamal!",
+        body: "Here's a quick tour of your teaching tools — classes, attendance, assignments, and grading, all in one place.",
+      },
+      student: {
+        title: "Welcome to Al Kamal!",
+        body: "Let's take a quick look around your dashboard — your timetable, assignments, exams, and grades.",
+      },
+      parent: {
+        title: "Welcome to Al Kamal!",
+        body: "Here's a quick tour of your parent portal — your child's progress, the school calendar, documents, and messages.",
+      },
+    },
+    steps: {
+      admin: {
+        overview: {
+          title: "Your overview",
+          body: "Live counts of students, teachers, and classes, plus shortcuts to the things you do most often.",
+        },
+        users: {
+          title: "User management",
+          body: "Add, edit, or deactivate student, teacher, and parent accounts — and reset a password if someone gets locked out.",
+        },
+        classes: {
+          title: "Classes",
+          body: "Create classes, assign a homeroom teacher, and manage enrollment.",
+        },
+        subjects: {
+          title: "Subjects",
+          body: "Manage the subjects taught across the school.",
+        },
+        timetable: {
+          title: "Timetable",
+          body: "Build and edit the weekly class schedule for every class.",
+        },
+        progress: {
+          title: "Student progress",
+          body: "Review the monthly progress scores teachers submit for every student.",
+        },
+        leave: {
+          title: "Leave requests",
+          body: "Approve or reject leave requests submitted by parents on behalf of their children.",
+        },
+        announcements: {
+          title: "Announcements",
+          body: "Post school-wide or role-targeted announcements that appear on everyone's dashboard.",
+        },
+        auditLog: {
+          title: "Audit log",
+          body: "A record of sensitive actions across the app — account changes, password resets, and more.",
+        },
+        settings: {
+          title: "Settings",
+          body: "Change your password, manage your devices, and adjust language or theme. Replay this tour from here anytime.",
+        },
+      },
+      teacher: {
+        myClasses: {
+          title: "Your classes",
+          body: "Your teaching schedule and assigned classes for today are right here.",
+        },
+        timetable: {
+          title: "My timetable",
+          body: "Your full weekly teaching schedule.",
+        },
+        attendance: {
+          title: "Attendance",
+          body: "Mark daily attendance for each of your classes.",
+        },
+        assignments: {
+          title: "Assignments",
+          body: "Create assignments and review what your students have submitted.",
+        },
+        exams: {
+          title: "Exams",
+          body: "Schedule exams and record results for your classes.",
+        },
+        grades: {
+          title: "Grades",
+          body: "Enter and manage grades for assignments and exams.",
+        },
+        remarks: {
+          title: "Remarks",
+          body: "Leave a note on a student's record for their parents to see.",
+        },
+        settings: {
+          title: "Settings",
+          body: "Change your password, manage your devices, and adjust language or theme. Replay this tour from here anytime.",
+        },
+      },
+      student: {
+        dashboard: {
+          title: "Your dashboard",
+          body: "Your academic progress, attendance, and today's schedule at a glance.",
+        },
+        timetable: {
+          title: "My timetable",
+          body: "Your full weekly class schedule.",
+        },
+        attendance: {
+          title: "Attendance",
+          body: "Your attendance record for every class.",
+        },
+        assignments: {
+          title: "Assignments",
+          body: "See assigned work and submit it before the due date.",
+        },
+        exams: {
+          title: "Exams",
+          body: "Your upcoming exams and past results.",
+        },
+        grades: {
+          title: "Grades",
+          body: "Your grades for every assignment and exam.",
+        },
+        leave: {
+          title: "Leave requests",
+          body: "See the status of leave requests your parent has submitted for you.",
+        },
+        settings: {
+          title: "Settings",
+          body: "Change your password, manage your devices, and adjust language or theme. Replay this tour from here anytime.",
+        },
+      },
+      parent: {
+        dashboard: {
+          title: "Your child's dashboard",
+          body: "Progress, attendance, grades, and upcoming work for your child, all in one place. Switch children up top if you have more than one.",
+        },
+        calendar: {
+          title: "Calendar",
+          body: "School events and important dates.",
+        },
+        documents: {
+          title: "Documents",
+          body: "School documents and files shared with families.",
+        },
+        messages: {
+          title: "Messages",
+          body: "Message your child's teachers and the school directly.",
+        },
+        settings: {
+          title: "Settings",
+          body: "Change your password, manage your devices, and adjust language or theme. Replay this tour from here anytime.",
+        },
+      },
+    },
+  },
 };
 
 export default en;
