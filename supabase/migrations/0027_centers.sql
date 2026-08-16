@@ -103,15 +103,24 @@ select id, '00000000-0000-0000-0000-000000000001' from profiles
 on conflict (profile_id, center_id) do nothing;
 
 -- Deliberate, explicit exception: grant Muhammad's own admin account
--- (Director, per HANDOVER.md) access to AKET too, so the center switcher
--- this migration ships alongside has at least one real account that can
--- actually use it, matching the task's own framing of who the switcher is
--- for. No other account is granted multi-center access here. Guarded with
--- a WHERE EXISTS-style select so this is a no-op (not an error) on any
--- database where that account doesn't exist.
+-- (Director, per HANDOVER.md) and the Principal account access to AKET
+-- too, so the center switcher this migration ships alongside has real
+-- accounts that can actually use it, matching the task's own framing of
+-- who the switcher is for. No other account is granted multi-center
+-- access here. Both guarded with a WHERE-style select so each is a no-op
+-- (not an error) on any database where that account doesn't exist.
 insert into profile_center_access (profile_id, center_id)
 select id, '00000000-0000-0000-0000-000000000002' from profiles
 where lower(email) = 'muhammad@alkamalinternational.com'
+on conflict (profile_id, center_id) do nothing;
+
+-- Also granted to the Principal account, per Muhammad's follow-up request
+-- (2026-08-16, recorded in HANDOVER.md Part 6): the Principal oversees both
+-- centers day-to-day just as the Director does. Same guarded, idempotent
+-- shape as the grant above.
+insert into profile_center_access (profile_id, center_id)
+select id, '00000000-0000-0000-0000-000000000002' from profiles
+where lower(email) = 'principal@alkamalinternational.com'
 on conflict (profile_id, center_id) do nothing;
 
 -- ----------------------------------------------------------------------------
