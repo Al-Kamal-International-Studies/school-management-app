@@ -562,6 +562,11 @@ const en = {
     avatarTooLarge: "Image must be under 4MB.",
     uploading: "Uploading…",
     changePhoto: "Change photo",
+    cropTitle: "Adjust your photo",
+    cropHint: "Drag to reposition. Scroll, pinch, or use the slider to zoom.",
+    cropZoomLabel: "Zoom",
+    cropConfirm: "Use this photo",
+    cropLoadError: "Couldn't load that image. Try a different file.",
   },
   chatbot: {
     title: "Help Assistant",
