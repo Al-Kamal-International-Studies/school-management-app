@@ -4,6 +4,27 @@
 
 export type UserRole = "admin" | "teacher" | "student" | "parent";
 
+// Added by 0027_centers.sql. Fixed, well-known ids — see that migration's
+// header comment for why they're not gen_random_uuid().
+export const AKIS_CENTER_ID = "00000000-0000-0000-0000-000000000001";
+export const AKET_CENTER_ID = "00000000-0000-0000-0000-000000000002";
+
+export type Center = {
+  id: string;
+  name: string;
+  short_code: string;
+  logo_path: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type ProfileCenterAccess = {
+  id: string;
+  profile_id: string;
+  center_id: string;
+  created_at: string;
+};
+
 export type Profile = {
   id: string;
   role: UserRole;
@@ -19,6 +40,10 @@ export type Profile = {
   // Added by 0022_account_security_columns.sql.
   failed_login_attempts: number;
   must_change_password: boolean;
+  // Added by 0027_centers.sql — the profile's home center. See
+  // profile_center_access for which center(s) a profile may actually access
+  // (usually just this one; more than one for a multi-center account).
+  center_id: string;
   created_at: string;
   updated_at: string;
 };
@@ -29,6 +54,7 @@ export type ClassRow = {
   section: string;
   academic_year: string;
   homeroom_teacher_id: string | null;
+  center_id: string;
   created_at: string;
 };
 
@@ -36,6 +62,7 @@ export type Subject = {
   id: string;
   name: string;
   code: string;
+  center_id: string;
   created_at: string;
 };
 
@@ -117,6 +144,7 @@ export type Announcement = {
   body: string;
   audience: AnnouncementAudience;
   created_by: string | null;
+  center_id: string;
   created_at: string;
 };
 
@@ -239,6 +267,7 @@ export type SchoolEvent = {
   event_type: EventType;
   audience: AnnouncementAudience;
   created_by: string | null;
+  center_id: string;
   created_at: string;
 };
 
@@ -252,6 +281,7 @@ export type SchoolDocument = {
   student_id: string | null;
   file_path: string;
   uploaded_by: string | null;
+  center_id: string;
   created_at: string;
 };
 
@@ -362,6 +392,13 @@ export type ChatbotMessage = {
 export type Database = {
   public: {
     Tables: {
+      centers: { Row: Center; Insert: Partial<Center> & { name: string; short_code: string }; Update: Partial<Center>; Relationships: [] };
+      profile_center_access: {
+        Row: ProfileCenterAccess;
+        Insert: Partial<ProfileCenterAccess> & { profile_id: string; center_id: string };
+        Update: Partial<ProfileCenterAccess>;
+        Relationships: [];
+      };
       profiles: { Row: Profile; Insert: Partial<Profile> & { id: string; role: UserRole; full_name: string; email: string }; Update: Partial<Profile>; Relationships: [] };
       classes: { Row: ClassRow; Insert: Partial<ClassRow> & { name: string; section: string }; Update: Partial<ClassRow>; Relationships: [] };
       subjects: { Row: Subject; Insert: Partial<Subject> & { name: string; code: string }; Update: Partial<Subject>; Relationships: [] };

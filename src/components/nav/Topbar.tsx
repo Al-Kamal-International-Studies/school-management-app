@@ -3,7 +3,8 @@ import { LogOut, Menu } from "lucide-react";
 import { signOutAction } from "@/app/logout/actions";
 import { initials } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
-import type { Profile } from "@/lib/types/database.types";
+import { CenterSwitcher } from "@/components/nav/CenterSwitcher";
+import type { Center, Profile } from "@/lib/types/database.types";
 
 const ROLE_TONE = {
   admin: "navy",
@@ -12,7 +13,17 @@ const ROLE_TONE = {
   parent: "slate",
 } as const;
 
-export function Topbar({ profile, onMenuClick }: { profile: Profile; onMenuClick: () => void }) {
+export function Topbar({
+  profile,
+  centers,
+  activeCenterId,
+  onMenuClick,
+}: {
+  profile: Profile;
+  centers: Center[];
+  activeCenterId: string;
+  onMenuClick: () => void;
+}) {
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 backdrop-blur-sm dark:border-navy-800 dark:bg-navy-950/80 sm:px-6">
       <button
@@ -25,6 +36,7 @@ export function Topbar({ profile, onMenuClick }: { profile: Profile; onMenuClick
       </button>
       <div className="hidden lg:block" />
       <div className="flex items-center gap-2 sm:gap-4">
+        <CenterSwitcher centers={centers} activeCenterId={activeCenterId} />
         <Badge tone={ROLE_TONE[profile.role]}>
           <span className="hidden sm:inline">{profile.title || profile.role}</span>
           <span className="sm:hidden">{(profile.title || profile.role)[0]?.toUpperCase()}</span>

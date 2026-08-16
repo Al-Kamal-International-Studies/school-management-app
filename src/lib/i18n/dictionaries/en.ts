@@ -563,6 +563,10 @@ const en = {
     uploading: "Uploading…",
     changePhoto: "Change photo",
   },
+  centerSwitcher: {
+    switchCenter: "Switch center",
+    switchTo: "Switch to",
+  },
 };
 
 export default en;

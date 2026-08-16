@@ -562,6 +562,10 @@ const ar: Dictionary = {
     uploading: "جارٍ الرفع…",
     changePhoto: "تغيير الصورة",
   },
+  centerSwitcher: {
+    switchCenter: "تبديل المركز",
+    switchTo: "التبديل إلى",
+  },
 };
 
 export default ar;
