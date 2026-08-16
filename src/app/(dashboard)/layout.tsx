@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth";
 import { DashboardShell } from "@/components/nav/DashboardShell";
+import { getAccessibleCenters } from "@/lib/centers/getAccessibleCenters";
+import { getActiveCenterId } from "@/lib/centers/activeCenterCookie";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();
@@ -12,5 +14,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login?error=account_deactivated");
   }
 
-  return <DashboardShell profile={profile}>{children}</DashboardShell>;
+  // Only ever fetched further/passed down when there's actually more than
+  // one center to switch between — a single-center account (the overwhelming
+  // majority) never triggers the extra query and never sees the switcher.
+  const accessibleCenters = await getAccessibleCenters(profile.id);
+  const activeCenterId =
+    accessibleCenters.length > 1
+      ? await getActiveCenterId(
+          profile.center_id,
+          accessibleCenters.map((c) => c.id)
+        )
+      : profile.center_id;
+
+  return (
+    <DashboardShell profile={profile} centers={accessibleCenters} activeCenterId={activeCenterId}>
+      {children}
+    </DashboardShell>
+  );
 }

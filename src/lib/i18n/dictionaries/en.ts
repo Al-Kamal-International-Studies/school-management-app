@@ -784,6 +784,10 @@ const en = {
       },
     },
   },
+  centerSwitcher: {
+    switchCenter: "Switch center",
+    switchTo: "Switch to",
+  },
 };
 
 export default en;

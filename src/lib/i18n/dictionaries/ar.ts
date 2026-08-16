@@ -783,6 +783,10 @@ const ar: Dictionary = {
       },
     },
   },
+  centerSwitcher: {
+    switchCenter: "تبديل المركز",
+    switchTo: "التبديل إلى",
+  },
 };
 
 export default ar;
