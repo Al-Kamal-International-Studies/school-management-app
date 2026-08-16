@@ -24,6 +24,29 @@ function resolveSelector(step: { target: { kind: "nav"; href: string } | { kind:
   return null;
 }
 
+/**
+ * Clamps `value` (a box's position along one axis) so the box of `size`
+ * stays fully inside `[0, viewportSize]`, with `margin` of breathing room
+ * on each side when there's room for it. Unlike a naive
+ * `min(max(value, margin), viewportSize - size - margin)`, this degrades
+ * gracefully instead of overflowing when `size` itself doesn't leave room
+ * for a full margin on both sides (a box wider/taller than
+ * `viewportSize - margin * 2`, which the CSS side of this component avoids
+ * via `w-[min(92vw,340px)]`, but this stays correct even if that ever
+ * stops being true — e.g. a very narrow phone in landscape, or unusually
+ * long translated copy pushing the panel's real height up): the margin
+ * itself shrinks (down to 0) rather than letting the upper bound end up
+ * below the lower bound, which is what let the panel render partly
+ * off-screen before this fix.
+ */
+function clamp1D(value: number, size: number, viewportSize: number, margin: number): number {
+  const maxMargin = Math.max(0, (viewportSize - size) / 2);
+  const effectiveMargin = Math.min(margin, maxMargin);
+  const min = effectiveMargin;
+  const max = Math.max(effectiveMargin, viewportSize - size - effectiveMargin);
+  return Math.min(Math.max(value, min), max);
+}
+
 function computePlacement(rect: Rect | null, size: { width: number; height: number }): CSSProperties {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -32,24 +55,30 @@ function computePlacement(rect: Rect | null, size: { width: number; height: numb
     return { top: Math.round(vh / 2), left: Math.round(vw / 2), transform: "translate(-50%, -50%)" };
   }
 
-  const spaceRight = vw - (rect.left + rect.width);
-  const spaceLeft = rect.left;
-  const spaceBelow = vh - (rect.top + rect.height);
+  // Space is measured from the spotlight ring's own (padded) edge, not the
+  // raw target rect, so the tooltip never tries to squeeze into the gap
+  // the ring itself is about to occupy.
+  const spaceRight = vw - (rect.left + rect.width + SPOTLIGHT_PADDING);
+  const spaceLeft = rect.left - SPOTLIGHT_PADDING;
+  const spaceBelow = vh - (rect.top + rect.height + SPOTLIGHT_PADDING);
 
   let top: number;
   let left: number;
 
   if (spaceRight >= size.width + VIEWPORT_MARGIN || spaceLeft >= size.width + VIEWPORT_MARGIN) {
     const placeRight = spaceRight >= spaceLeft;
-    left = placeRight ? rect.left + rect.width + VIEWPORT_MARGIN : rect.left - size.width - VIEWPORT_MARGIN;
+    left = placeRight ? rect.left + rect.width + SPOTLIGHT_PADDING + VIEWPORT_MARGIN : rect.left - SPOTLIGHT_PADDING - size.width - VIEWPORT_MARGIN;
     top = rect.top + rect.height / 2 - size.height / 2;
   } else {
     left = rect.left + rect.width / 2 - size.width / 2;
-    top = spaceBelow >= size.height + VIEWPORT_MARGIN ? rect.top + rect.height + VIEWPORT_MARGIN : rect.top - size.height - VIEWPORT_MARGIN;
+    top =
+      spaceBelow >= size.height + VIEWPORT_MARGIN
+        ? rect.top + rect.height + SPOTLIGHT_PADDING + VIEWPORT_MARGIN
+        : rect.top - SPOTLIGHT_PADDING - size.height - VIEWPORT_MARGIN;
   }
 
-  left = Math.min(Math.max(left, VIEWPORT_MARGIN), Math.max(VIEWPORT_MARGIN, vw - size.width - VIEWPORT_MARGIN));
-  top = Math.min(Math.max(top, VIEWPORT_MARGIN), Math.max(VIEWPORT_MARGIN, vh - size.height - VIEWPORT_MARGIN));
+  left = clamp1D(left, size.width, vw, VIEWPORT_MARGIN);
+  top = clamp1D(top, size.height, vh, VIEWPORT_MARGIN);
 
   return { top: Math.round(top), left: Math.round(left) };
 }
@@ -127,12 +156,25 @@ export function TourOverlay() {
   useLayoutEffect(() => {
     const el = tooltipRef.current;
     if (!el) return;
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      setTooltipSize({ width: entry.contentRect.width, height: entry.contentRect.height });
-    });
+    // Measured via getBoundingClientRect() (always the border box — the
+    // panel's real on-screen footprint), not ResizeObserver's
+    // `entry.contentRect` (the content box, which excludes this element's
+    // own `p-5` padding and `border`). Tailwind's Preflight makes
+    // `box-sizing: border-box` the default here, so `contentRect` under-
+    // reports the panel's true width/height by ~42px (2 * (20px padding +
+    // 1px border) on each axis) — the viewport-clamping math below was
+    // computing its "safe" edge from a box ~42px smaller than the one
+    // actually being clamped, which is exactly what let the real panel
+    // hang off the edge of the screen despite the clamp "succeeding".
+    function measureSize() {
+      const node = tooltipRef.current;
+      if (!node) return;
+      const box = node.getBoundingClientRect();
+      setTooltipSize({ width: box.width, height: box.height });
+    }
+    const observer = new ResizeObserver(measureSize);
     observer.observe(el);
+    measureSize();
     return () => observer.disconnect();
   }, [stepIndex]);
 
@@ -152,22 +194,47 @@ export function TourOverlay() {
 
   return (
     <div className="fixed inset-0 z-[200]" role="dialog" aria-modal="true" aria-label={dict.tour.replayTitle}>
+      {/* Click-outside-to-skip catcher, covering the full viewport either
+          way. When there's a real target (targetRect), this stays
+          invisible — the spotlight ring below is the *only* dimming layer
+          in that case, via its own oversized box-shadow. Previously this
+          button always painted its own flat bg-navy-950/70 over the whole
+          viewport *underneath* the spotlight ring, including over the
+          target's own screen position — the ring's box-shadow only adds
+          darkness outside its own box, it doesn't (and can't) remove
+          darkness a separate element already painted there, so the
+          "spotlit" element was just as dimmed as everything else instead
+          of reading crisp/bright. With no target (the welcome/center step,
+          or a stale/unmatched nav href), this is the only dimming layer,
+          so it keeps its own dim + blur — the same recipe Sidebar.tsx's
+          own mobile backdrop already uses. */}
       <button
         type="button"
         aria-label={dict.tour.skip}
-        className="absolute inset-0 bg-navy-950/70 transition-opacity duration-200"
+        className={cn(
+          "absolute inset-0 transition-opacity duration-200",
+          targetRect ? "bg-transparent" : "bg-navy-950/70 backdrop-blur-[2px]"
+        )}
         onClick={skipTour}
       />
 
       {targetRect && (
         <div
-          className="pointer-events-none absolute rounded-xl ring-2 ring-gold-400 transition-all duration-300 ease-out"
+          className="pointer-events-none absolute rounded-xl ring-[3px] ring-gold-400 transition-all duration-300 ease-out"
           style={{
             top: targetRect.top - SPOTLIGHT_PADDING,
             left: targetRect.left - SPOTLIGHT_PADDING,
             width: targetRect.width + SPOTLIGHT_PADDING * 2,
             height: targetRect.height + SPOTLIGHT_PADDING * 2,
-            boxShadow: "0 0 0 9999px rgba(11, 33, 56, 0.72)",
+            // The 9999px spread is the whole spotlight technique: a
+            // transparent box whose shadow is forced to fill every pixel
+            // of the viewport *outside* its own bounds (box-shadow never
+            // paints inside the box it's cast from), leaving the target
+            // itself — now genuinely uncovered by anything — fully crisp
+            // and bright. The second, tighter shadow adds a soft gold glow
+            // right at the ring's edge so the highlighted element pops
+            // rather than just having a hard-edged ring around it.
+            boxShadow: "0 0 0 9999px rgba(11, 33, 56, 0.82), 0 0 0 6px rgba(230, 173, 63, 0.28)",
           }}
         />
       )}
@@ -175,7 +242,14 @@ export function TourOverlay() {
       <div
         key={step.id}
         ref={tooltipRef}
-        className="animate-fade-in-up absolute w-[min(92vw,340px)] rounded-2xl border border-white/10 bg-navy-gradient p-5 text-white shadow-card-hover"
+        // max-h + overflow-y-auto is a backstop independent of the
+        // position-clamping math above: on a short viewport (a phone in
+        // landscape) with an unusually long translated step body, this
+        // guarantees the panel itself can never be physically taller than
+        // the viewport, by scrolling its own content instead — no clamp
+        // can otherwise put a too-tall box fully on-screen, since there's
+        // no valid position for one.
+        className="animate-fade-in-up absolute w-[min(92vw,340px)] max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-navy-gradient p-5 text-white shadow-card-hover"
         style={placement}
       >
         <div className="mb-3 flex items-center justify-between gap-3">
