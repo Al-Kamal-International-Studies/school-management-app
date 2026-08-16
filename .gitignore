@@ -30,3 +30,4 @@ supabase/.temp
 
 # bulk-onboard.mjs output — real generated temp passwords, never commit
 scripts/output/
+.claude/worktrees/

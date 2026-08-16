@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * Marks the guided tour as seen for the current account, so it doesn't
  * auto-trigger again on a future login (per-account, not per-device — see
- * 0027_tour_seen.sql). Called when the tour is finished OR explicitly
+ * 0029_tour_seen.sql). Called when the tour is finished OR explicitly
  * skipped; both count as "seen" so the app never nags on a normal login.
  *
  * Uses the regular RLS-scoped client, not the service-role admin client —
