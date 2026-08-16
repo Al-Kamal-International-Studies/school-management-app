@@ -36,3 +36,32 @@ export function currentMonthValue(date: Date = new Date()): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   return `${year}-${month}-01`;
 }
+
+export interface MonthlySummary {
+  month: string;
+  averageScore: number;
+  averageAttendance: number;
+}
+
+/**
+ * Groups monthly progress entries by month and averages across subjects,
+ * newest first. Shared by the student dashboard (own progress) and the
+ * parent dashboard (a child's progress) so both build their trend
+ * sparklines/deltas from the exact same aggregation.
+ */
+export function summarizeByMonth(entries: Pick<MonthlyProgressEntry, ProgressFactor | "month">[]): MonthlySummary[] {
+  const byMonth = new Map<string, typeof entries>();
+  for (const e of entries) {
+    const list = byMonth.get(e.month) ?? [];
+    list.push(e);
+    byMonth.set(e.month, list);
+  }
+
+  return [...byMonth.entries()]
+    .map(([month, rows]) => ({
+      month,
+      averageScore: Math.round((rows.reduce((sum, r) => sum + computeOverallScore(r), 0) / rows.length) * 10) / 10,
+      averageAttendance: Math.round((rows.reduce((sum, r) => sum + Number(r.attendance_percentage), 0) / rows.length) * 10) / 10,
+    }))
+    .sort((a, b) => (a.month < b.month ? 1 : -1));
+}

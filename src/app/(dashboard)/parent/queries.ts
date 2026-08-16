@@ -1,5 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
-import { computeOverallScore } from "@/lib/progress/calculate";
+import { computeOverallScore, summarizeByMonth } from "@/lib/progress/calculate";
+
+/** Monday (ISO week start) of the week containing `date`, as "YYYY-MM-DD". */
+function weekStartOf(date: string): string {
+  const d = new Date(`${date}T00:00:00`);
+  const diffToMonday = (d.getDay() + 6) % 7; // Sun(0)->6, Mon(1)->0, ... Sat(6)->5
+  d.setDate(d.getDate() - diffToMonday);
+  return d.toISOString().slice(0, 10);
+}
 
 export async function listMyChildren(parentId: string) {
   const supabase = await createClient();
@@ -61,9 +69,40 @@ export async function getChildOverview(studentId: string) {
     ? Math.round((latestEntries.reduce((sum, e) => sum + computeOverallScore(e), 0) / latestEntries.length) * 10) / 10
     : null;
 
+  // Monthly score trend (newest first, same aggregation the student's own
+  // dashboard uses) — powers the Academic Progress card's sparkline + delta.
+  const monthlySummary = summarizeByMonth(entries);
+  const scoreDelta = monthlySummary.length > 1 ? monthlySummary[0]!.averageScore - monthlySummary[1]!.averageScore : null;
+  const scoreTrend = monthlySummary.slice(0, 6).map((m) => m.averageScore).reverse();
+
+  // Weekly attendance rate, bucketed from the same 30 most-recent records
+  // already fetched above — no extra query. Chronological (oldest week
+  // first) so the sparkline and the "this week vs last" delta read the
+  // same direction as everywhere else in the app.
+  const weekBuckets = new Map<string, { present: number; total: number }>();
+  for (const r of attendance ?? []) {
+    const key = weekStartOf(r.date);
+    const bucket = weekBuckets.get(key) ?? { present: 0, total: 0 };
+    bucket.total += 1;
+    if (r.status === "present") bucket.present += 1;
+    weekBuckets.set(key, bucket);
+  }
+  const weeklyAttendance = [...weekBuckets.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([week, b]) => ({ week, rate: Math.round((b.present / b.total) * 1000) / 10 }));
+  const attendanceTrend = weeklyAttendance.slice(-6).map((w) => w.rate);
+  const attendanceDelta =
+    weeklyAttendance.length > 1
+      ? Math.round((weeklyAttendance[weeklyAttendance.length - 1]!.rate - weeklyAttendance[weeklyAttendance.length - 2]!.rate) * 10) / 10
+      : null;
+
   return {
     overallScore,
     latestMonth,
+    scoreTrend,
+    scoreDelta,
+    attendanceTrend,
+    attendanceDelta,
     attendance: attendance ?? [],
     assignments: assignments ?? [],
     exams: exams ?? [],

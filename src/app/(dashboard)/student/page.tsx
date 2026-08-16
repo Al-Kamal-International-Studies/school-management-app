@@ -1,27 +1,40 @@
-import { MessageSquareText, Megaphone, CalendarClock, ClipboardCheck, Sparkles } from "lucide-react";
+import { MessageSquareText, Megaphone, CalendarClock, ClipboardCheck, Sparkles, Award } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
-import { getMyClassInfo, getMySchedule, listMyProgressEntries, summarizeByMonth, listMyRemarks, listMyBehaviourEntries } from "./queries";
+import {
+  getMyClassInfo,
+  getMySchedule,
+  listMyProgressEntries,
+  listMyRemarks,
+  listMyBehaviourEntries,
+  listMyRecentGrades,
+  listUpcomingItems,
+} from "./queries";
 import { listVisibleAnnouncements } from "@/lib/queries/announcements";
 import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/ui/ProgressRing";
+import { Sparkline, TrendDelta } from "@/components/ui/Sparkline";
 import { formatTime, jsDayToDbDay } from "@/lib/utils";
-import { formatMonth } from "@/lib/progress/calculate";
+import { formatMonth, summarizeByMonth } from "@/lib/progress/calculate";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+
+const UPCOMING_KIND_TONE = { assignment: "navy", exam: "navy", quiz: "gold" } as const;
 
 export default async function StudentDashboardPage() {
   const profile = await getCurrentProfile();
   const dict = await getDictionary(await getLocale());
   const { student, classRow } = await getMyClassInfo(profile!.id);
-  const [schedule, progressEntries, announcements, remarks, behaviourEntries] = await Promise.all([
+  const [schedule, progressEntries, announcements, remarks, behaviourEntries, recentGrades, upcomingItems] = await Promise.all([
     getMySchedule(student?.class_id ?? null),
     listMyProgressEntries(profile!.id),
     listVisibleAnnouncements(5),
     listMyRemarks(profile!.id),
     listMyBehaviourEntries(profile!.id),
+    listMyRecentGrades(profile!.id),
+    listUpcomingItems(student?.class_id ?? null),
   ]);
 
   const todayDbDay = jsDayToDbDay(new Date().getDay());
@@ -31,6 +44,13 @@ export default async function StudentDashboardPage() {
   const latest = monthly[0];
   const maxScore = Math.max(100, ...monthly.map((m) => m.averageScore));
   const recentComments = progressEntries.filter((e) => e.teacher_comments).slice(0, 4);
+
+  // Chronological (oldest first) for the sparklines; the delta compares the
+  // latest month to the one before it.
+  const scoreTrend = monthly.slice(0, 6).map((m) => m.averageScore).reverse();
+  const attendanceTrend = monthly.slice(0, 6).map((m) => m.averageAttendance).reverse();
+  const scoreDelta = monthly.length > 1 ? monthly[0]!.averageScore - monthly[1]!.averageScore : null;
+  const attendanceDelta = monthly.length > 1 ? monthly[0]!.averageAttendance - monthly[1]!.averageAttendance : null;
 
   return (
     <div className="space-y-10">
@@ -51,11 +71,22 @@ export default async function StudentDashboardPage() {
       <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2" staggerDelay={0.06}>
         <FadeUpItem>
           <Card>
-            <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.academicProgress}</h2>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.academicProgress}</h2>
+              {monthly.length > 1 && <TrendDelta value={scoreDelta} goodDirection="up" />}
+            </div>
             {latest ? (
               <div className="flex items-center gap-5">
                 <ProgressRing value={latest.averageScore} label={dict.progress.overallScore} />
-                <p className="text-xs text-slate-500 dark:text-navy-400">{formatMonth(latest.month)}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-slate-500 dark:text-navy-400">{formatMonth(latest.month)}</p>
+                  {scoreTrend.length > 1 && (
+                    <div className="mt-3">
+                      <Sparkline points={scoreTrend} height={28} />
+                      <p className="mt-1 text-[11px] text-slate-400 dark:text-navy-500">{dict.progress.vsLastMonth}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.noProgressYetDescription}</p>
@@ -65,13 +96,22 @@ export default async function StudentDashboardPage() {
 
         <FadeUpItem>
           <Card>
-            <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.attendanceSummary}</h2>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.attendanceSummary}</h2>
+              {monthly.length > 1 && <TrendDelta value={attendanceDelta} goodDirection="up" />}
+            </div>
             {latest ? (
               <div>
                 <p className="font-display text-3xl font-semibold text-navy-900 dark:text-white">
                   {latest.averageAttendance.toFixed(1)}%
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-navy-400">{formatMonth(latest.month)}</p>
+                {attendanceTrend.length > 1 && (
+                  <div className="mt-3">
+                    <Sparkline points={attendanceTrend} height={28} />
+                    <p className="mt-1 text-[11px] text-slate-400 dark:text-navy-500">{dict.progress.vsLastMonth}</p>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.noProgressYetDescription}</p>
@@ -133,7 +173,33 @@ export default async function StudentDashboardPage() {
         )}
       </FadeUp>
 
-      <FadeUp delay={0.2} className="space-y-4">
+      <FadeUp delay={0.19} className="space-y-4">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
+          <Award className="h-4 w-4" />
+          {dict.grades.recentGrades}
+        </h2>
+        {recentGrades.length === 0 ? (
+          <Card>
+            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.grades.noGrades}</p>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {recentGrades.map((g) => (
+              <Card key={g.id} className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-navy-900 dark:text-white">{g.assessment_name}</p>
+                  <p className="text-xs text-slate-500 dark:text-navy-400">{g.subjectName}</p>
+                </div>
+                <span className="shrink-0 text-sm font-semibold text-navy-900 dark:text-white">
+                  {g.marks_obtained}/{g.marks_total}
+                </span>
+              </Card>
+            ))}
+          </div>
+        )}
+      </FadeUp>
+
+      <FadeUp delay={0.22} className="space-y-4">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.announcements.title}</h2>
         {announcements.length === 0 ? (
           <Card>
@@ -160,7 +226,7 @@ export default async function StudentDashboardPage() {
       </FadeUp>
 
       {(remarks.length > 0 || behaviourEntries.length > 0) && (
-        <FadeUp delay={0.22} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FadeUp delay={0.25} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
               <ClipboardCheck className="h-4 w-4" />
@@ -201,14 +267,33 @@ export default async function StudentDashboardPage() {
         </FadeUp>
       )}
 
-      <FadeUp delay={0.24} className="space-y-4">
+      <FadeUp delay={0.28} className="space-y-4">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.upcomingTasks}</h2>
-        <Card>
-          <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.upcomingTasksNotAvailable}</p>
-        </Card>
+        {upcomingItems.length === 0 ? (
+          <Card>
+            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.noUpcomingItems}</p>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {upcomingItems.map((item) => (
+              <Card key={`${item.kind}-${item.id}`} className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-navy-900 dark:text-white">{item.title}</p>
+                    <Badge tone={UPCOMING_KIND_TONE[item.kind]}>
+                      {item.kind === "assignment" ? dict.assignments.assignment : item.kind === "quiz" ? dict.exams.quiz : dict.exams.exam}
+                    </Badge>
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{item.subjectName}</p>
+                </div>
+                <span className="shrink-0 text-xs text-slate-400 dark:text-navy-500">{item.date}</span>
+              </Card>
+            ))}
+          </div>
+        )}
       </FadeUp>
 
-      <FadeUp delay={0.28} className="space-y-4">
+      <FadeUp delay={0.32} className="space-y-4">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
           <CalendarClock className="h-4 w-4" />
           {dict.common.todaysSchedule}

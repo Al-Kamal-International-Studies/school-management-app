@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { computeOverallScore } from "@/lib/progress/calculate";
 
 export async function getMyClassInfo(studentId: string) {
   const supabase = await createClient();
@@ -85,26 +84,74 @@ export async function listMyBehaviourEntries(studentId: string, limit = 3) {
   return data ?? [];
 }
 
-export interface MonthlySummary {
-  month: string;
-  averageScore: number;
-  averageAttendance: number;
+/** The student's most recent recorded grades, newest first — for the dashboard's "Recent Grades" card. */
+export async function listMyRecentGrades(studentId: string, limit = 5) {
+  const supabase = await createClient();
+  const { data: grades } = await supabase
+    .from("grades")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  const all = grades ?? [];
+  if (all.length === 0) return [];
+
+  const subjectIds = [...new Set(all.map((g) => g.subject_id))];
+  const { data: subjects } = await supabase.from("subjects").select("id, name").in("id", subjectIds);
+  const subjectMap = new Map((subjects ?? []).map((s) => [s.id, s.name]));
+
+  return all.map((g) => ({ ...g, subjectName: subjectMap.get(g.subject_id) ?? "Unknown" }));
 }
 
-/** Groups progress entries by month and averages across subjects, newest first. */
-export function summarizeByMonth(entries: Awaited<ReturnType<typeof listMyProgressEntries>>): MonthlySummary[] {
-  const byMonth = new Map<string, typeof entries>();
-  for (const e of entries) {
-    const list = byMonth.get(e.month) ?? [];
-    list.push(e);
-    byMonth.set(e.month, list);
-  }
+export interface UpcomingItem {
+  id: string;
+  kind: "assignment" | "exam" | "quiz";
+  title: string;
+  date: string;
+  subjectName: string;
+}
 
-  return [...byMonth.entries()]
-    .map(([month, rows]) => ({
-      month,
-      averageScore: Math.round((rows.reduce((sum, r) => sum + computeOverallScore(r), 0) / rows.length) * 10) / 10,
-      averageAttendance: Math.round((rows.reduce((sum, r) => sum + Number(r.attendance_percentage), 0) / rows.length) * 10) / 10,
-    }))
-    .sort((a, b) => (a.month < b.month ? 1 : -1));
+/**
+ * Merges upcoming assignments (due_date >= today) and upcoming exams/quizzes
+ * (exam_date >= today) for the student's class into one date-sorted list —
+ * real data behind the dashboard's "Upcoming Tasks & Exams" card, which used
+ * to be a static "not built yet" placeholder.
+ */
+export async function listUpcomingItems(classId: string | null, limit = 6): Promise<UpcomingItem[]> {
+  if (!classId) return [];
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [{ data: assignments }, { data: exams }] = await Promise.all([
+    supabase
+      .from("assignments")
+      .select("id, title, due_date, subject_id")
+      .eq("class_id", classId)
+      .gte("due_date", today)
+      .order("due_date", { ascending: true })
+      .limit(limit),
+    supabase
+      .from("exams")
+      .select("id, title, exam_date, exam_type, subject_id")
+      .eq("class_id", classId)
+      .gte("exam_date", today)
+      .order("exam_date", { ascending: true })
+      .limit(limit),
+  ]);
+
+  const items = [
+    ...(assignments ?? []).map((a) => ({ id: a.id, kind: "assignment" as const, title: a.title, date: a.due_date, subjectId: a.subject_id })),
+    ...(exams ?? []).map((e) => ({ id: e.id, kind: e.exam_type, title: e.title, date: e.exam_date, subjectId: e.subject_id })),
+  ];
+  if (items.length === 0) return [];
+
+  const subjectIds = [...new Set(items.map((i) => i.subjectId))];
+  const { data: subjects } = await supabase.from("subjects").select("id, name").in("id", subjectIds);
+  const subjectMap = new Map((subjects ?? []).map((s) => [s.id, s.name]));
+
+  return items
+    .map((i) => ({ id: i.id, kind: i.kind, title: i.title, date: i.date, subjectName: subjectMap.get(i.subjectId) ?? "Unknown" }))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+    .slice(0, limit);
 }

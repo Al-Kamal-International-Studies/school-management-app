@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/Table";
 import { ProgressRing } from "@/components/ui/ProgressRing";
+import { Sparkline, TrendDelta } from "@/components/ui/Sparkline";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { formatMonth } from "@/lib/progress/calculate";
 import { initials } from "@/lib/utils";
@@ -83,11 +84,22 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
       <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2" staggerDelay={0.06}>
         <FadeUpItem>
           <Card>
-            <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.academicProgress}</h2>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.academicProgress}</h2>
+              {overview.scoreDelta !== null && <TrendDelta value={overview.scoreDelta} goodDirection="up" />}
+            </div>
             {overview.overallScore !== null ? (
               <div className="flex items-center gap-5">
                 <ProgressRing value={overview.overallScore} label={dict.progress.overallScore} />
-                {overview.latestMonth && <p className="text-xs text-slate-500 dark:text-navy-400">{formatMonth(overview.latestMonth)}</p>}
+                <div className="min-w-0 flex-1">
+                  {overview.latestMonth && <p className="text-xs text-slate-500 dark:text-navy-400">{formatMonth(overview.latestMonth)}</p>}
+                  {overview.scoreTrend.length > 1 && (
+                    <div className="mt-3">
+                      <Sparkline points={overview.scoreTrend} height={28} />
+                      <p className="mt-1 text-[11px] text-slate-400 dark:text-navy-500">{dict.progress.vsLastMonth}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.noProgressYetDescription}</p>
@@ -96,9 +108,20 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
         </FadeUpItem>
         <FadeUpItem>
           <Card>
-            <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.attendance.title}</h2>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.attendance.title}</h2>
+              {overview.attendanceDelta !== null && <TrendDelta value={overview.attendanceDelta} goodDirection="up" />}
+            </div>
             {attendanceRate !== null ? (
-              <p className="font-display text-3xl font-semibold text-navy-900 dark:text-white">{attendanceRate}%</p>
+              <div>
+                <p className="font-display text-3xl font-semibold text-navy-900 dark:text-white">{attendanceRate}%</p>
+                {overview.attendanceTrend.length > 1 && (
+                  <div className="mt-3">
+                    <Sparkline points={overview.attendanceTrend} height={28} />
+                    <p className="mt-1 text-[11px] text-slate-400 dark:text-navy-500">{dict.common.vsLastWeek}</p>
+                  </div>
+                )}
+              </div>
             ) : (
               <p className="text-sm text-slate-500 dark:text-navy-400">{dict.attendance.noRecords}</p>
             )}

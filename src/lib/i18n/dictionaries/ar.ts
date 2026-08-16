@@ -55,6 +55,8 @@ const ar: Dictionary = {
     todaysScheduleAndClasses: "جدول اليوم وفصولك.",
     noClassesToday: "لا توجد حصص مجدولة اليوم.",
     welcome: "مرحبًا",
+    viewAll: "عرض الكل",
+    vsLastWeek: "مقارنة بالأسبوع الماضي",
   },
   welcome: {
     languageTitle: "اختر لغتك",
@@ -234,8 +236,9 @@ const ar: Dictionary = {
     noProgressYet: "لا يوجد تقدم مسجل بعد",
     noProgressYetDescription: "لم يقم معلموك بإرسال سجل تقدم شهري بعد.",
     upcomingTasks: "المهام والاختبارات القادمة",
-    upcomingTasksNotAvailable: "لم يتم إنشاء هذه الميزة بعد — جدولة الواجبات والاختبارات على خارطة الطريق. تحقق مرة أخرى قريبًا.",
+    noUpcomingItems: "لا يوجد شيء مستحق قريبًا — أنت على اطلاع بكل شيء.",
     filterAll: "الكل",
+    vsLastMonth: "مقارنة بالشهر الماضي",
   },
   announcements: {
     title: "الإعلانات",
@@ -288,6 +291,7 @@ const ar: Dictionary = {
   },
   assignments: {
     title: "الواجبات",
+    assignment: "واجب",
     newAssignment: "واجب جديد",
     dueDate: "تاريخ التسليم",
     description: "الوصف",
@@ -320,6 +324,7 @@ const ar: Dictionary = {
     marksTotal: "الدرجة الكلية",
     term: "الفصل الدراسي",
     noGrades: "لا توجد درجات مسجلة بعد.",
+    recentGrades: "أحدث الدرجات",
   },
   remarks: {
     title: "ملاحظات المعلمين",
@@ -526,6 +531,17 @@ const ar: Dictionary = {
     createClass: "إنشاء فصل",
     manageSubjects: "إدارة المواد",
     buildTimetable: "إنشاء الجدول الزمني",
+    attendanceRate: "نسبة الحضور",
+    needsAttention: "يحتاج إلى انتباه",
+    pendingLeaveRequests: "طلبات إجازة معلّقة",
+    openFeedback: "ملاحظات مفتوحة",
+    pendingPasswordResets: "طلبات إعادة تعيين كلمة مرور معلّقة",
+    reviewNow: "مراجعة الآن",
+    nothingPending: "لا يوجد شيء معلّق",
+    upcomingEvents: "الفعاليات القادمة",
+    noUpcomingEvents: "لا يوجد شيء في التقويم حاليًا.",
+    recentActivity: "النشاط الأخير",
+    noRecentActivity: "لا يوجد نشاط حديث بعد.",
   },
   myTimetable: {
     title: "جدولي الزمني",
@@ -539,6 +555,9 @@ const ar: Dictionary = {
     submitProgress: "إرسال التقدم",
     noClassesAssignedYet: "لا توجد فصول مُسندة بعد",
     noClassesAssignedDescription: "لم تقم الإدارة بتعيينك لتدريس مادة في أي فصل بعد.",
+    upcomingExams: "الاختبارات القادمة",
+    pendingGrading: "بانتظار التصحيح",
+    allGraded: "لا يوجد شيء بانتظار التصحيح",
   },
   studentDashboard: {
     noClassAssignedShort: "لم يتم تعيين فصل بعد",
