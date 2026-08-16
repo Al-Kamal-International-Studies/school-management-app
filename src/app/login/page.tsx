@@ -1,8 +1,11 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile, dashboardPathForRole } from "@/lib/auth";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { CenterPicker } from "@/components/auth/CenterPicker";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { getDictionary } from "@/lib/i18n/getDictionary";
+import { getLoginCenterId } from "@/lib/centers/loginCenterCookie";
+import { knownCenterFor } from "@/lib/centers/knownCenters";
 import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage({
@@ -17,9 +20,11 @@ export default async function LoginPage({
 
   const { next, error } = await searchParams;
   const dict = await getDictionary(await getLocale());
+  const center = knownCenterFor(await getLoginCenterId());
 
   return (
-    <AuthShell>
+    <AuthShell center={center}>
+      <CenterPicker selectedCenterId={center.id} />
       <div className="mb-8">
         <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.login.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-300">{dict.login.subtitle}</p>

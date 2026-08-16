@@ -2,20 +2,38 @@
 
 import { motion } from "framer-motion";
 import { GraduationCap, ShieldCheck, Sparkles } from "lucide-react";
-import { Logo } from "@/components/ui/Logo";
+import { CenterLogo } from "./CenterLogo";
 import { WalkingRobots } from "./WalkingRobots";
 import { AuthBackground } from "./AuthBackground";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useTheme } from "@/lib/theme/ThemeProvider";
+import { DEFAULT_KNOWN_CENTER, type KnownCenter } from "@/lib/centers/knownCenters";
 import type { ReactNode } from "react";
 
-export function AuthShell({ children }: { children: ReactNode }) {
+/** authBranding.akis/authBranding.aket keys derive from short_code — this
+ * keeps that mapping in one explicit place instead of a `.toLowerCase()`
+ * cast, which TypeScript can't narrow to the literal union on its own. */
+function brandKeyFor(shortCode: KnownCenter["short_code"]): "akis" | "aket" {
+  return shortCode === "AKET" ? "aket" : "akis";
+}
+
+/**
+ * `center` reflects whichever institution the visitor is currently signing
+ * in to/acting under — the pre-login choice on /login and /forgot-password
+ * (src/lib/centers/loginCenterCookie.ts), or the already-known account's own
+ * center on /devices/manage and /force-password-change (both reached with a
+ * profile already resolved). Optional, defaulting to AKIS, so the other
+ * AuthShell call sites that predate this feature (mfa/setup, mfa/verify,
+ * welcome/*) keep their exact current (AKIS) branding untouched.
+ */
+export function AuthShell({ children, center = DEFAULT_KNOWN_CENTER }: { children: ReactNode; center?: KnownCenter }) {
   const { dict } = useLocale();
   const { theme } = useTheme();
+  const brand = dict.authBranding[brandKeyFor(center.short_code)];
   const FEATURES = [
-    { icon: GraduationCap, text: dict.authBranding.feature1 },
-    { icon: ShieldCheck, text: dict.authBranding.feature2 },
-    { icon: Sparkles, text: dict.authBranding.feature3 },
+    { icon: GraduationCap, text: brand.feature1 },
+    { icon: ShieldCheck, text: brand.feature2 },
+    { icon: Sparkles, text: brand.feature3 },
   ];
 
   return (
@@ -48,14 +66,14 @@ export function AuthShell({ children }: { children: ReactNode }) {
         />
 
         <div className="animate-fade-in-up">
-          <Logo />
+          <CenterLogo center={center} />
         </div>
 
         <div className="relative z-10 animate-fade-in-up" style={{ animationDelay: "120ms" }}>
           <span className="mb-4 inline-block rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-gold-300">
-            {dict.authBranding.tagline}
+            {brand.tagline}
           </span>
-          <p className="font-display text-3xl font-semibold leading-snug text-balance">{dict.authBranding.headline}</p>
+          <p className="font-display text-3xl font-semibold leading-snug text-balance">{brand.headline}</p>
           <div className="mt-10 space-y-4">
             {FEATURES.map(({ icon: Icon, text }, i) => (
               <div
@@ -73,7 +91,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         </div>
 
         <p className="relative z-10 animate-fade-in text-xs text-navy-200" style={{ animationDelay: "480ms" }}>
-          © {new Date().getFullYear()} Al Kamal International Studies
+          © {new Date().getFullYear()} {center.name}
         </p>
       </div>
 
@@ -89,7 +107,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
             fed the server-resolved cookie value on first render (see
             RootLayout/ThemeProvider), so this has no hydration flash. */}
         <div className="mb-8 lg:hidden">
-          <Logo onLight={theme === "light"} />
+          <CenterLogo center={center} onLight={theme === "light"} />
         </div>
         {/* This wraps the actual sign-in form — the one thing on this page
             that must never fail to become visible. It used to be a

@@ -93,5 +93,5 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     return { error: "This account has been deactivated. Contact your administrator." };
   }
 
-  return completeLogin(profile, next);
+  return completeLogin(profile, { email, centerDeniedMessage: "Incorrect email or password.", next });
 }
