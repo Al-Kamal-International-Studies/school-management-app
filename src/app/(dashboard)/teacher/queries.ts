@@ -61,3 +61,32 @@ export async function getMySchedule(teacherId: string) {
     subjectName: subjectMap.get(e.subject_id) ?? "Unknown",
   }));
 }
+
+export interface TeacherOverviewStats {
+  upcomingExamCount: number;
+  pendingGradingCount: number;
+}
+
+/**
+ * Two cheap `head: true` counts for the dashboard's KPI row: exams/quizzes
+ * this teacher has scheduled from today onward, and submissions still
+ * waiting on a grade. The submissions count needs no explicit teacher
+ * filter — its RLS select policy already scopes rows to submissions for
+ * assignments this teacher authored (see migration 0019), same as every
+ * other teacher-scoped query in this app relying on RLS rather than a
+ * redundant client-side filter.
+ */
+export async function getOverviewStats(teacherId: string): Promise<TeacherOverviewStats> {
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [{ count: upcomingExamCount }, { count: pendingGradingCount }] = await Promise.all([
+    supabase.from("exams").select("*", { count: "exact", head: true }).eq("teacher_id", teacherId).gte("exam_date", today),
+    supabase.from("assignment_submissions").select("*", { count: "exact", head: true }).eq("status", "submitted"),
+  ]);
+
+  return {
+    upcomingExamCount: upcomingExamCount ?? 0,
+    pendingGradingCount: pendingGradingCount ?? 0,
+  };
+}

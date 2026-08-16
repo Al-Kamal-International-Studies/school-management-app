@@ -56,6 +56,8 @@ const en = {
     todaysScheduleAndClasses: "Today's schedule and your classes.",
     noClassesToday: "No classes scheduled for today.",
     welcome: "Welcome",
+    viewAll: "View all",
+    vsLastWeek: "vs. last week",
   },
   welcome: {
     languageTitle: "Choose your language",
@@ -250,8 +252,9 @@ const en = {
     noProgressYet: "No progress recorded yet",
     noProgressYetDescription: "Your teachers haven't submitted a monthly progress entry yet.",
     upcomingTasks: "Upcoming Tasks & Exams",
-    upcomingTasksNotAvailable: "Not built yet — assignments and exam scheduling are on the roadmap. Check back soon.",
+    noUpcomingItems: "Nothing due soon — you're all caught up.",
     filterAll: "All",
+    vsLastMonth: "vs. last month",
   },
   announcements: {
     title: "Announcements",
@@ -304,6 +307,7 @@ const en = {
   },
   assignments: {
     title: "Assignments",
+    assignment: "Assignment",
     newAssignment: "New Assignment",
     dueDate: "Due Date",
     description: "Description",
@@ -336,6 +340,7 @@ const en = {
     marksTotal: "Marks Total",
     term: "Term",
     noGrades: "No grades recorded yet.",
+    recentGrades: "Recent Grades",
   },
   remarks: {
     title: "Teacher Remarks",
@@ -542,6 +547,17 @@ const en = {
     createClass: "Create a class",
     manageSubjects: "Manage subjects",
     buildTimetable: "Build timetable",
+    attendanceRate: "Attendance rate",
+    needsAttention: "Needs attention",
+    pendingLeaveRequests: "Pending leave requests",
+    openFeedback: "Open feedback",
+    pendingPasswordResets: "Pending password resets",
+    reviewNow: "Review now",
+    nothingPending: "Nothing pending",
+    upcomingEvents: "Upcoming events",
+    noUpcomingEvents: "Nothing on the calendar yet.",
+    recentActivity: "Recent activity",
+    noRecentActivity: "No recent activity yet.",
   },
   myTimetable: {
     title: "My timetable",
@@ -555,6 +571,9 @@ const en = {
     submitProgress: "Submit Progress",
     noClassesAssignedYet: "No classes assigned yet",
     noClassesAssignedDescription: "Your admin hasn't assigned you to teach a subject in any class yet.",
+    upcomingExams: "Upcoming exams",
+    pendingGrading: "Pending grading",
+    allGraded: "Nothing waiting to be graded",
   },
   studentDashboard: {
     noClassAssignedShort: "No class assigned yet",

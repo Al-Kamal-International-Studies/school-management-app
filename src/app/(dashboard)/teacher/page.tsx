@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ClipboardList, Megaphone } from "lucide-react";
+import { ClipboardList, Megaphone, School, Users, CalendarDays, ClipboardCheck } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
-import { listMyClasses, getMySchedule } from "./queries";
+import { listMyClasses, getMySchedule, getOverviewStats } from "./queries";
 import { listVisibleAnnouncements } from "@/lib/queries/announcements";
-import { Card } from "@/components/ui/Card";
+import { Card, StatCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
 import { formatTime, jsDayToDbDay } from "@/lib/utils";
@@ -14,14 +14,24 @@ import { getLocale } from "@/lib/i18n/getLocale";
 export default async function TeacherDashboardPage() {
   const profile = await getCurrentProfile();
   const dict = await getDictionary(await getLocale());
-  const [classes, schedule, announcements] = await Promise.all([
+  const [classes, schedule, announcements, stats] = await Promise.all([
     listMyClasses(profile!.id),
     getMySchedule(profile!.id),
     listVisibleAnnouncements(3),
+    getOverviewStats(profile!.id),
   ]);
 
   const todayDbDay = jsDayToDbDay(new Date().getDay());
   const todaysClasses = schedule.filter((e) => e.day_of_week === todayDbDay);
+
+  // `classes` has one row per (class, subject) assignment, so the same
+  // class can repeat — dedupe by class id for an accurate "classes taught"
+  // and "students taught" count.
+  const distinctClasses = new Map<string, number>();
+  for (const c of classes) {
+    if (c.class) distinctClasses.set(c.class.id, c.studentCount);
+  }
+  const totalStudents = [...distinctClasses.values()].reduce((sum, n) => sum + n, 0);
 
   return (
     <div className="space-y-10">
@@ -38,7 +48,27 @@ export default async function TeacherDashboardPage() {
         </Link>
       </FadeUp>
 
-      <FadeUp delay={0.08} className="space-y-4">
+      <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" staggerDelay={0.06}>
+        <FadeUpItem>
+          <StatCard label={dict.nav.myClasses} value={distinctClasses.size} icon={School} />
+        </FadeUpItem>
+        <FadeUpItem>
+          <StatCard label={dict.adminClasses.students} value={totalStudents} icon={Users} />
+        </FadeUpItem>
+        <FadeUpItem>
+          <StatCard label={dict.teacherDashboard.upcomingExams} value={stats.upcomingExamCount} icon={CalendarDays} />
+        </FadeUpItem>
+        <FadeUpItem>
+          <StatCard
+            label={dict.teacherDashboard.pendingGrading}
+            value={stats.pendingGradingCount}
+            hint={stats.pendingGradingCount === 0 ? dict.teacherDashboard.allGraded : undefined}
+            icon={ClipboardCheck}
+          />
+        </FadeUpItem>
+      </FadeUpStagger>
+
+      <FadeUp delay={0.1} className="space-y-4">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.common.todaysSchedule}</h2>
         {todaysClasses.length === 0 ? (
           <Card>
