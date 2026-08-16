@@ -3,6 +3,121 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Per-center color system — the third, independent dimension alongside
+   * light/dark (ThemeProvider) and locale (LocaleProvider). AKIS and AKET
+   * are both "navy + gold" institutions by brand, but Muhammad's ask was
+   * that switching center via CenterSwitcher.tsx should give a genuinely
+   * different visual experience, not just a different logo.
+   *
+   * Mechanism: every `navy-*`/`gold-*`/`brand-*` Tailwind color step
+   * (tailwind.config.ts) resolves through one of the CSS custom properties
+   * below instead of a literal hex value. `:root` holds AKIS's values
+   * (byte-identical to the literals this file replaced — AKIS's live look
+   * is unchanged) as the safe default for any markup that never gets a
+   * `data-center` attribute (pre-login pages, anything outside the
+   * authenticated shell). `[data-center="aket"]` — set server-side on
+   * DashboardShell's root element from the resolved active center, see
+   * `(dashboard)/layout.tsx` — overrides them for every authenticated
+   * page once an AKET account (or an AKIS/AKET multi-center account that
+   * switched) is active. Because the override lives on a real DOM
+   * ancestor of the whole dashboard tree and is baked into the very first
+   * server-rendered HTML (no client-side class toggle, no useEffect), this
+   * has the same no-flash guarantee THEME_COOKIE's `dark` class already
+   * has — see ThemeProvider.tsx.
+   *
+   * This is why every existing `dark:bg-navy-950`, `bg-gold-400`, etc.
+   * across the app automatically follows the active center with zero
+   * per-component changes: the class names never change, only what color
+   * they resolve to. `dark:` and `data-center` are fully orthogonal — a
+   * `dark:` variant picks a different *step* of the scale (e.g. navy-950
+   * instead of white), while `data-center` changes what a given step *is*
+   * (steel-blue instead of navy) — so all four combinations (AKIS/AKET ×
+   * light/dark) fall out for free from the existing utility classes.
+   *
+   * Values are "R G B" (space-separated, no commas/rgb()) per Tailwind's
+   * own convention — see the `<alpha-value>` placeholders in
+   * tailwind.config.ts, which is what keeps opacity modifiers like
+   * `bg-navy-800/60` working unchanged.
+   *
+   * AKET's palette was derived with the same OKLCH/WCAG rigor as a chart
+   * palette (dataviz skill's method, applied to UI text/surface pairs
+   * instead of categorical marks): a single hue per scale (steel ~H205 vs
+   * AKIS navy's ~H248; amber ~H48 vs AKIS gold's ~H80-91), monotone
+   * lightness matching AKIS's own steps (so nothing feels "heavier" or
+   * "lighter" than the equivalent AKIS surface), and every real text/icon-
+   * on-surface pairing this app actually renders checked against WCAG
+   * contrast — see the worktree's PR description / handover notes for the
+   * exact ratios computed during design, not reproduced here.
+   */
+  :root {
+    --color-navy-50: 238 243 248;
+    --color-navy-100: 215 227 238;
+    --color-navy-200: 176 200 221;
+    --color-navy-300: 130 166 198;
+    --color-navy-400: 85 128 168;
+    --color-navy-500: 58 98 136;
+    --color-navy-600: 40 75 108;
+    --color-navy-700: 28 58 86;
+    --color-navy-800: 21 44 66;
+    --color-navy-900: 15 33 49;
+    --color-navy-950: 11 33 56;
+    --color-gold-50: 253 248 236;
+    --color-gold-100: 250 237 199;
+    --color-gold-200: 244 216 136;
+    --color-gold-300: 238 193 88;
+    --color-gold-400: 230 173 63;
+    --color-gold-500: 212 175 55;
+    --color-gold-600: 184 134 11;
+    --color-gold-700: 148 107 10;
+    --color-gold-800: 120 86 15;
+    --color-gold-900: 100 72 17;
+    --color-navy-gradient-from: 11 33 56;
+    --color-navy-gradient-via: 18 58 94;
+    --color-navy-gradient-to: 28 77 120;
+    --color-gold-gradient-from: 243 216 120;
+    --color-gold-gradient-via: 212 175 55;
+    --color-gold-gradient-to: 184 134 11;
+  }
+
+  /* AKET — Al Kamal Education Technology. A cooler, more saturated
+     steel-teal primary (vs. AKIS's deep indigo-navy) paired with a true
+     amber/orange accent (vs. AKIS's yellow-gold) — the orange also echoes
+     aket-seal.svg's real torch-flame color, so the palette and the crest
+     read as the same institution. Chosen deliberately further from AKIS's
+     hues than the crest's own navy tones sit, since a close match would
+     have undermined the actual point of this work: reading as clearly
+     different at a glance, not just a slightly different navy. */
+  [data-center="aket"] {
+    --color-navy-50: 232 245 247;
+    --color-navy-100: 203 232 235;
+    --color-navy-200: 152 208 215;
+    --color-navy-300: 83 178 188;
+    --color-navy-400: 32 144 155;
+    --color-navy-500: 21 112 121;
+    --color-navy-600: 17 90 97;
+    --color-navy-700: 10 71 77;
+    --color-navy-800: 5 53 57;
+    --color-navy-900: 3 40 44;
+    --color-navy-950: 1 34 37;
+    --color-gold-50: 255 247 243;
+    --color-gold-100: 253 233 223;
+    --color-gold-200: 250 208 187;
+    --color-gold-300: 249 182 149;
+    --color-gold-400: 247 160 114;
+    --color-gold-500: 245 144 90;
+    --color-gold-600: 217 109 44;
+    --color-gold-700: 176 86 30;
+    --color-gold-800: 143 69 24;
+    --color-gold-900: 120 58 20;
+    --color-navy-gradient-from: 1 34 37;
+    --color-navy-gradient-via: 5 53 57;
+    --color-navy-gradient-to: 10 71 77;
+    --color-gold-gradient-from: 250 208 187;
+    --color-gold-gradient-via: 245 144 90;
+    --color-gold-gradient-to: 217 109 44;
+  }
+
   html {
     font-family: theme("fontFamily.sans");
     scroll-behavior: smooth;
@@ -87,11 +202,14 @@
      behavior still works correctly there. */
   .nav-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgb(212 175 55 / 0) transparent;
+    /* rgb(212 175 55) was gold-500's literal value — now the CSS variable,
+       so this follows AKET's amber accent too instead of staying
+       AKIS-gold regardless of the active center. */
+    scrollbar-color: rgb(var(--color-gold-500) / 0) transparent;
     transition: scrollbar-color 300ms ease;
   }
   .nav-scrollbar.is-scrolling {
-    scrollbar-color: rgb(212 175 55 / 0.35) transparent;
+    scrollbar-color: rgb(var(--color-gold-500) / 0.35) transparent;
   }
   .nav-scrollbar::-webkit-scrollbar {
     width: 6px;
@@ -100,7 +218,7 @@
     background: transparent;
   }
   .nav-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgb(212 175 55 / 0.35);
+    background-color: rgb(var(--color-gold-500) / 0.35);
     border-radius: 9999px;
     opacity: 0;
     transition: opacity 300ms ease;
@@ -109,6 +227,6 @@
     opacity: 1;
   }
   .nav-scrollbar.is-scrolling::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(212 175 55 / 0.65);
+    background-color: rgb(var(--color-gold-500) / 0.65);
   }
 }
