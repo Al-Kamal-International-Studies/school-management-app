@@ -31,7 +31,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Logo, LogoMark } from "@/components/ui/Logo";
+import { CenterLogo, CenterMark } from "@/components/auth/CenterLogo";
+import { knownCenterFor } from "@/lib/centers/knownCenters";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { dirForLocale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/types";
@@ -153,10 +154,12 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
 
 export function Sidebar({
   role,
+  activeCenterId,
   mobileOpen,
   onClose,
 }: {
   role: UserRole;
+  activeCenterId: string;
   mobileOpen: boolean;
   onClose: () => void;
 }) {
@@ -164,6 +167,12 @@ export function Sidebar({
   const { dict, locale } = useLocale();
   const isRtl = dirForLocale(locale) === "rtl";
   const items = NAV_ITEMS[role];
+  // Which center's branding to show — the account's actual active center
+  // (resolved by (dashboard)/layout.tsx from profile.center_id or, for a
+  // multi-center account, the active_center_id cookie), not a hardcoded
+  // AKIS assumption. See CenterLogo.tsx for the same resolution AuthShell
+  // already applies pre-login.
+  const center = knownCenterFor(activeCenterId);
 
   // Desktop-only icon-rail collapse. Server and first client (hydration)
   // render always see "expanded" via getCollapsedServerSnapshot, so there's
@@ -314,18 +323,18 @@ export function Sidebar({
             collapsed ? "lg:px-2" : "lg:px-4"
           )}
         >
-          <Logo className={cn(collapsed && "lg:hidden")} />
+          <CenterLogo center={center} className={cn(collapsed && "lg:hidden")} />
           {collapsed && (
-            // Fixed-size wrapper + unsized LogoMark, same pattern the Logo
+            // Fixed-size wrapper + unsized CenterMark, same pattern the Logo
             // component itself uses internally for the crest (see
             // ui/Logo.tsx's own `<div className="h-10 w-10 shrink-0">`) —
-            // LogoMark's <img> hard-codes `h-full w-full`, and since `cn`
-            // here is plain clsx (no tailwind-merge conflict resolution,
-            // see lib/utils.ts), passing a fixed size directly to LogoMark
+            // CenterMark's <img>/<LogoMark> hard-codes `h-full w-full`, and
+            // since `cn` here is plain clsx (no tailwind-merge conflict
+            // resolution, see lib/utils.ts), passing a fixed size directly
             // would just lose the cascade to its own h-full/w-full and
             // render at the parent's full size instead of 36px.
             <div className="hidden h-9 w-9 shrink-0 lg:block">
-              <LogoMark />
+              <CenterMark center={center} />
             </div>
           )}
           <div className="flex shrink-0 items-center">
