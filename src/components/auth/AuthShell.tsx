@@ -6,10 +6,12 @@ import { Logo } from "@/components/ui/Logo";
 import { WalkingRobots } from "./WalkingRobots";
 import { AuthBackground } from "./AuthBackground";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useTheme } from "@/lib/theme/ThemeProvider";
 import type { ReactNode } from "react";
 
 export function AuthShell({ children }: { children: ReactNode }) {
   const { dict } = useLocale();
+  const { theme } = useTheme();
   const FEATURES = [
     { icon: GraduationCap, text: dict.authBranding.feature1 },
     { icon: ShieldCheck, text: dict.authBranding.feature2 },
@@ -77,8 +79,17 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
       {/* Form panel */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        {/* Mobile-only logo (branding panel above is `lg:hidden` away). This
+            panel's actual background flips with the active theme — it's
+            `bg-slate-50` in light mode but `bg-navy-950` (dark navy) in dark
+            mode, inherited from the outer AuthShell wrapper. `onLight` picks
+            the crest/wordmark's own color, so it must track the *resolved*
+            theme rather than being hardcoded: a hardcoded `onLight` rendered
+            dark-navy-on-dark-navy in dark mode — invisible. `useTheme()` is
+            fed the server-resolved cookie value on first render (see
+            RootLayout/ThemeProvider), so this has no hydration flash. */}
         <div className="mb-8 lg:hidden">
-          <Logo onLight />
+          <Logo onLight={theme === "light"} />
         </div>
         {/* This wraps the actual sign-in form — the one thing on this page
             that must never fail to become visible. It used to be a

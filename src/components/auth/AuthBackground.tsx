@@ -8,11 +8,26 @@ import { motion } from "framer-motion";
  * navy/gold color wash, an 8-point geometric star lattice (the same
  * architectural motif this app's crest draws from — see public/brand —
  * kept as understated linework, not an illustration), and two slow-drifting
- * glow blobs. Sits as the *first* child of AuthShell's relative flex
- * wrapper so it paints behind both the branding panel (which has its own
- * opaque `bg-navy-gradient` and covers it there) and the form panel (which
- * doesn't, so this shows through) — see AuthShell.tsx for why DOM order
- * alone is enough to get that layering right, no z-index needed.
+ * glow blobs.
+ *
+ * `-z-10` is load-bearing, not decoration. This is `position: absolute`
+ * with an otherwise-auto z-index, and CSS paints positioned (z-index:auto)
+ * elements *after* — i.e. on top of — plain static in-flow content in the
+ * same stacking context, regardless of DOM order. The branding panel is
+ * fine either way (it's `position: relative`, so it always paints above
+ * this element), but the form panel's static children are not: found live,
+ * AuthShell's mobile-only logo (`Logo` above the form, no `position` and no
+ * animation of its own) was being fully painted over and rendered
+ * completely invisible by this element — confirmed by forcing a bright
+ * inline outline/background onto the logo's wrapper via devtools and
+ * watching it still not appear. (The "Welcome back" form content next to
+ * it escaped this by accident: its `animate-fade-in-up` wrapper animates
+ * `opacity`/`transform`, which incidentally promotes it to its own stacking
+ * context in Chromium, so it happens to paint above this element too — not
+ * something any future static addition to either panel should have to rely
+ * on.) `-z-10` pins this element behind *all* normal content, static or
+ * positioned, so it can only ever be background — no more depending on
+ * DOM order or incidental stacking-context promotion elsewhere.
  *
  * `text-*` (not a literal color) drives the star lattice's stroke via
  * `currentColor`, so one SVG works in both themes just by switching the
@@ -20,7 +35,7 @@ import { motion } from "framer-motion";
  */
 export function AuthBackground() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
       <div className="absolute inset-0 bg-gradient-to-br from-navy-50 via-slate-50 to-gold-50/50 dark:from-navy-950 dark:via-navy-950 dark:to-navy-900" />
 
       <svg className="absolute inset-0 h-full w-full text-navy-900/[0.05] dark:text-white/[0.055]">
