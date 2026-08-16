@@ -36,7 +36,10 @@ export async function getCurrentProfile(): Promise<Profile | null> {
  * requireDeviceApproved below) before anything else, and admins
  * additionally must complete MFA (see requireAdminMfaVerified below) — all
  * checked here (not just on specific routes) so none of them can be dodged
- * by visiting a shared route like /settings or /profile instead.
+ * by visiting a shared route like /settings or /profile instead. Last, a
+ * one-time skippable passkey setup nudge (see requirePasskeyPromptResolved
+ * below) — deliberately the last check, since it's an onboarding nudge, not
+ * a security requirement like everything above it.
  */
 export async function requireRole(...roles: UserRole[]): Promise<Profile> {
   const profile = await getCurrentProfile();
@@ -62,6 +65,8 @@ export async function requireRole(...roles: UserRole[]): Promise<Profile> {
   if (profile.role === "admin") {
     await requireAdminMfaVerified();
   }
+
+  await requirePasskeyPromptResolved(profile);
 
   return profile;
 }
@@ -110,6 +115,32 @@ export async function requireAdminMfaVerified(): Promise<void> {
   if (data.currentLevel === "aal2") return;
 
   redirect(data.nextLevel === "aal2" ? "/mfa/verify" : "/mfa/setup");
+}
+
+/**
+ * Redirects to /setup-passkey once, for an account that's already past
+ * every actual security gate above (must_change_password cleared, device
+ * approved, MFA verified if admin) but has never registered a WebAuthn
+ * credential and hasn't dismissed the suggestion — a one-time, skippable
+ * nudge, not a requirement. Checks profile.passkey_prompt_dismissed_at
+ * first (already loaded on `profile`, no extra query) so a dismissal or a
+ * registered credential both short-circuit this on every request after the
+ * first; only an account that has neither incurs the extra
+ * webauthn_credentials lookup, the same "cheap once resolved" shape as
+ * requireDeviceApproved above.
+ */
+async function requirePasskeyPromptResolved(profile: Profile): Promise<void> {
+  if (profile.passkey_prompt_dismissed_at) return;
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("webauthn_credentials")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", profile.id);
+
+  if ((count ?? 0) === 0) {
+    redirect("/setup-passkey");
+  }
 }
 
 export function dashboardPathForRole(role: UserRole): string {
