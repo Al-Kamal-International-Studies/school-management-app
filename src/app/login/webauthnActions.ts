@@ -170,5 +170,5 @@ export async function verifyWebauthnLoginAction(response: AuthenticationResponse
     return { error: "Could not complete sign-in. Try your password instead." };
   }
 
-  return completeLogin(profile, next);
+  return completeLogin(profile, { email, centerDeniedMessage: GENERIC_ERROR, next });
 }

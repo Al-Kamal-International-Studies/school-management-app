@@ -25,3 +25,24 @@ export const CENTER_LOGO: Record<string, { light: string; dark: string }> = {
 export function centerLogoSrc(shortCode: string): { light: string; dark: string } {
   return CENTER_LOGO[shortCode] ?? { light: "/brand/seal-navy.png", dark: "/brand/seal-white.png" };
 }
+
+/**
+ * The "crest" variant (a taller, shield-shaped mark — not the round "seal"
+ * above) for the larger hero logo treatment on the pre-login auth screens
+ * (AuthShell's branding panel + mobile logo), the same distinction
+ * ui/Logo.tsx already draws for AKIS specifically (`crest-navy.png`/
+ * `crest-white.png`, different files from `seal-navy.png`/`seal-white.png`).
+ * AKET has no separate crest-shaped asset yet — only the seal (see this
+ * file's note above on aket-seal.svg's origin) — so it reuses that same
+ * self-contained file here too rather than stretching/cropping it into a
+ * shape it wasn't drawn for. See components/auth/CenterLogo.tsx, the only
+ * consumer of this map.
+ */
+export const CENTER_CREST: Record<string, { light: string; dark: string }> = {
+  AKIS: { light: "/brand/crest-navy.png", dark: "/brand/crest-white.png" },
+  AKET: { light: "/brand/aket-seal.svg", dark: "/brand/aket-seal.svg" },
+};
+
+export function centerCrestSrc(shortCode: string): { light: string; dark: string } {
+  return CENTER_CREST[shortCode] ?? { light: "/brand/crest-navy.png", dark: "/brand/crest-white.png" };
+}

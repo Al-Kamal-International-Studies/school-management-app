@@ -182,11 +182,23 @@ const en = {
     pushBodyPrefix: "A password reset was requested for",
   },
   authBranding: {
-    tagline: "Knowledge is Light",
-    headline: "Where every student's journey is seen, supported, and celebrated.",
-    feature1: "One place for classes, grades, and attendance",
-    feature2: "Role-based access, secured end to end",
-    feature3: "Built for a modern, connected campus",
+    akis: {
+      tagline: "Knowledge is Light",
+      headline: "Where every student's journey is seen, supported, and celebrated.",
+      feature1: "One place for classes, grades, and attendance",
+      feature2: "Role-based access, secured end to end",
+      feature3: "Built for a modern, connected campus",
+    },
+    aket: {
+      tagline: "Knowledge is Light",
+      headline: "Where technology and teaching come together to prepare every learner for what's next.",
+      feature1: "Digital-first classes, grading, and attendance",
+      feature2: "Role-based access, secured end to end",
+      feature3: "Built for a connected, technology-driven campus",
+    },
+  },
+  centerPicker: {
+    label: "Signing in to",
   },
   settings: {
     title: "Settings",
