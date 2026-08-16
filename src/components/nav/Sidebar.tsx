@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -117,13 +116,17 @@ export function Sidebar({
     const Icon = item.icon;
     return (
       <li key={item.href} className="relative">
-        {active && (
-          <motion.div
-            layoutId="sidebar-active"
-            className="absolute inset-0 rounded-lg bg-white/10"
-            transition={{ type: "spring", stiffness: 500, damping: 35 }}
-          />
-        )}
+        {/* Plain CSS fade-in, not Framer Motion's `layoutId` shared-layout
+            spring (see this file's history) — the shared-layout "slide
+            between items" morph isn't worth the ~134KB (44KB gzipped)
+            framer-motion adds to the JS every dashboard page loads, since
+            Sidebar sits inside DashboardShell and is mounted on every
+            authenticated route. A cross-fade at the new position reads
+            the same to users (still highlights the active item
+            immediately) without shipping a full animation library for it.
+            animate-fade-in is the same CSS keyframe already used
+            app-wide — see FadeUp.tsx and tailwind.config.ts. */}
+        {active && <div className="absolute inset-0 animate-fade-in rounded-lg bg-white/10" />}
         <Link
           href={item.href}
           onClick={onClose}
@@ -142,20 +145,23 @@ export function Sidebar({
 
   return (
     <>
-      {/* Mobile backdrop */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            className="fixed inset-0 z-30 bg-navy-950/60 backdrop-blur-[2px] lg:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={onClose}
-            aria-hidden="true"
-          />
+      {/* Mobile backdrop — always mounted, CSS opacity transition instead of
+          Framer Motion's AnimatePresence (see renderItem above for why:
+          same 134KB/44KB-gzipped framer-motion cost, paid on every
+          dashboard page for a fade that a plain CSS transition does just
+          as well for both the enter *and* exit, without needing JS to
+          orchestrate the exit-before-unmount). `invisible` (not
+          `hidden`/conditional render) keeps it in the DOM so opacity can
+          transition on the way out too, and drops it from hit-testing and
+          the accessibility tree while closed. */}
+      <div
+        className={cn(
+          "fixed inset-0 z-30 bg-navy-950/60 backdrop-blur-[2px] transition-opacity duration-200 lg:hidden",
+          mobileOpen ? "opacity-100" : "invisible opacity-0"
         )}
-      </AnimatePresence>
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
       <nav
         className={cn(
