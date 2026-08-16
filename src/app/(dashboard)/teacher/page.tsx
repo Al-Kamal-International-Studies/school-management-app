@@ -7,9 +7,16 @@ import { Card, StatCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
 import { formatTime, jsDayToDbDay } from "@/lib/utils";
+import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+
+// Shared focus/hover treatment for dashboard rows that are now real links —
+// see the identical constant + comment in admin/page.tsx.
+const ROW_LINK_CLASS =
+  "group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-gold-400 dark:focus-visible:ring-offset-navy-950";
+const ROW_CARD_CLASS = "card-hover transition-colors hover:border-navy-200 dark:hover:border-navy-600";
 
 export default async function TeacherDashboardPage() {
   const profile = await getCurrentProfile();
@@ -37,7 +44,7 @@ export default async function TeacherDashboardPage() {
     <div className="space-y-10">
       <FadeUp className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.common.welcome}, {profile!.full_name}</h1>
+          <WelcomeRobot name={profile!.full_name} role="teacher" dict={dict} dataTour="page-title" />
           <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{dict.common.todaysScheduleAndClasses}</p>
         </div>
         <Link href="/teacher/progress" className="shrink-0">
@@ -78,14 +85,19 @@ export default async function TeacherDashboardPage() {
           <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={0.06}>
             {todaysClasses.map((e) => (
               <FadeUpItem key={e.id}>
-                <Card>
-                  <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
-                    {formatTime(e.start_time)} – {formatTime(e.end_time)}
-                  </p>
-                  <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.className}</p>
-                  {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
-                </Card>
+                {/* Teachers have no per-class detail page, so this links to
+                    the one page where "this class, right now" is actually
+                    actionable: marking today's attendance for it. */}
+                <Link href={`/teacher/attendance?class=${e.class_id}`} className={ROW_LINK_CLASS}>
+                  <Card className={ROW_CARD_CLASS}>
+                    <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
+                      {formatTime(e.start_time)} – {formatTime(e.end_time)}
+                    </p>
+                    <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.className}</p>
+                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
+                  </Card>
+                </Link>
               </FadeUpItem>
             ))}
           </FadeUpStagger>
@@ -133,9 +145,25 @@ export default async function TeacherDashboardPage() {
             </Thead>
             <Tbody>
               {classes.map((c) => (
-                <tr key={c.id}>
+                // "Stretched link" pattern: the anchor's ::before covers the
+                // whole row (via `relative` on <tr>, `absolute inset-0` on
+                // the pseudo), so the entire row is a click target — not
+                // just the class-name cell — while still being valid table
+                // markup (an <a> can't be a <tr> itself). No dedicated
+                // per-class page exists for teachers, so this goes to the
+                // closest real action for that class: marking attendance.
+                <tr key={c.id} className={c.class ? "relative" : undefined}>
                   <Td className="font-medium text-slate-900 dark:text-white">
-                    {c.class ? `${c.class.name} - ${c.class.section}` : "—"}
+                    {c.class ? (
+                      <Link
+                        href={`/teacher/attendance?class=${c.class.id}`}
+                        className="outline-none before:absolute before:inset-0 before:rounded-none before:content-[''] focus-visible:before:ring-2 focus-visible:before:ring-inset focus-visible:before:ring-navy-400 dark:focus-visible:before:ring-gold-400"
+                      >
+                        {`${c.class.name} - ${c.class.section}`}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
                   </Td>
                   <Td>{c.subjectName}</Td>
                   <Td>{c.studentCount}</Td>

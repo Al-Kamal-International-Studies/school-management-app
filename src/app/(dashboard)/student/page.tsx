@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MessageSquareText, Megaphone, CalendarClock, ClipboardCheck, Sparkles, Award } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import {
@@ -15,13 +16,24 @@ import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Sparkline, TrendDelta } from "@/components/ui/Sparkline";
-import { formatTime, jsDayToDbDay } from "@/lib/utils";
+import { formatTime, jsDayToDbDay, cn } from "@/lib/utils";
 import { formatMonth, summarizeByMonth } from "@/lib/progress/calculate";
+import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 
 const UPCOMING_KIND_TONE = { assignment: "navy", exam: "navy", quiz: "gold" } as const;
+// Where each upcoming-item kind's own list page lives — assignments and
+// exams/quizzes are separate pages for a student, so the destination
+// differs per row rather than being one fixed href.
+const UPCOMING_KIND_HREF = { assignment: "/student/assignments", exam: "/student/exams", quiz: "/student/exams" } as const;
+
+// Shared focus/hover treatment for dashboard rows that are now real links —
+// see the identical constant + comment in admin/page.tsx.
+const ROW_LINK_CLASS =
+  "group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-gold-400 dark:focus-visible:ring-offset-navy-950";
+const ROW_CARD_CLASS = "card-hover transition-colors hover:border-navy-200 dark:hover:border-navy-600";
 
 export default async function StudentDashboardPage() {
   const profile = await getCurrentProfile();
@@ -55,7 +67,7 @@ export default async function StudentDashboardPage() {
   return (
     <div className="space-y-10">
       <FadeUp>
-        <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.common.welcome}, {profile!.full_name}</h1>
+        <WelcomeRobot name={profile!.full_name} role="student" dict={dict} dataTour="page-title" />
         <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">
           {classRow ? `${classRow.name} - ${classRow.section}` : dict.studentDashboard.noClassAssignedShort} · {dict.studentDashboard.enrollmentHash}
           {student?.enrollment_number}
@@ -185,15 +197,19 @@ export default async function StudentDashboardPage() {
         ) : (
           <div className="space-y-3">
             {recentGrades.map((g) => (
-              <Card key={g.id} className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-navy-900 dark:text-white">{g.assessment_name}</p>
-                  <p className="text-xs text-slate-500 dark:text-navy-400">{g.subjectName}</p>
-                </div>
-                <span className="shrink-0 text-sm font-semibold text-navy-900 dark:text-white">
-                  {g.marks_obtained}/{g.marks_total}
-                </span>
-              </Card>
+              // No per-grade detail page exists — links to the full grades
+              // list, the closest real destination for "this grade".
+              <Link key={g.id} href="/student/grades" className={ROW_LINK_CLASS}>
+                <Card className={cn("flex items-center justify-between gap-4", ROW_CARD_CLASS)}>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-navy-900 dark:text-white">{g.assessment_name}</p>
+                    <p className="text-xs text-slate-500 dark:text-navy-400">{g.subjectName}</p>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold text-navy-900 dark:text-white">
+                    {g.marks_obtained}/{g.marks_total}
+                  </span>
+                </Card>
+              </Link>
             ))}
           </div>
         )}
@@ -276,18 +292,23 @@ export default async function StudentDashboardPage() {
         ) : (
           <div className="space-y-3">
             {upcomingItems.map((item) => (
-              <Card key={`${item.kind}-${item.id}`} className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-medium text-navy-900 dark:text-white">{item.title}</p>
-                    <Badge tone={UPCOMING_KIND_TONE[item.kind]}>
-                      {item.kind === "assignment" ? dict.assignments.assignment : item.kind === "quiz" ? dict.exams.quiz : dict.exams.exam}
-                    </Badge>
+              // Assignments and exams/quizzes are two separate list pages
+              // for a student — no shared per-item detail page — so each
+              // row links to whichever list actually contains it.
+              <Link key={`${item.kind}-${item.id}`} href={UPCOMING_KIND_HREF[item.kind]} className={ROW_LINK_CLASS}>
+                <Card className={cn("flex items-center justify-between gap-4", ROW_CARD_CLASS)}>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-medium text-navy-900 dark:text-white">{item.title}</p>
+                      <Badge tone={UPCOMING_KIND_TONE[item.kind]}>
+                        {item.kind === "assignment" ? dict.assignments.assignment : item.kind === "quiz" ? dict.exams.quiz : dict.exams.exam}
+                      </Badge>
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{item.subjectName}</p>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{item.subjectName}</p>
-                </div>
-                <span className="shrink-0 text-xs text-slate-400 dark:text-navy-500">{item.date}</span>
-              </Card>
+                  <span className="shrink-0 text-xs text-slate-400 dark:text-navy-500">{item.date}</span>
+                </Card>
+              </Link>
             ))}
           </div>
         )}
@@ -306,14 +327,18 @@ export default async function StudentDashboardPage() {
           <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={0.06}>
             {todaysClasses.map((e) => (
               <FadeUpItem key={e.id}>
-                <Card>
-                  <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
-                    {formatTime(e.start_time)} – {formatTime(e.end_time)}
-                  </p>
-                  <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.teacherName}</p>
-                  {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
-                </Card>
+                {/* No per-timeslot detail page exists — links to the full
+                    weekly timetable, the closest real destination. */}
+                <Link href="/student/timetable" className={ROW_LINK_CLASS}>
+                  <Card className={ROW_CARD_CLASS}>
+                    <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
+                      {formatTime(e.start_time)} – {formatTime(e.end_time)}
+                    </p>
+                    <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.teacherName}</p>
+                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
+                  </Card>
+                </Link>
               </FadeUpItem>
             ))}
           </FadeUpStagger>
