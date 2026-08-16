@@ -581,6 +581,39 @@ const en = {
     noClassAssignedShort: "No class assigned yet",
     enrollmentHash: "Enrollment #",
   },
+  welcomeRobot: {
+    // Speech-bubble greeting, same for every role — the quote right after
+    // it is what carries the role-specific tone.
+    greeting: "Hi there!",
+    studentQuotes: [
+      "Every expert was once a beginner.",
+      "Small steps today, big wins tomorrow.",
+      "Curiosity is your superpower.",
+      "A mistake just means you're trying.",
+      "Read more, worry less.",
+    ],
+    teacherQuotes: [
+      "You shape more futures than you know.",
+      "A good question outlives a good answer.",
+      "Teaching is lighting a spark, one class at a time.",
+      "Every student remembers one great teacher — be theirs.",
+      "Patience today, brilliance tomorrow.",
+    ],
+    parentQuotes: [
+      "Your patience is their foundation.",
+      "Small moments build big confidence.",
+      "You're their first, favorite teacher.",
+      "Every question they ask is a door opening.",
+      "Love and consistency — the best curriculum.",
+    ],
+    adminQuotes: [
+      "Great schools are built one steady decision at a time.",
+      "Behind every strong school is a steady hand.",
+      "Community first, always.",
+      "Small improvements, compounded, change everything.",
+      "Leadership is quiet service, day after day.",
+    ],
+  },
   profilePage: {
     title: "My profile",
     subtitle: "Manage your personal details and photo.",

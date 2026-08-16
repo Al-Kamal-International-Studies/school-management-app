@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/Table";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Sparkline, TrendDelta } from "@/components/ui/Sparkline";
+import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { formatMonth } from "@/lib/progress/calculate";
 import { initials } from "@/lib/utils";
@@ -37,6 +38,7 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
     return (
       <div className="mx-auto max-w-xl">
         <FadeUp>
+          <WelcomeRobot name={me.full_name} role="parent" dict={dict} as="p" className="mb-1" />
           <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.parent.title}</h1>
         </FadeUp>
         <FadeUp delay={0.05} className="mt-4">
@@ -54,6 +56,7 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
     <div className="space-y-8">
       <FadeUp className="flex flex-wrap items-center justify-between gap-4">
         <div>
+          <WelcomeRobot name={me.full_name} role="parent" dict={dict} as="p" className="mb-1" />
           <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{activeChild.full_name}</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">
             {activeChild.className ?? dict.common.notAssigned} · #{activeChild.enrollment_number}

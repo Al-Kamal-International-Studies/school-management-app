@@ -69,6 +69,28 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        // Speech-bubble "pop" entrance for WelcomeRobot — same fill-mode
+        // discipline as fade-in/fade-in-up below (see that comment): this is
+        // a delayed, mount-gated entrance (it waits for the robot itself to
+        // settle first), so it needs `both` too or it'd flash at full
+        // opacity/scale before its delay, then snap invisible.
+        "pop-in": {
+          from: { opacity: "0", transform: "scale(0.75) translateY(4px)" },
+          to: { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
+        // Continuous wave loop for WelcomeRobot's free arm — purely
+        // decorative and never gates content visibility (its rest state,
+        // 0deg, is a perfectly normal-looking lowered arm), so unlike
+        // fade-in/fade-in-up/pop-in above this deliberately has no mount
+        // dependency to protect against in the first place: plain CSS,
+        // `infinite`, no `both` needed since it never has a delay to hide.
+        wave: {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "20%": { transform: "rotate(14deg)" },
+          "40%": { transform: "rotate(-8deg)" },
+          "60%": { transform: "rotate(14deg)" },
+          "80%": { transform: "rotate(0deg)" },
+        },
       },
       animation: {
         // `both` fill-mode is load-bearing, not decoration: without it,
@@ -84,6 +106,8 @@ const config: Config = {
         // after the animation ends (nothing reverts once it's finished).
         "fade-in": "fade-in 0.4s ease-out both",
         "fade-in-up": "fade-in-up 0.4s ease-out both",
+        "pop-in": "pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both",
+        wave: "wave 2.2s ease-in-out infinite",
       },
     },
   },

@@ -16,9 +16,12 @@ import {
 import { Card, StatCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
+import { getCurrentProfile } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { cn } from "@/lib/utils";
 import { getOverviewCounts, getAttendanceTrend, listRecentActivity, listUpcomingEvents } from "./queries";
 import type { EventType } from "@/lib/types/database.types";
 
@@ -26,10 +29,26 @@ import type { EventType } from "@/lib/types/database.types";
 // across every place events appear in the app.
 const EVENT_TYPE_TONE: Record<EventType, "navy" | "gold" | "red"> = { event: "navy", holiday: "gold", deadline: "red" };
 
+// Shared focus/hover treatment for every dashboard row that's now a real
+// link — visible keyboard focus ring (matches the .btn convention in
+// globals.css) plus a hover affordance on the Card itself, so it reads as
+// clickable rather than just decorative. Neither /admin/events nor
+// /admin/audit-log has a per-item detail route (both are single flat list
+// pages, see queries.ts comments), so these rows link to the list page
+// itself rather than a route that doesn't exist.
+const ROW_LINK_CLASS =
+  "group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-gold-400 dark:focus-visible:ring-offset-navy-950";
+const ROW_CARD_CLASS = "card-hover transition-colors hover:border-navy-200 dark:hover:border-navy-600";
+
 export default async function AdminOverviewPage() {
   const dict = await getDictionary(await getLocale());
 
-  const [counts, attendanceTrend, recentActivity, upcomingEvents] = await Promise.all([
+  const [profile, counts, attendanceTrend, recentActivity, upcomingEvents] = await Promise.all([
+    // Already resolved by the (dashboard) layout's own auth check and
+    // cache()-deduped (see lib/auth.ts) — this costs no extra round trip,
+    // just the name for the new "Welcome, {name}" line above the page's
+    // real title below.
+    getCurrentProfile(),
     getOverviewCounts(),
     getAttendanceTrend(),
     listRecentActivity(6),
@@ -63,6 +82,7 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-10">
       <FadeUp>
+        {profile && <WelcomeRobot name={profile.full_name} role="admin" dict={dict} as="p" className="mb-1" />}
         <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminOverview.title}</h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{dict.adminOverview.subtitle}</p>
       </FadeUp>
@@ -94,7 +114,7 @@ export default async function AdminOverviewPage() {
         <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-3" staggerDelay={0.06}>
           {needsAttentionTiles.map((tile) => (
             <FadeUpItem key={tile.key}>
-              <Link href={tile.href}>
+              <Link href={tile.href} className={ROW_LINK_CLASS}>
                 <StatCard
                   label={tile.label}
                   value={tile.value}
@@ -125,20 +145,26 @@ export default async function AdminOverviewPage() {
           ) : (
             <div className="space-y-3">
               {upcomingEvents.map((e) => (
-                <Card key={e.id} className="flex items-start gap-4">
-                  <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-navy-50 text-navy-900 dark:bg-navy-800 dark:text-white">
-                    <span className="text-base font-bold leading-none">{new Date(`${e.event_date}T00:00:00`).getDate()}</span>
-                    <span className="text-[9px] uppercase text-slate-500 dark:text-navy-400">
-                      {new Date(`${e.event_date}T00:00:00`).toLocaleDateString(undefined, { month: "short" })}
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-navy-900 dark:text-white">{e.title}</p>
-                    <div className="mt-1">
-                      <Badge tone={EVENT_TYPE_TONE[e.event_type]}>{e.event_type}</Badge>
+                // No dedicated per-event page exists (events are managed
+                // inline on /admin/events, see that page's own file) — this
+                // links to the list page itself rather than a route that
+                // doesn't exist.
+                <Link key={e.id} href="/admin/events" className={ROW_LINK_CLASS}>
+                  <Card className={cn("flex items-start gap-4", ROW_CARD_CLASS)}>
+                    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-navy-50 text-navy-900 dark:bg-navy-800 dark:text-white">
+                      <span className="text-base font-bold leading-none">{new Date(`${e.event_date}T00:00:00`).getDate()}</span>
+                      <span className="text-[9px] uppercase text-slate-500 dark:text-navy-400">
+                        {new Date(`${e.event_date}T00:00:00`).toLocaleDateString(undefined, { month: "short" })}
+                      </span>
                     </div>
-                  </div>
-                </Card>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-navy-900 dark:text-white">{e.title}</p>
+                      <div className="mt-1">
+                        <Badge tone={EVENT_TYPE_TONE[e.event_type]}>{e.event_type}</Badge>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
@@ -161,16 +187,20 @@ export default async function AdminOverviewPage() {
           ) : (
             <div className="space-y-3">
               {recentActivity.map((item) => (
-                <Card key={item.id} className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-navy-50 text-navy-700 dark:bg-navy-800 dark:text-navy-200">
-                    <Activity className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-navy-900 dark:text-white">{item.actorName ?? dict.common.system}</p>
-                    <p className="mt-0.5 truncate font-mono text-xs text-slate-500 dark:text-navy-400">{item.action}</p>
-                    <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{new Date(item.createdAt).toLocaleString()}</p>
-                  </div>
-                </Card>
+                // Same story as events above: the audit log has no
+                // per-entry detail route, just one flat table page.
+                <Link key={item.id} href="/admin/audit-log" className={ROW_LINK_CLASS}>
+                  <Card className={cn("flex items-start gap-3", ROW_CARD_CLASS)}>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-navy-50 text-navy-700 dark:bg-navy-800 dark:text-navy-200">
+                      <Activity className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-navy-900 dark:text-white">{item.actorName ?? dict.common.system}</p>
+                      <p className="mt-0.5 truncate font-mono text-xs text-slate-500 dark:text-navy-400">{item.action}</p>
+                      <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{new Date(item.createdAt).toLocaleString()}</p>
+                    </div>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
