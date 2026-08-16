@@ -3,31 +3,84 @@ import type { Dictionary } from "@/lib/i18n/types";
 import type { UserRole } from "@/lib/types/database.types";
 
 /**
- * The "Welcome, {name}" heading, with a small robot mascot climbing up
- * diagonally from behind it — one hand gripping the end of the text, the
- * other free hand waving — and a speech bubble popping in above its head
- * with a greeting + a short role-appropriate quote. Shows up on all four
- * dashboards (admin/teacher/student/parent), per Muhammad's request that
- * this appear "whenever someone logs into their accounts."
+ * The "Welcome, {name}" heading, with a small robot mascot overlapping its
+ * trailing edge — genuinely layered *behind* the text via z-index, not just
+ * floating beside it — one hand gripping into the last letters, the other
+ * free hand waving, and a speech bubble above with a greeting + a short
+ * role-appropriate quote. Shows up on all four dashboards (admin/teacher/
+ * student/parent), per Muhammad's request that this appear "whenever
+ * someone logs into their accounts."
+ *
+ * v2 (this pass) rewrites the layout after Muhammad reported three real
+ * bugs in the shipped v1: (1) the mascot wasn't actually behind the text —
+ * v1 rendered Heading and the mascot as plain flex siblings with a small
+ * gap, so nothing ever overlapped, regardless of the rotation/mirror
+ * transforms applied to the art; (2) the "Welcome, {name}" line and the
+ * page's own "Overview"/child-name heading directly below it (on admin/
+ * parent) were the same weight and nearly the same size, reading as two
+ * competing headlines; (3) the speech bubble was `position:absolute` with
+ * a negative `bottom` offset that could push it above the very top of the
+ * page — and since this is normally the first thing rendered inside
+ * `<DashboardShell>`'s `<main className="overflow-y-auto ...">` (see
+ * src/components/nav/DashboardShell.tsx), there was no headroom above it
+ * for the bubble to render into: `overflow-y-auto` clips anything painted
+ * above the scrolled-to-top container's own top edge, which sliced the top
+ * off the bubble. Root-caused by reproducing the exact geometry (wrapper
+ * height ~48-56px, bubble `bottom-[85%]` of that, bubble content ~46-50px
+ * tall) rather than guessing.
+ *
+ * Fixes, in order:
+ * 1. The bubble is now a real in-flow block that sits *above* the heading
+ *    row in normal document flow (not an absolutely-positioned overlay
+ *    poking out above its own container). An in-flow element can't be
+ *    clipped by an ancestor's `overflow-y-auto` the way an
+ *    absolutely-offset one can — it always renders inside the space it
+ *    itself reserves, however tall its content turns out to be (longer
+ *    Arabic quotes wrapping to 3 lines, a longer name, etc. all just make
+ *    the reserved space taller, automatically, no magic px value to keep
+ *    in sync).
+ * 2. The mascot is `position:absolute` inside a wrapper that hugs only the
+ *    Heading text (`relative inline-block`), anchored past the text's own
+ *    trailing edge with `inset-inline-end` (a genuinely logical CSS
+ *    property — resolves to the right in LTR, the left in RTL, no rtl:
+ *    variant needed) and vertically centered on the heading's own line box
+ *    (`top-1/2 -translate-y-1/2`) rather than bottom-aligned. Centering
+ *    guarantees the mascot's own vertical middle — where its grip hand and
+ *    body sit — actually falls across the text's ink band regardless of
+ *    which of the two font sizes below is in play, instead of needing
+ *    per-variant offset tuning. The Heading gets `relative z-10`, the
+ *    mascot wrapper gets `z-0`, so the text visually paints *over* the
+ *    mascot wherever they overlap and the mascot shows through everywhere
+ *    else (the gaps between glyphs, and the ~1/4 of its own width that
+ *    protrudes past the text's trailing edge) — a real "emerging from
+ *    behind the text" composition, not a `z-index` no-op.
+ * 3. "Welcome, {name}" now has two distinct visual roles depending on
+ *    `as`, matching how it's actually used: when it's the page's one true
+ *    h1 (teacher/student, which have no other heading), it keeps the
+ *    exact size/weight/color every other h1 in this app uses
+ *    (`font-display text-2xl font-semibold text-navy-900 dark:text-white`
+ *    — literally the same classes as admin's "Overview" h1). When the page
+ *    already has its own h1 right below it (admin's "Overview", parent's
+ *    child-name heading), this line is deliberately lighter — smaller
+ *    weight, a step lighter in color — so it reads as a lead-in greeting
+ *    the real heading follows, not a second heading competing with it.
+ *
+ * Visual language still deliberately reuses src/components/auth/Robot.tsx
+ * and WalkingRobots.tsx's palette/proportions (same head/body/eye shapes,
+ * same slate + gold accent) rather than inventing an unrelated character.
  *
  * Server component, zero client JS: the mascot's art, its continuous wave
  * loop, and its mount entrance are all plain CSS/SVG (no Framer Motion —
  * this is used on literally every dashboard page, the same "don't ship a
  * motion library just for a decorative loop that runs on every route" call
- * already made for the sidebar, see HANDOVER Part 6 §10). The quote rotates
- * by time of day (see pickQuote below) rather than Math.random() — this
- * repo's lint config (react-hooks/purity) rejects Math.random() in a
- * component body outright ("Cannot call impure function during render");
- * `new Date()` doesn't trip the same rule (teacher/student dashboards
- * already call it directly in their own component bodies, e.g.
- * `jsDayToDbDay(new Date().getDay())`), so a deterministic-but-changing
- * pick built from it stays within that rule while still satisfying the
- * spec's explicit "picked randomly (or rotating)" allowance.
- *
- * Visual language deliberately reuses src/components/auth/Robot.tsx's
- * palette and proportions (same head/body/eye shapes, same slate + gold
- * accent) rather than inventing an unrelated character — this app already
- * has a mascot.
+ * already made for the sidebar, see HANDOVER Part 6 §10). Every entrance
+ * animation here uses the existing `animate-fade-in-up` / `animate-pop-in`
+ * utilities from tailwind.config.ts, both `animation-fill-mode: both` —
+ * unchanged from v1, and deliberately not touched, since that's the exact
+ * property whose absence caused this project's worst production bug (see
+ * HANDOVER §2). The quote rotates by time of day (see pickQuote below)
+ * rather than Math.random() — this repo's lint config
+ * (react-hooks/purity) rejects Math.random() in a component body outright.
  */
 export function WelcomeRobot({
   name,
@@ -44,8 +97,9 @@ export function WelcomeRobot({
    * "h1" when this line is the page's one true title (teacher/student,
    * which had no other heading). "p" when the page already has its own h1
    * elsewhere (admin's "Overview", parent's child-name heading) — this
-   * then renders as a visually-similar-but-not-actually-a-second-h1 line,
-   * so the page keeps exactly one h1 for a11y/outline purposes.
+   * then renders as a visually lighter lead-in line, so the page keeps
+   * exactly one h1 for a11y/outline purposes, and the two lines read as a
+   * clear hierarchy instead of two same-weight headings.
    */
   as?: "h1" | "p";
   /** Only meaningful when `as="h1"` — see the comment on the element below. */
@@ -55,50 +109,86 @@ export function WelcomeRobot({
   const quotes = QUOTES_BY_ROLE[role](dict);
   const quote = pickQuote(quotes);
   const Heading = as;
+  const isPageTitle = as === "h1";
 
   return (
-    <div className={cn("flex flex-wrap items-end gap-1.5 sm:gap-2", className)}>
-      {/* This is the one element `[data-tour="page-title"]` targets (see
-          src/lib/tour/steps.ts) on the pages where `as="h1"` makes it the
-          real page title — left undecorated by that attribute on admin/
-          parent, where the existing "Overview"/child-name heading stays
-          the tour's anchor instead, unchanged. */}
-      <Heading
-        data-tour={dataTour}
-        className={cn(
-          "font-display font-semibold text-navy-900 dark:text-white",
-          as === "h1" ? "text-2xl" : "text-xl",
-        )}
-      >
-        {dict.common.welcome}, {name}
-      </Heading>
-
+    <div className={cn("inline-flex max-w-full flex-col items-end", className)}>
+      {/* Speech bubble — real in-flow block (see fix #1 in the doc comment
+          above): it reserves its own height above the heading row instead
+          of being absolutely offset above the page's own top edge, so it
+          cannot be clipped by <main>'s `overflow-y-auto` regardless of
+          scroll position, quote length, or locale. `items-end` on the
+          outer column keeps this aligned with whichever edge the mascot
+          actually sits near (the heading's trailing edge), in both
+          directions, without an rtl: override. */}
       <div
-        className="relative -ms-1 mb-0.5 shrink-0 animate-fade-in-up"
-        style={{ animationDelay: "180ms" }}
+        className="relative mb-2 max-w-[10.5rem] animate-pop-in rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs leading-snug text-slate-600 shadow-card dark:border-navy-700 dark:bg-navy-800 dark:text-navy-200 sm:mb-2.5 sm:max-w-[13rem] sm:text-sm"
+        style={{ animationDelay: "480ms" }}
         aria-hidden="true"
       >
-        {/* Centered over the mascot (flex justify-center on a full-width
-            wrapper) rather than edge-anchored — direction-agnostic, so it
-            doesn't need separate LTR/RTL cases, and safe regardless of
-            whether the mascot lands beside the heading on the same line or
-            wraps onto its own line below a long name (where it sits flush
-            against the row's start edge with nothing beside it — an
-            end-anchored bubble was measured overflowing off-screen in that
-            exact case during verification; centering fixes it because it
-            grows symmetrically instead of assuming which side has room). */}
-        <div className="absolute inset-x-0 bottom-[85%] z-10 flex justify-center">
-          <div
-            className="w-max max-w-[9rem] animate-pop-in rounded-2xl border border-slate-200/70 bg-white px-3 py-2 text-[11px] leading-snug text-slate-600 shadow-card dark:border-navy-700 dark:bg-navy-800 dark:text-navy-200 sm:max-w-[12rem] sm:text-xs"
-            style={{ animationDelay: "560ms" }}
-          >
-            <p className="font-semibold text-navy-900 dark:text-white">{dict.welcomeRobot.greeting}</p>
-            <p className="mt-0.5">{quote}</p>
-            <span className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-e border-slate-200/70 bg-white dark:border-navy-700 dark:bg-navy-800" />
-          </div>
-        </div>
+        <p className="font-semibold text-navy-900 dark:text-white">{dict.welcomeRobot.greeting}</p>
+        <p className="mt-0.5">{quote}</p>
+        <span className="absolute end-4 top-full h-2.5 w-2.5 rotate-45 border-b border-e border-slate-200 bg-white dark:border-navy-700 dark:bg-navy-800" />
+      </div>
 
-        <RobotMascot className="h-12 w-12 rotate-[14deg] rtl:scale-x-[-1] sm:h-14 sm:w-14" />
+      {/* Heading + mascot. `relative inline-block` shrink-wraps to exactly
+          the heading text's own box, so `inset-inline-end` on the mascot
+          below anchors to the *text's* trailing edge specifically — not
+          the row's, not the page's — regardless of how long `name` is. */}
+      <div className="relative inline-block max-w-full">
+        {/* `[data-tour="page-title"]` (see src/lib/tour/steps.ts) targets
+            this element on the pages where `as="h1"` makes it the real page
+            title — left undecorated by that attribute on admin/parent,
+            where the existing "Overview"/child-name heading stays the
+            tour's anchor instead, unchanged. `relative z-10` is what makes
+            the text paint *over* the mascot below wherever they overlap —
+            without it the mascot (an absolutely-positioned sibling) would
+            stack above plain in-flow text by default. */}
+        <Heading
+          data-tour={dataTour}
+          className={cn(
+            "relative z-10 font-display",
+            isPageTitle
+              ? "text-2xl font-semibold text-navy-900 dark:text-white"
+              : "text-xl font-medium text-navy-700 dark:text-navy-300",
+          )}
+        >
+          {dict.common.welcome}, {name}
+        </Heading>
+
+        {/* Mascot: `z-0` (behind the heading's `z-10`), vertically centered
+            on the heading's own line box, protruding past its trailing
+            edge. The result: the mascot's grip-hand side overlaps into the
+            text (occluded by the glyph ink wherever they coincide, visible
+            in the gaps everywhere else — a real "behind the text" read),
+            while its free waving hand sits past the text's own edge,
+            entirely unobstructed. */}
+        {/* Positioning lives on this outer span alone (`top-1/2
+            -translate-y-1/2` for centering, `end-[...]` for the trailing
+            overlap) — deliberately *not* combined with the entrance
+            animation below on the same element. A CSS keyframe animation
+            that targets `transform` replaces that element's entire
+            computed transform for the animation's duration and after
+            (fill-mode `both`), it doesn't compose with a separately-set
+            static transform utility. Putting `-translate-y-1/2` and
+            `animate-fade-in-up` on one element was tried and measured live
+            (getBoundingClientRect + getComputedStyle) to silently break
+            the centering: once the animation finished, the element's
+            transform was the keyframe's own resting `translateY(0)`, not
+            `translateY(-50%)`, so the mascot rendered ~30px lower than
+            intended, overlapping the text by only a sliver instead of
+            straddling it. Splitting "where it sits" (this span) from "how
+            it enters" (the inner span) from "its tilt/mirror" (the SVG
+            itself, via RobotMascot's className) keeps all three transforms
+            on separate elements so none of them can clobber another. */}
+        <span
+          className="pointer-events-none absolute top-1/2 z-0 end-[-0.85rem] -translate-y-1/2 sm:end-[-1.1rem]"
+          aria-hidden="true"
+        >
+          <span className="block animate-fade-in-up" style={{ animationDelay: "140ms" }}>
+            <RobotMascot className="h-12 w-12 rotate-[10deg] rtl:scale-x-[-1] sm:h-14 sm:w-14 lg:h-16 lg:w-16" />
+          </span>
+        </span>
       </div>
     </div>
   );
@@ -125,25 +215,24 @@ function pickQuote(quotes: string[]): string {
  * on a taller viewBox with two arms in different poses instead of Robot's
  * two symmetrical side arms — one reaching up (the "gripping" hand), one
  * raised and waving. `rtl:scale-x-[-1]` on the caller mirrors the whole
- * mascot for Arabic: since the mascot sits in normal document flow right
- * after the heading (not absolutely pinned over specific glyphs — text
- * length varies too much across names/locales for that to be reliable),
- * flexbox alone already puts it on the correct trailing side in both
- * directions (last DOM child = end of the line, whichever side that is).
- * The mirror is what keeps the gripping hand pointed *back toward the
- * text* rather than away from it once that trailing side flips from right
- * (LTR) to left (RTL) — composing scaleX(-1) after the existing rotation
- * flips the diagonal lean along with the artwork, so both the tilt and the
- * arm-side reversal come from one utility class instead of two competing
- * rotation values.
+ * mascot for Arabic: the grip hand is drawn at the art's own local-start
+ * side (x=8, left in unmirrored LTR) and the wave hand at local-end (x=78).
+ * In LTR the mascot sits past the heading's trailing (right) edge, so an
+ * unmirrored grip hand at local-left already points back toward the text —
+ * no mirroring needed. In RTL the heading's trailing edge is the left side,
+ * so the mascot ends up sitting to the text's *left* (via the
+ * `inset-inline-end` logical positioning on the wrapper), meaning the grip
+ * hand now needs to point right, toward the text, instead — `scale-x-[-1]`
+ * flips the art so the local-left grip hand renders on the visual-right,
+ * keeping it pointed at the text in both directions from one utility class.
  */
 function RobotMascot({ className }: { className?: string }) {
   const accent = "#d4af37";
 
   return (
-    // No role/aria-label needed — the whole mascot+bubble wrapper above is
-    // already aria-hidden (purely decorative; the real "Welcome, {name}"
-    // text is the actual heading, not hidden).
+    // No role/aria-label needed — the whole mascot wrapper above is already
+    // aria-hidden (purely decorative; the real "Welcome, {name}" text is
+    // the actual heading, not hidden).
     <svg viewBox="0 0 86 80" className={className} aria-hidden="true">
       {/* wave arm (drawn first so the grip arm's hand overlaps it slightly
           less awkwardly at the shoulder) */}
