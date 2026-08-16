@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Send, RotateCcw } from "lucide-react";
 import { sendMessageAction } from "../actions";
 import { PERSONAS } from "@/lib/chatbot/personas";
 import { CHATBOT_MESSAGE_LIMIT } from "@/lib/chatbot/constants";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { ChatbotConversation, ChatbotMessage } from "@/lib/types/database.types";
 
 interface DisplayMessage extends Pick<ChatbotMessage, "id" | "role" | "content" | "created_at"> {}
@@ -21,6 +22,17 @@ export function ChatInterface({
   initialMessages: ChatbotMessage[];
   initialUserMessageCount: number;
 }) {
+  // `dict`/`locale` come from the server-resolved LocaleProvider Context
+  // (see src/lib/i18n/LocaleProvider.tsx) rather than ever reading
+  // `document.documentElement.dir` directly in this Client Component —
+  // that pattern reads differently on the server (no `document`, defaults
+  // to LTR) than on the client's first paint, producing a real hydration
+  // mismatch in Arabic mode (the exact bug HANDOVER.md Part 4 §7 found and
+  // fixed in Sidebar.tsx). RTL layout itself is handled purely via Tailwind's
+  // `rtl:`/logical-property utilities below, driven by the `dir` attribute
+  // the root layout already sets server-side — no JS direction branching
+  // needed here at all.
+  const { dict } = useLocale();
   const persona = PERSONAS[conversation.persona];
   const [messages, setMessages] = useState<DisplayMessage[]>(initialMessages);
   const [userMessageCount, setUserMessageCount] = useState(initialUserMessageCount);
@@ -80,7 +92,7 @@ export function ChatInterface({
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-slate-200 dark:border-navy-800 pb-4">
         <Link href="/chatbot" className="rounded-lg p-1.5 text-slate-500 dark:text-navy-400 transition-colors hover:bg-slate-100 dark:hover:bg-white/5">
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
         </Link>
         <div className="h-10 w-10 overflow-hidden rounded-full ring-2 ring-white shadow-soft">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -88,23 +100,23 @@ export function ChatInterface({
         </div>
         <div>
           <p className="font-display text-sm font-semibold text-navy-900 dark:text-white">{persona.name}</p>
-          <p className="text-xs text-slate-400 dark:text-navy-500">{persona.role}</p>
+          <p className="text-xs text-slate-400 dark:text-navy-500">{dict.chatbot.personaRole}</p>
         </div>
         <Link
           href="/chatbot"
-          className="ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-navy-600 transition-colors hover:bg-navy-50"
+          className="ms-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-navy-600 transition-colors hover:bg-navy-50"
         >
           <RotateCcw className="h-3.5 w-3.5" />
-          New chat
+          {dict.chatbot.newChat}
         </Link>
       </div>
 
       {/* Message limit bar */}
       <div className="mt-4">
         <div className="flex items-center justify-between text-xs text-slate-500 dark:text-navy-400">
-          <span>Conversation length</span>
+          <span>{dict.chatbot.conversationLength}</span>
           <span className={cn(atLimit && "font-medium text-red-600")}>
-            {userMessageCount} / {CHATBOT_MESSAGE_LIMIT} messages
+            {userMessageCount} / {CHATBOT_MESSAGE_LIMIT} {dict.chatbot.messagesUnit}
           </span>
         </div>
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -118,7 +130,7 @@ export function ChatInterface({
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="my-4 flex-1 space-y-3 overflow-y-auto pr-1">
+      <div ref={scrollRef} className="my-4 flex-1 space-y-3 overflow-y-auto pe-1">
         <AnimatePresence initial={false}>
           {messages.map((m) => (
             <motion.div
@@ -129,11 +141,12 @@ export function ChatInterface({
               className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
             >
               <div
+                dir="auto"
                 className={cn(
                   "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                   m.role === "user"
-                    ? "rounded-br-sm bg-navy-800 text-white"
-                    : "rounded-bl-sm border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-900 text-slate-700 dark:text-navy-100"
+                    ? "rounded-ee-sm bg-navy-800 text-white"
+                    : "rounded-es-sm border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-900 text-slate-700 dark:text-navy-100"
                 )}
               >
                 {m.content}
@@ -148,9 +161,10 @@ export function ChatInterface({
       {/* Input */}
       {atLimit ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 dark:bg-navy-800/40 p-4 text-center">
-          <p className="text-sm text-slate-600">You've reached this conversation's message limit.</p>
-          <Link href="/chatbot" className="mt-2 inline-block text-sm font-medium text-navy-600 hover:text-navy-800">
-            Start a new conversation →
+          <p className="text-sm text-slate-600">{dict.chatbot.limitReached}</p>
+          <Link href="/chatbot" className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-navy-600 hover:text-navy-800">
+            {dict.chatbot.startNewConversation}
+            <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
           </Link>
         </div>
       ) : (
@@ -158,7 +172,8 @@ export function ChatInterface({
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`Ask ${persona.name} about the app…`}
+            placeholder={`${dict.chatbot.askPrefix} ${persona.name} ${dict.chatbot.askSuffix}`}
+            dir="auto"
             maxLength={500}
             disabled={sending}
             className="input flex-1"
@@ -167,15 +182,20 @@ export function ChatInterface({
             type="submit"
             disabled={sending || !input.trim()}
             className="btn-primary shrink-0 px-3.5"
-            aria-label="Send"
+            aria-label={dict.chatbot.send}
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-4 w-4 rtl:-scale-x-100" />
           </button>
         </form>
       )}
       <p className="mt-2 text-center text-[11px] text-slate-400 dark:text-navy-500">
-        {remaining > 0 ? `${remaining} message${remaining === 1 ? "" : "s"} left in this conversation` : ""} · App
-        questions only — not for personal or sensitive information.
+        {remaining > 0 && (
+          <>
+            {remaining === 1 ? dict.chatbot.oneMessageLeft : `${remaining} ${dict.chatbot.messagesLeftSuffix}`}
+            {" · "}
+          </>
+        )}
+        {dict.chatbot.disclaimer}
       </p>
     </div>
   );

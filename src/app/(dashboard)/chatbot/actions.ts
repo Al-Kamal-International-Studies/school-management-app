@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getFaqAnswer, type ChatRole } from "@/lib/chatbot/faq";
 import { getGreeting } from "@/lib/chatbot/personas";
 import { CHATBOT_MESSAGE_LIMIT } from "@/lib/chatbot/constants";
+import { getLocale } from "@/lib/i18n/getLocale";
 
 export interface ActionState {
   error?: string;
@@ -39,10 +40,11 @@ export async function startConversationAction(formData: FormData) {
 
   if (error || !conversation) redirect("/chatbot");
 
+  const locale = await getLocale();
   await supabase.from("chatbot_messages").insert({
     conversation_id: conversation.id,
     role: "assistant",
-    content: getGreeting(parsed.data, me!.role as ChatRole),
+    content: getGreeting(parsed.data, me!.role as ChatRole, locale),
   });
 
   redirect(`/chatbot/${conversation.id}`);
@@ -90,7 +92,8 @@ export async function sendMessageAction(_prevState: ActionState, formData: FormD
     return { error: "This conversation has reached its message limit. Start a new conversation to keep chatting." };
   }
 
-  const reply = getFaqAnswer(parsed.data.content, isChatRole(me.role) ? me.role : "student");
+  const locale = await getLocale();
+  const reply = getFaqAnswer(parsed.data.content, isChatRole(me.role) ? me.role : "student", locale);
   await supabase.from("chatbot_messages").insert({
     conversation_id: conversation.id,
     role: "assistant",
