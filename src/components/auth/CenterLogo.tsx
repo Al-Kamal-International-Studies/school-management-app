@@ -1,15 +1,18 @@
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/ui/Logo";
+import { Logo, LogoMark } from "@/components/ui/Logo";
 import { centerCrestSrc } from "@/lib/centers/branding";
 import type { KnownCenter } from "@/lib/centers/knownCenters";
 
 /**
- * Center-aware equivalent of ui/Logo.tsx's <Logo>, used only inside the
- * auth shell (AuthShell's branding panel + mobile logo) — the one place in
- * this app where the rendered brand mark needs to track the pre-login
- * center selection instead of being permanently AKIS. Every other <Logo>
- * call site (Sidebar, the welcome flow) is deliberately left untouched —
- * those are app-wide chrome, not part of this pre-login flow.
+ * Center-aware equivalent of ui/Logo.tsx's <Logo>. Originally used only
+ * inside the auth shell (AuthShell's branding panel + mobile logo); also
+ * used by Sidebar.tsx now (2026-08-16 pass) so the authenticated chrome
+ * shows the account's *actual* center rather than being permanently AKIS —
+ * see CenterMark below for the collapsed-rail (mark-only) equivalent.
+ * welcome/splash and welcome/language are deliberately left on the plain
+ * AKIS-only <Logo> — those screens render before any center has ever been
+ * selected (before even the login picker), so there is nothing to be
+ * center-aware about yet.
  *
  * For AKIS this renders byte-identical output to the plain <Logo> (same
  * crest-navy.png/crest-white.png, same hardcoded "Al Kamal" / "International
@@ -63,5 +66,28 @@ export function CenterLogo({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Center-aware equivalent of ui/Logo.tsx's <LogoMark> — the crest with no
+ * wordmark, deliberately unsized (`h-full w-full`, same contract LogoMark
+ * itself has always had) so the caller sizes it via a wrapping div with an
+ * explicit height/width. Used by Sidebar's collapsed icon-rail, which needs
+ * a compact 36px mark rather than the full lockup CenterLogo above renders.
+ */
+export function CenterMark({ center, className, onLight = false }: { center: KnownCenter; className?: string; onLight?: boolean }) {
+  if (center.short_code === "AKIS") {
+    return <LogoMark className={className} onLight={onLight} />;
+  }
+
+  const crest = centerCrestSrc(center.short_code);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={onLight ? crest.light : crest.dark}
+      alt={`${center.name} crest`}
+      className={cn("h-full w-full object-contain", className)}
+    />
   );
 }

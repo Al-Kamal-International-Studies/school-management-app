@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { centerLogoSrc } from "@/lib/centers/branding";
@@ -25,9 +26,15 @@ import { KNOWN_CENTER_LIST } from "@/lib/centers/knownCenters";
  * client/server sync mechanism for what's otherwise a one-shot pre-auth
  * choice.
  *
- * Uses the existing animate-fade-in-up CSS keyframe utility, not a
- * JS-mount-gated Framer Motion animation — see AuthShell.tsx's own comment
- * for why that matters on this exact screen.
+ * Visual language (2026-08-16 redesign, "make the dropdowns attractive"):
+ * card-style options matching this app's existing shadow-card/shadow-card-
+ * hover + navy/gold premium conventions (see Card.tsx, LanguageCards.tsx)
+ * instead of the earlier bare bordered-button treatment — a raised card,
+ * gold ring + corner check badge for the active choice, subtle lift on
+ * hover. Only CSS transitions/hover states, no mount-gated animation (the
+ * outer wrapper keeps the same animate-fade-in-up entrance it always had).
+ * Underlying behavior (radiogroup semantics, click handler, cookie + reload)
+ * is unchanged from before this pass.
  */
 export function CenterPicker({ selectedCenterId }: { selectedCenterId: string }) {
   const { dict } = useLocale();
@@ -40,10 +47,10 @@ export function CenterPicker({ selectedCenterId }: { selectedCenterId: string })
 
   return (
     <div className="mb-6 animate-fade-in-up">
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-400">
+      <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-400">
         {dict.centerPicker.label}
       </p>
-      <div role="radiogroup" aria-label={dict.centerPicker.label} className="grid grid-cols-2 gap-2">
+      <div role="radiogroup" aria-label={dict.centerPicker.label} className="grid grid-cols-2 gap-3">
         {KNOWN_CENTER_LIST.map((center) => {
           const active = center.id === selectedCenterId;
           const logo = centerLogoSrc(center.short_code);
@@ -55,13 +62,23 @@ export function CenterPicker({ selectedCenterId }: { selectedCenterId: string })
               aria-checked={active}
               onClick={() => choose(center.id)}
               className={cn(
-                "flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-start transition-colors",
+                "group relative flex items-center gap-2.5 rounded-xl border-2 px-3 py-3 text-start shadow-soft transition-all duration-200",
                 active
-                  ? "border-navy-600 bg-navy-50 dark:border-gold-400 dark:bg-navy-800/60"
-                  : "border-slate-200 hover:bg-slate-50 dark:border-navy-700 dark:hover:bg-navy-800/40"
+                  ? "border-gold-400 bg-white shadow-card ring-1 ring-gold-400/30 dark:bg-navy-800/70"
+                  : "border-slate-200/80 bg-white/70 hover:-translate-y-0.5 hover:border-navy-200 hover:shadow-card dark:border-navy-700 dark:bg-navy-900/40 dark:hover:border-navy-500"
               )}
             >
-              <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full ring-2 ring-white dark:ring-navy-900">
+              {active && (
+                <span className="absolute end-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-gold-gradient text-navy-900 shadow-gold">
+                  <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+                </span>
+              )}
+              <span
+                className={cn(
+                  "relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 transition-all duration-200",
+                  active ? "ring-gold-300 dark:ring-gold-500/50" : "ring-white dark:ring-navy-900"
+                )}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={logo.light} alt="" className="h-full w-full object-cover dark:hidden" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -74,7 +91,7 @@ export function CenterPicker({ selectedCenterId }: { selectedCenterId: string })
               <span className="min-w-0 flex-1" dir="ltr">
                 <span
                   className={cn(
-                    "block truncate text-sm font-semibold",
+                    "block truncate text-sm font-semibold tracking-wide",
                     active ? "text-navy-900 dark:text-white" : "text-slate-600 dark:text-navy-300"
                   )}
                 >
