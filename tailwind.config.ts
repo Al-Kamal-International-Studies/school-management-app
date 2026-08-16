@@ -6,44 +6,61 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Deep navy — primary brand color (Al Kamal International Studies)
+        // Deep navy — primary brand color (Al Kamal International Studies).
+        // Every step resolves through a CSS custom property (globals.css's
+        // `:root` block), not a literal hex — that's what lets a single
+        // compiled class like `.text-navy-800` render AKIS's navy on one
+        // page and AKET's steel-blue on another, purely from a `data-center`
+        // attribute upstream in the DOM, with no per-component `aket:`
+        // variant needed anywhere. `<alpha-value>` is Tailwind's own
+        // placeholder token (not a variable I define) — it lets opacity
+        // modifiers like `bg-navy-800/60` keep working exactly as before.
+        // See globals.css for the actual AKIS/AKET values and
+        // HANDOVER.md-style reasoning; values here must stay in sync with
+        // the CSS variable *names* (not values) defined there.
         navy: {
-          50: "#eef3f8",
-          100: "#d7e3ee",
-          200: "#b0c8dd",
-          300: "#82a6c6",
-          400: "#5580a8",
-          500: "#3a6288",
-          600: "#284b6c",
-          700: "#1c3a56",
-          800: "#152c42",
-          900: "#0f2131",
-          950: "#0b2138",
+          50: "rgb(var(--color-navy-50) / <alpha-value>)",
+          100: "rgb(var(--color-navy-100) / <alpha-value>)",
+          200: "rgb(var(--color-navy-200) / <alpha-value>)",
+          300: "rgb(var(--color-navy-300) / <alpha-value>)",
+          400: "rgb(var(--color-navy-400) / <alpha-value>)",
+          500: "rgb(var(--color-navy-500) / <alpha-value>)",
+          600: "rgb(var(--color-navy-600) / <alpha-value>)",
+          700: "rgb(var(--color-navy-700) / <alpha-value>)",
+          800: "rgb(var(--color-navy-800) / <alpha-value>)",
+          900: "rgb(var(--color-navy-900) / <alpha-value>)",
+          950: "rgb(var(--color-navy-950) / <alpha-value>)",
         },
-        // Warm gold — accent color, used sparingly for premium touches
+        // Warm gold — accent color, used sparingly for premium touches.
+        // Same CSS-variable indirection as navy above (AKET renders this
+        // token family as an amber/orange accent instead).
         gold: {
-          50: "#fdf8ec",
-          100: "#faedc7",
-          200: "#f4d888",
-          300: "#eec158",
-          400: "#e6ad3f",
-          500: "#d4af37",
-          600: "#b8860b",
-          700: "#946b0a",
-          800: "#78560f",
-          900: "#644811",
+          50: "rgb(var(--color-gold-50) / <alpha-value>)",
+          100: "rgb(var(--color-gold-100) / <alpha-value>)",
+          200: "rgb(var(--color-gold-200) / <alpha-value>)",
+          300: "rgb(var(--color-gold-300) / <alpha-value>)",
+          400: "rgb(var(--color-gold-400) / <alpha-value>)",
+          500: "rgb(var(--color-gold-500) / <alpha-value>)",
+          600: "rgb(var(--color-gold-600) / <alpha-value>)",
+          700: "rgb(var(--color-gold-700) / <alpha-value>)",
+          800: "rgb(var(--color-gold-800) / <alpha-value>)",
+          900: "rgb(var(--color-gold-900) / <alpha-value>)",
         },
+        // `brand` has always been a duplicate of navy's 50-900 steps (see
+        // its original literal values, identical to navy's) — rather than
+        // defining a second, parallel set of CSS variables that could drift
+        // out of sync, it now aliases navy's variables directly.
         brand: {
-          50: "#eef3f8",
-          100: "#d7e3ee",
-          200: "#b0c8dd",
-          300: "#82a6c6",
-          400: "#5580a8",
-          500: "#3a6288",
-          600: "#284b6c",
-          700: "#1c3a56",
-          800: "#152c42",
-          900: "#0f2131",
+          50: "rgb(var(--color-navy-50) / <alpha-value>)",
+          100: "rgb(var(--color-navy-100) / <alpha-value>)",
+          200: "rgb(var(--color-navy-200) / <alpha-value>)",
+          300: "rgb(var(--color-navy-300) / <alpha-value>)",
+          400: "rgb(var(--color-navy-400) / <alpha-value>)",
+          500: "rgb(var(--color-navy-500) / <alpha-value>)",
+          600: "rgb(var(--color-navy-600) / <alpha-value>)",
+          700: "rgb(var(--color-navy-700) / <alpha-value>)",
+          800: "rgb(var(--color-navy-800) / <alpha-value>)",
+          900: "rgb(var(--color-navy-900) / <alpha-value>)",
         },
       },
       fontFamily: {
@@ -51,14 +68,30 @@ const config: Config = {
         display: ["var(--font-display)", "Georgia", "serif"],
       },
       boxShadow: {
+        // These three stay literal navy (rgb 15 33 49) regardless of center
+        // — they're neutral elevation/depth shadows used on white/light
+        // surfaces app-wide, not a brand accent, so there's nothing for
+        // AKET to differentiate here (matching how e.g. slate-* neutrals
+        // stay constant too).
         soft: "0 1px 2px 0 rgb(15 33 49 / 0.04), 0 1px 3px 0 rgb(15 33 49 / 0.06)",
         card: "0 1px 3px 0 rgb(15 33 49 / 0.06), 0 4px 12px -2px rgb(15 33 49 / 0.08)",
         "card-hover": "0 4px 8px 0 rgb(15 33 49 / 0.08), 0 12px 24px -4px rgb(15 33 49 / 0.12)",
-        gold: "0 4px 14px 0 rgb(212 175 55 / 0.25)",
+        // This one IS the brand accent glow (btn-gold), so it follows the
+        // gold-500 CSS variable like everything else in this file.
+        gold: "0 4px 14px 0 rgb(var(--color-gold-500) / 0.25)",
       },
       backgroundImage: {
-        "navy-gradient": "linear-gradient(135deg, #0b2138 0%, #123a5e 55%, #1c4d78 100%)",
-        "gold-gradient": "linear-gradient(135deg, #f3d878 0%, #d4af37 50%, #b8860b 100%)",
+        // Dedicated gradient-stop variables rather than reusing e.g.
+        // navy-950/800/700 directly — AKIS's existing gradient uses
+        // bespoke stops (#123a5e, #1c4d78) that don't exactly match any
+        // named scale step, and "AKIS stays pixel-exact" is a hard
+        // requirement here. AKET's stops are chosen scale steps (see
+        // globals.css) tuned so white text and the active-nav-item accent
+        // icon both clear WCAG contrast against the lightest stop.
+        "navy-gradient":
+          "linear-gradient(135deg, rgb(var(--color-navy-gradient-from)) 0%, rgb(var(--color-navy-gradient-via)) 55%, rgb(var(--color-navy-gradient-to)) 100%)",
+        "gold-gradient":
+          "linear-gradient(135deg, rgb(var(--color-gold-gradient-from)) 0%, rgb(var(--color-gold-gradient-via)) 50%, rgb(var(--color-gold-gradient-to)) 100%)",
       },
       keyframes: {
         "fade-in": {
