@@ -561,6 +561,11 @@ const ar: Dictionary = {
     avatarTooLarge: "يجب أن تكون الصورة أقل من 4 ميجابايت.",
     uploading: "جارٍ الرفع…",
     changePhoto: "تغيير الصورة",
+    cropTitle: "اضبط صورتك",
+    cropHint: "اسحب لإعادة الضبط. كبّر بعجلة الفأرة أو بإصبعين أو باستخدام شريط التكبير.",
+    cropZoomLabel: "التكبير",
+    cropConfirm: "استخدام هذه الصورة",
+    cropLoadError: "تعذّر تحميل هذه الصورة. جرّب ملفًا آخر.",
   },
 };
 

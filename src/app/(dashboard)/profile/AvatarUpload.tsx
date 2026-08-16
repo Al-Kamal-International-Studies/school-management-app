@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { setAvatarUrlAction } from "./actions";
 import { initials } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { AvatarCropperModal } from "./AvatarCropperModal";
 
 const MAX_SIZE_BYTES = 4 * 1024 * 1024; // 4MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -25,11 +26,18 @@ export function AvatarUpload({
   const { dict } = useLocale();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(avatarUrl);
+  // Object URL of the just-selected (not-yet-uploaded) file. Its presence
+  // is what opens the crop modal — nothing is uploaded until the user
+  // confirms their pan/zoom choice there.
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>();
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    // Reset now (not just on success) so picking the same file again later
+    // — e.g. immediately after Cancel — still fires a change event.
+    e.target.value = "";
     if (!file) return;
     setError(undefined);
 
@@ -42,15 +50,40 @@ export function AvatarUpload({
       return;
     }
 
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function closeCropper() {
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }
+
+  /** Fires when the user hits Confirm in the crop modal. `blob` is the
+   * user's chosen pan/zoom framing rendered to a canvas and re-encoded
+   * (see AvatarCropperModal) — this, not the original file, is what gets
+   * uploaded. */
+  async function handleCropConfirm(blob: Blob, ext: string) {
+    setError(undefined);
+
+    // Belt-and-suspenders re-check: the fixed export resolution keeps the
+    // cropped output well under this in practice, but validate anyway
+    // rather than assume.
+    if (blob.size > MAX_SIZE_BYTES) {
+      setError(dict.profilePage.avatarTooLarge);
+      return;
+    }
+
     setUploading(true);
-    const localPreview = URL.createObjectURL(file);
-    setPreview(localPreview);
 
     const supabase = createClient();
-    const ext = file.name.split(".").pop() || "jpg";
     const path = `${userId}/avatar.${ext}`;
 
-    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, {
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, blob, {
       upsert: true,
       cacheControl: "3600",
     });
@@ -75,6 +108,11 @@ export function AvatarUpload({
       return;
     }
 
+    setPreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(blob);
+    });
+    closeCropper();
     router.refresh();
   }
 
@@ -113,7 +151,22 @@ export function AvatarUpload({
       >
         {uploading ? dict.profilePage.uploading : dict.profilePage.changePhoto}
       </button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && !cropSrc && <p className="mt-1 text-xs text-red-600">{error}</p>}
+
+      {cropSrc && (
+        <AvatarCropperModal
+          imageSrc={cropSrc}
+          altText={fullName}
+          pending={uploading}
+          error={error}
+          onCancel={() => {
+            if (uploading) return;
+            setError(undefined);
+            closeCropper();
+          }}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   );
 }
