@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getDeviceIdCookie, isDeviceApproved } from "@/lib/auth/deviceCookie";
@@ -8,8 +9,23 @@ import type { Profile, UserRole } from "@/lib/types/database.types";
 /**
  * Returns the logged-in user's profile, or null if not authenticated.
  * Safe to call from Server Components, layouts, and Server Actions.
+ *
+ * Wrapped in React's `cache()` (see
+ * node_modules/next/dist/docs/01-app/02-guides/caching-without-cache-components.md
+ * §"Deduplicating requests") so multiple calls within the same request share
+ * one result instead of re-querying Supabase. This matters a lot here: every
+ * single dashboard navigation was previously calling this 3 times —
+ * (dashboard)/layout.tsx, the role layout's requireRole(), and then the page
+ * itself — each call doing a network round trip to Supabase Auth
+ * (auth.getUser() revalidates the JWT against the Auth server, it's not a
+ * free local read like getSession()) *plus* a `profiles` select. That's up
+ * to 6 sequential round trips of pure duplicate work before a page's own
+ * data queries even start. `cache()` collapses that to 1 call's worth of
+ * round trips per request; the other 2 call sites resolve instantly from
+ * the memoized promise. Request-scoped only (per React's docs), so this
+ * never leaks data between users/requests.
  */
-export async function getCurrentProfile(): Promise<Profile | null> {
+export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -24,7 +40,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     .single();
 
   return profile;
-}
+});
 
 /**
  * Guards a Server Component / layout so only the given role(s) can render
