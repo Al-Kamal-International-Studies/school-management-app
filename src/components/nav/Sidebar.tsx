@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -179,6 +179,39 @@ export function Sidebar({
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  // Overlay-style nav scrollbar: `.nav-scrollbar` (globals.css) renders its
+  // thumb invisible by default and fades it in only while `is-scrolling` is
+  // present. That class is toggled here rather than through React state —
+  // this fires on every scroll frame, and a plain classList mutation avoids
+  // re-rendering Sidebar (which mounts on every authenticated page) on each
+  // one. Listening for the native `scroll` event (not `wheel`/`touchmove`)
+  // means every way of moving the list — mouse wheel, trackpad, touch drag,
+  // dragging the scrollbar thumb itself, and keyboard scrolling (arrow keys
+  // / Page Down / Space moving a focused nav link into view) — is covered
+  // identically, since `scroll` fires for any scrollTop change regardless
+  // of what caused it. The `nav-scrollbar` className on the <ul> below is a
+  // static string, so React never rewrites the DOM's class attribute across
+  // re-renders and this imperative toggle is safe to leave in place.
+  const navListRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    const el = navListRef.current;
+    if (!el) return;
+    let hideTimeout: ReturnType<typeof setTimeout> | undefined;
+    function handleScroll() {
+      el!.classList.add("is-scrolling");
+      if (hideTimeout) clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => {
+        el!.classList.remove("is-scrolling");
+      }, 1000);
+    }
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      if (hideTimeout) clearTimeout(hideTimeout);
+    };
+  }, []);
+
   function toggleCollapsed() {
     setCollapsedPreference(!collapsed);
   }
@@ -264,54 +297,79 @@ export function Sidebar({
         style={{ transform: mobileOpen ? "translateX(0)" : isRtl ? "translateX(100%)" : "translateX(-100%)" }}
       >
         <div className="bg-grid pointer-events-none absolute inset-0" />
-        <div className="relative flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
+        <div
+          className={cn(
+            "relative flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5",
+            // Desktop-only padding trim to make room for the new toggle
+            // button beside the logo — mobile (no lg: prefix) always keeps
+            // the original px-5. Expanded needs only a little less (px-4)
+            // for a comfortable gap between the wordmark and the button;
+            // the collapsed lg:w-20 (80px) rail is far tighter and needs
+            // px-2 so the crest mark and the button both fit without
+            // touching. A single ternary (matching the lg:w-20/lg:w-64
+            // pattern below) keeps exactly one lg:px-* class present at a
+            // time — two competing lg:px-* utilities would leave the
+            // winner to Tailwind's stylesheet-order, not this file's prop
+            // order.
+            collapsed ? "lg:px-2" : "lg:px-4"
+          )}
+        >
           <Logo className={cn(collapsed && "lg:hidden")} />
           {collapsed && (
-            <div className="hidden w-full items-center justify-center lg:flex">
-              <LogoMark className="h-9 w-9" />
+            // Fixed-size wrapper + unsized LogoMark, same pattern the Logo
+            // component itself uses internally for the crest (see
+            // ui/Logo.tsx's own `<div className="h-10 w-10 shrink-0">`) —
+            // LogoMark's <img> hard-codes `h-full w-full`, and since `cn`
+            // here is plain clsx (no tailwind-merge conflict resolution,
+            // see lib/utils.ts), passing a fixed size directly to LogoMark
+            // would just lose the cascade to its own h-full/w-full and
+            // render at the parent's full size instead of 36px.
+            <div className="hidden h-9 w-9 shrink-0 lg:block">
+              <LogoMark />
             </div>
           )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-navy-200 hover:bg-white/10 hover:text-white lg:hidden"
-            aria-label="Close menu"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex shrink-0 items-center">
+            {/* Desktop-only collapse toggle: icon-only, sitting in the
+                header row to the right of the logo/crest. A plain flex
+                row + justify-between (not absolute positioning) so it
+                mirrors to the left of the logo under RTL automatically
+                via the row's own direction-awareness, and so it can never
+                overlap the logo — worst case on a too-narrow rail is
+                clipping by the nav's overflow-hidden, not visual collision.
+                Mobile keeps its own open/close drawer via mobileOpen/
+                onClose and never sees this button (hidden below lg). */}
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}
+              title={collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}
+              aria-pressed={collapsed}
+              className="hidden shrink-0 rounded-lg p-1 text-navy-200 transition-colors hover:bg-white/10 hover:text-white lg:inline-flex lg:items-center lg:justify-center"
+            >
+              <ChevronLeft
+                className={cn("h-4 w-4 shrink-0 transition-transform duration-300", isRtl !== collapsed && "rotate-180")}
+                strokeWidth={2}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-navy-200 hover:bg-white/10 hover:text-white lg:hidden"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
-        <ul className="nav-scrollbar relative flex-1 space-y-1 overflow-y-auto p-3">{items.map(renderItem)}</ul>
+        <ul ref={navListRef} className="nav-scrollbar relative flex-1 space-y-1 overflow-y-auto p-3">
+          {items.map(renderItem)}
+        </ul>
 
         {/* Settings is pinned to the bottom for every role, outside the
             per-role scrollable nav list, so it's always reachable without
             scrolling. */}
         <div className="relative border-t border-white/10 p-3">
           <ul>{renderItem({ href: "/settings", labelKey: "settings", icon: SettingsIcon })}</ul>
-        </div>
-
-        {/* Desktop-only collapse toggle. Mobile already has its own
-            open/close drawer via mobileOpen/onClose, so this stays hidden
-            below lg. A full-width row (rather than an edge-mounted button)
-            avoids fighting the nav's overflow-hidden / the scrollable
-            list's own clipped overflow-x. */}
-        <div className="relative hidden border-t border-white/10 p-3 lg:block">
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            aria-label={collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}
-            title={collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}
-            aria-pressed={collapsed}
-            className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-navy-200 transition-colors hover:bg-white/10 hover:text-white",
-              collapsed && "justify-center px-0"
-            )}
-          >
-            <ChevronLeft
-              className={cn("h-[18px] w-[18px] shrink-0 transition-transform duration-300", isRtl !== collapsed && "rotate-180")}
-              strokeWidth={2}
-            />
-            <span className={cn(collapsed && "hidden")}>{collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}</span>
-          </button>
         </div>
       </nav>
     </>

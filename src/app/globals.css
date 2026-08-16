@@ -67,14 +67,30 @@
     background-size: 24px 24px;
   }
 
-  /* Sidebar nav-list scrollbar. The sidebar is a fixed dark navy gradient
-     regardless of the app's light/dark theme, so this is themed against
-     that navy background specifically (gold accent, thin + rounded),
-     not against `dark:` — Tailwind's scrollbar utilities don't reach
+  /* Sidebar nav-list scrollbar — "overlay" style (macOS/modern-web
+     pattern): invisible while idle, fades in only while the list is
+     actively being scrolled, then fades back out shortly after scrolling
+     stops. The sidebar is a fixed dark navy gradient regardless of the
+     app's light/dark theme, so this is themed against that navy
+     background specifically (gold accent, thin + rounded), not against
+     `dark:` — Tailwind's scrollbar utilities don't reach
      ::-webkit-scrollbar or Firefox's scrollbar-color, so this needs plain
-     CSS. Idle is a faint gold hairline; hover brightens it. */
+     CSS.
+     Detecting "is scrolling right now" can't be done in CSS alone, so
+     Sidebar.tsx toggles the `is-scrolling` class via a scroll listener +
+     debounced timeout (see its useEffect) — this stylesheet only owns the
+     visual chrome and the fade transition itself.
+     Chromium/WebKit fade the thumb's opacity smoothly. Firefox's
+     scrollbar-color has no CSS transition support, so there the show/hide
+     is an instant swap rather than a smooth ramp — a browser limitation,
+     not a bug; the actual appear-while-scrolling / hide-when-idle
+     behavior still works correctly there. */
   .nav-scrollbar {
     scrollbar-width: thin;
+    scrollbar-color: rgb(212 175 55 / 0) transparent;
+    transition: scrollbar-color 300ms ease;
+  }
+  .nav-scrollbar.is-scrolling {
     scrollbar-color: rgb(212 175 55 / 0.35) transparent;
   }
   .nav-scrollbar::-webkit-scrollbar {
@@ -86,8 +102,13 @@
   .nav-scrollbar::-webkit-scrollbar-thumb {
     background-color: rgb(212 175 55 / 0.35);
     border-radius: 9999px;
+    opacity: 0;
+    transition: opacity 300ms ease;
   }
-  .nav-scrollbar::-webkit-scrollbar-thumb:hover {
+  .nav-scrollbar.is-scrolling::-webkit-scrollbar-thumb {
+    opacity: 1;
+  }
+  .nav-scrollbar.is-scrolling::-webkit-scrollbar-thumb:hover {
     background-color: rgb(212 175 55 / 0.65);
   }
 }
