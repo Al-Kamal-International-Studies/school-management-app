@@ -563,6 +563,24 @@ const en = {
     uploading: "Uploading…",
     changePhoto: "Change photo",
   },
+  chatbot: {
+    title: "Help Assistant",
+    subtitle: "Ask a quick question about using the app. Pick who you'd like to chat with — each conversation is limited to 20 messages.",
+    personaRole: "Help Assistant",
+    chatWithPrefix: "Chat with",
+    recentConversations: "Recent conversations",
+    newChat: "New chat",
+    conversationLength: "Conversation length",
+    messagesUnit: "messages",
+    limitReached: "You've reached this conversation's message limit.",
+    startNewConversation: "Start a new conversation",
+    askPrefix: "Ask",
+    askSuffix: "about the app…",
+    send: "Send",
+    oneMessageLeft: "1 message left in this conversation",
+    messagesLeftSuffix: "messages left in this conversation",
+    disclaimer: "App questions only — not for personal or sensitive information.",
+  },
 };
 
 export default en;
