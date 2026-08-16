@@ -90,6 +90,8 @@ const en = {
     auditLog: "Audit Log",
     messages: "Messages",
     passwordResetRequests: "Password Resets",
+    collapseSidebar: "Collapse sidebar",
+    expandSidebar: "Expand sidebar",
   },
   login: {
     title: "Welcome back",

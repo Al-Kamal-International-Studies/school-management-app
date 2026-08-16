@@ -89,6 +89,8 @@ const ar: Dictionary = {
     auditLog: "سجل التدقيق",
     messages: "الرسائل",
     passwordResetRequests: "طلبات إعادة تعيين كلمة المرور",
+    collapseSidebar: "طي الشريط الجانبي",
+    expandSidebar: "توسيع الشريط الجانبي",
   },
   login: {
     title: "مرحبًا بعودتك",

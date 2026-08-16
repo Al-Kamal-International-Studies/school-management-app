@@ -66,4 +66,28 @@
     background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.08) 1px, transparent 0);
     background-size: 24px 24px;
   }
+
+  /* Sidebar nav-list scrollbar. The sidebar is a fixed dark navy gradient
+     regardless of the app's light/dark theme, so this is themed against
+     that navy background specifically (gold accent, thin + rounded),
+     not against `dark:` — Tailwind's scrollbar utilities don't reach
+     ::-webkit-scrollbar or Firefox's scrollbar-color, so this needs plain
+     CSS. Idle is a faint gold hairline; hover brightens it. */
+  .nav-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(212 175 55 / 0.35) transparent;
+  }
+  .nav-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .nav-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .nav-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgb(212 175 55 / 0.35);
+    border-radius: 9999px;
+  }
+  .nav-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(212 175 55 / 0.65);
+  }
 }
