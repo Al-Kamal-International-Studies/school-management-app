@@ -162,6 +162,10 @@ export type Feedback = {
   subject: string;
   message: string;
   status: FeedbackStatus;
+  // Added by 0030_feedback_center_id.sql — the center the submitting user
+  // belonged to at submission time. See centers/profile_center_access for
+  // the access-grant model this is checked against in RLS.
+  center_id: string;
   created_at: string;
 };
 

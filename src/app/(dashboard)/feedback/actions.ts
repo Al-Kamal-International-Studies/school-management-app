@@ -37,7 +37,10 @@ export async function submitFeedbackAction(_prevState: ActionState, formData: Fo
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("feedback").insert({ ...parsed.data, user_id: me.id });
+  // center_id comes from the submitting user's own profile, not the client
+  // — a user's feedback belongs to the center they're actually part of.
+  // See supabase/migrations/0030_feedback_center_id.sql.
+  const { error } = await supabase.from("feedback").insert({ ...parsed.data, user_id: me.id, center_id: me.center_id });
   if (error) return { error: error.message };
 
   await recordRateLimitAttempt(bucket);
