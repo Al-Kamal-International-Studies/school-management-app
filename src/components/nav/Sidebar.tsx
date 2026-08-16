@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,15 +27,68 @@ import {
   History,
   MessagesSquare,
   KeyRound,
+  ChevronLeft,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/ui/Logo";
+import { Logo, LogoMark } from "@/components/ui/Logo";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { dirForLocale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/types";
 import type { UserRole } from "@/lib/types/database.types";
+
+// Persists the desktop-only collapsed/expanded rail preference across
+// sessions. Deliberately a plain localStorage flag (not the cookie+
+// server-resolved pattern ThemeProvider uses) since this is a pure
+// client-side layout preference with no SSR-rendered content depending on
+// it. Read/written through a tiny external store (below) so the value can
+// be surfaced via useSyncExternalStore — that's what lets the server/first
+// client render both safely assume "expanded" (via getServerSnapshot,
+// avoiding a hydration mismatch) while still picking up the real stored
+// value right after mount, without reaching for a manual
+// useEffect-that-calls-setState (which the project's lint config forbids —
+// see react-hooks/set-state-in-effect).
+const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
+
+const collapsedListeners = new Set<() => void>();
+let cachedCollapsed: boolean | null = null;
+
+function readStoredCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+  } catch {
+    // localStorage unavailable (private browsing, disabled, etc.) — fall
+    // back to the default expanded rail.
+    return false;
+  }
+}
+
+function subscribeCollapsed(onStoreChange: () => void) {
+  collapsedListeners.add(onStoreChange);
+  return () => {
+    collapsedListeners.delete(onStoreChange);
+  };
+}
+
+function getCollapsedSnapshot(): boolean {
+  if (cachedCollapsed === null) cachedCollapsed = readStoredCollapsed();
+  return cachedCollapsed;
+}
+
+function getCollapsedServerSnapshot(): boolean {
+  return false;
+}
+
+function setCollapsedPreference(next: boolean) {
+  cachedCollapsed = next;
+  try {
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+  } catch {
+    // ignore write failures (private browsing, storage disabled, etc.)
+  }
+  collapsedListeners.forEach((listener) => listener());
+}
 
 interface NavItem {
   href: string;
@@ -112,9 +166,35 @@ export function Sidebar({
   const isRtl = dirForLocale(locale) === "rtl";
   const items = NAV_ITEMS[role];
 
+  // Desktop-only icon-rail collapse. Server and first client (hydration)
+  // render always see "expanded" via getCollapsedServerSnapshot, so there's
+  // no hydration mismatch; React re-renders with the real stored value
+  // right after mount. The width transition is briefly suppressed on that
+  // first correction so restoring a previously-collapsed sidebar snaps
+  // into place instead of visibly animating on every page load.
+  const collapsed = useSyncExternalStore(subscribeCollapsed, getCollapsedSnapshot, getCollapsedServerSnapshot);
+  const [enableWidthTransition, setEnableWidthTransition] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setEnableWidthTransition(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsedPreference(!collapsed);
+  }
+
   function renderItem(item: NavItem) {
-    const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+    // The root/index item for a role (e.g. admin's "Overview" -> /admin) is
+    // a literal path-prefix of every other route in that role's nav (e.g.
+    // /admin/users starts with /admin/), so it must only ever match on an
+    // exact pathname — otherwise it and whatever page you actually navigate
+    // to both light up at once. Every other item keeps the prefix behavior
+    // so nested routes (e.g. /admin/users/[id]) still highlight correctly.
+    const isRootItem = item.href === `/${role}`;
+    const active = isRootItem ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
     const Icon = item.icon;
+    const label = dict.nav[item.labelKey];
     return (
       <li key={item.href} className="relative">
         {active && (
@@ -127,14 +207,17 @@ export function Sidebar({
         <Link
           href={item.href}
           onClick={onClose}
+          aria-label={label}
+          title={collapsed ? label : undefined}
           className={cn(
             "relative flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors lg:py-2.5",
-            active ? "text-white" : "text-navy-200 hover:text-white"
+            active ? "text-white" : "text-navy-200 hover:text-white",
+            collapsed && "lg:justify-center lg:px-0"
           )}
         >
           <Icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-gold-400")} strokeWidth={2} />
-          {dict.nav[item.labelKey]}
-          {active && <span className="ms-auto h-1.5 w-1.5 rounded-full bg-gold-400" />}
+          <span className={cn(collapsed && "lg:hidden")}>{label}</span>
+          {active && <span className={cn("ms-auto h-1.5 w-1.5 rounded-full bg-gold-400", collapsed && "lg:hidden")} />}
         </Link>
       </li>
     );
@@ -163,13 +246,24 @@ export function Sidebar({
           // Full-height regardless of content height, robust against the
           // parent flex row's ambiguous cross-size calculation (see
           // HANDOVER.md-style gotchas — `lg:static` + `h-full` was fragile).
-          "lg:sticky lg:top-0 lg:z-0 lg:h-screen lg:w-64 lg:!transform-none"
+          "lg:sticky lg:top-0 lg:z-0 lg:h-screen lg:!transform-none",
+          collapsed ? "lg:w-20" : "lg:w-64",
+          // Width only ever changes at the lg breakpoint (the collapse
+          // rail); suppressed on the first paint after mount (see the
+          // enableWidthTransition effect above) so restoring a stored
+          // "collapsed" preference snaps in instead of animating.
+          enableWidthTransition ? "lg:transition-[width,transform] lg:duration-300 lg:ease-out" : "lg:transition-none"
         )}
         style={{ transform: mobileOpen ? "translateX(0)" : isRtl ? "translateX(100%)" : "translateX(-100%)" }}
       >
         <div className="bg-grid pointer-events-none absolute inset-0" />
         <div className="relative flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
-          <Logo />
+          <Logo className={cn(collapsed && "lg:hidden")} />
+          {collapsed && (
+            <div className="hidden w-full items-center justify-center lg:flex">
+              <LogoMark className="h-9 w-9" />
+            </div>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -179,13 +273,38 @@ export function Sidebar({
             <X className="h-5 w-5" />
           </button>
         </div>
-        <ul className="relative flex-1 space-y-1 overflow-y-auto p-3">{items.map(renderItem)}</ul>
+        <ul className="nav-scrollbar relative flex-1 space-y-1 overflow-y-auto p-3">{items.map(renderItem)}</ul>
 
         {/* Settings is pinned to the bottom for every role, outside the
             per-role scrollable nav list, so it's always reachable without
             scrolling. */}
         <div className="relative border-t border-white/10 p-3">
           <ul>{renderItem({ href: "/settings", labelKey: "settings", icon: SettingsIcon })}</ul>
+        </div>
+
+        {/* Desktop-only collapse toggle. Mobile already has its own
+            open/close drawer via mobileOpen/onClose, so this stays hidden
+            below lg. A full-width row (rather than an edge-mounted button)
+            avoids fighting the nav's overflow-hidden / the scrollable
+            list's own clipped overflow-x. */}
+        <div className="relative hidden border-t border-white/10 p-3 lg:block">
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}
+            title={collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}
+            aria-pressed={collapsed}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-navy-200 transition-colors hover:bg-white/10 hover:text-white",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            <ChevronLeft
+              className={cn("h-[18px] w-[18px] shrink-0 transition-transform duration-300", isRtl !== collapsed && "rotate-180")}
+              strokeWidth={2}
+            />
+            <span className={cn(collapsed && "hidden")}>{collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}</span>
+          </button>
         </div>
       </nav>
     </>
