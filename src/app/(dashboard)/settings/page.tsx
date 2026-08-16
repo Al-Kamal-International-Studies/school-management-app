@@ -12,6 +12,7 @@ import { MfaSettingsCard } from "@/components/mfa/MfaSettingsCard";
 import { SignOutOtherSessionsButton } from "@/components/settings/SignOutOtherSessionsButton";
 import { DeviceList } from "@/components/settings/DeviceList";
 import { BiometricSettingsCard } from "@/components/settings/BiometricSettingsCard";
+import { ReplayTourButton } from "@/components/tour/ReplayTourButton";
 
 const CONTACT_PHONE = "052 772 7246";
 const CONTACT_EMAIL = "info@alkamalinternational.com";
@@ -82,6 +83,14 @@ export default async function SettingsPage() {
         <Card>
           <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.notifications}</h2>
           <PushNotificationToggle />
+        </Card>
+      </FadeUp>
+
+      <FadeUp delay={0.19}>
+        <Card>
+          <h2 className="mb-1 text-sm font-semibold text-navy-900 dark:text-white">{dict.tour.replayTitle}</h2>
+          <p className="mb-4 text-xs text-slate-500 dark:text-navy-400">{dict.tour.replayDescription}</p>
+          <ReplayTourButton />
         </Card>
       </FadeUp>
 
