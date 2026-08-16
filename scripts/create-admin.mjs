@@ -82,5 +82,22 @@ if (error) {
   process.exit(1);
 }
 
+// Every account this app creates gets must_change_password = true on first
+// login, no exceptions — see requireRole()'s /force-password-change gate
+// (src/lib/auth.ts) and HANDOVER.md's account-security section. This is
+// the very first account in a fresh environment, so there's no
+// on_auth_user_created-created row race to worry about; it already exists
+// by the time createUser() above resolves.
+const { error: profileError } = await supabase
+  .from("profiles")
+  .update({ must_change_password: true })
+  .eq("id", data.user.id);
+
+if (profileError) {
+  console.error("Admin account created, but failed to set must_change_password:", profileError.message);
+  console.error(`Set it manually before handing off credentials: profiles.id = ${data.user.id}`);
+  process.exit(1);
+}
+
 console.log(`Admin account created: ${data.user.email} (id: ${data.user.id})`);
-console.log("You can now sign in at /login with this email and password.");
+console.log("You can now sign in at /login with this email and password — you'll be asked to set a new one immediately.");

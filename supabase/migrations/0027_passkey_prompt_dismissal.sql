@@ -1,0 +1,27 @@
+-- ============================================================================
+-- Passkey (WebAuthn) setup suggestion — dismissal state.
+--
+-- After the mandatory must_change_password gate clears (0022), an account
+-- with zero registered webauthn_credentials (0025) is routed once to
+-- /setup-passkey — a skippable nudge to register Face ID/fingerprint/
+-- Windows Hello sign-in (see lib/auth.ts's requireRole()). "Maybe later" on
+-- that page sets this column so the nudge doesn't reappear on every future
+-- login.
+--
+-- Deliberately account-bound (a profiles column), not device-bound (e.g. a
+-- cookie): dismissing "remind me later" on one device should follow the
+-- account everywhere, the same way must_change_password and every other
+-- account-security flag in this app already does — a cookie would mean
+-- re-dismissing the same prompt on every new device/browser, which is
+-- exactly the nagging behaviour this is meant to avoid.
+--
+-- Deliberately NOT added to the pinned-column list in the "users can update
+-- their own profile" policy (0022/0017's BOPLA fix) — unlike
+-- must_change_password/failed_login_attempts/etc, this is a genuinely
+-- user-owned, low-stakes preference (same class as phone/avatar_url, which
+-- are also unpinned), so the account holder can clear it themselves via the
+-- regular session-scoped client (src/app/setup-passkey/actions.ts) without
+-- needing the service-role client.
+-- ============================================================================
+
+alter table profiles add column if not exists passkey_prompt_dismissed_at timestamptz;

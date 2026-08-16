@@ -19,6 +19,8 @@ export type Profile = {
   // Added by 0022_account_security_columns.sql.
   failed_login_attempts: number;
   must_change_password: boolean;
+  // Added by 0027_passkey_prompt_dismissal.sql.
+  passkey_prompt_dismissed_at: string | null;
   created_at: string;
   updated_at: string;
 };
