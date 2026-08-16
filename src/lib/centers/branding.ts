@@ -6,18 +6,20 @@
  * template); the switcher UI uses this map instead so it can pick the
  * correct light/dark variant, the same way Logo.tsx's `onLight` prop does.
  *
- * AKET has no real logo yet — `aket-monogram.svg` is a placeholder built
- * from this app's existing navy/gold palette (tailwind.config.ts), self-
- * contained (own fill colors) so one asset works on both light and dark
- * surfaces, unlike the AKIS crest PNGs which need separate ink colors.
- * Swap it out here once Muhammad supplies AKET's real logo file.
+ * AKET's real crest (2026-08-16): `aket-seal.svg`, hand-recreated from a
+ * reference image Muhammad supplied in chat — not a byte-exact copy, since
+ * pasted chat images arrive as inline content with no readable file path
+ * in this environment. Ask for the original vector source (SVG/AI/PDF) if
+ * one exists, for a fully accurate swap. Self-contained (own fill colors)
+ * so one asset works on both light and dark surfaces, same reasoning the
+ * placeholder it replaced used.
  */
 // The round "seal" variant (not the shield-shaped "crest") is used here on
 // purpose — it's the one designed to sit inside a circular badge, which is
 // what this compact switcher control needs.
 export const CENTER_LOGO: Record<string, { light: string; dark: string }> = {
   AKIS: { light: "/brand/seal-navy.png", dark: "/brand/seal-white.png" },
-  AKET: { light: "/brand/aket-monogram.svg", dark: "/brand/aket-monogram.svg" },
+  AKET: { light: "/brand/aket-seal.svg", dark: "/brand/aket-seal.svg" },
 };
 
 export function centerLogoSrc(shortCode: string): { light: string; dark: string } {

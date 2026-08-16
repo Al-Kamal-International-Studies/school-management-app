@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!--
+    AKET (Al Kamal Education Technology) crest — hand-recreated from a
+    reference image Muhammad supplied in chat. This is NOT a byte-exact
+    copy: the chat attachment's raw file bytes weren't accessible (pasted
+    images in this environment arrive as inline content, not a readable
+    file path), so this is a close visual recreation instead. Ask Muhammad
+    for the original source file (SVG/AI/PDF, if one exists) for a fully
+    accurate replacement.
+
+    Square canvas, shield-only (the reference image's "Knowledge is Light"
+    ribbon banner is dropped here on purpose) — this asset is only ever
+    rendered inside CenterSwitcher.tsx's 28px circular badge
+    (rounded-full/overflow-hidden/object-cover), so a wide ribbon at the
+    bottom of a tall shield would just be cropped away; better to compose
+    the icon-only portion to read clearly at that size.
+  -->
+  <defs>
+    <clipPath id="aket-shield-clip">
+      <path d="M100 8
+               C 130 8, 158 20, 176 34
+               L 176 92
+               C 176 138, 148 172, 100 194
+               C 52 172, 24 138, 24 92
+               L 24 34
+               C 42 20, 70 8, 100 8 Z" />
+    </clipPath>
+  </defs>
+
+  <!-- Outer navy edge -->
+  <path d="M100 4
+           C 132 4, 162 17, 181 32
+           L 181 92
+           C 181 141, 151 177, 100 200
+           C 49 177, 19 141, 19 92
+           L 19 32
+           C 38 17, 68 4, 100 4 Z" fill="#081029" />
+
+  <!-- Light steel-blue border band -->
+  <path d="M100 8
+           C 130 8, 158 20, 176 34
+           L 176 92
+           C 176 138, 148 172, 100 194
+           C 52 172, 24 138, 24 92
+           L 24 34
+           C 42 20, 70 8, 100 8 Z" fill="#6d8fb8" />
+
+  <!-- Inner navy field -->
+  <path d="M100 16
+           C 127 16, 152 27, 168 40
+           L 168 91
+           C 168 132, 143 162, 100 182
+           C 57 162, 32 132, 32 91
+           L 32 40
+           C 48 27, 73 16, 100 16 Z" fill="#0f2454" />
+
+  <g clip-path="url(#aket-shield-clip)">
+    <!-- "AK" / "ET" lettering -->
+    <text x="52" y="98" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+          font-weight="700" font-size="46" fill="#e6dab8">AK</text>
+    <text x="150" y="98" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+          font-weight="700" font-size="46" fill="#e6dab8">ET</text>
+
+    <!-- Torch handle -->
+    <rect x="95" y="95" width="10" height="38" rx="2" fill="#6b4a2f" />
+    <!-- Torch cup -->
+    <path d="M86 78 L114 78 L110 96 L90 96 Z" fill="#8b8f94" />
+    <!-- Flame -->
+    <path d="M100 24
+             C 108 34, 116 42, 112 54
+             C 118 50, 122 40, 119 30
+             C 128 40, 130 54, 122 66
+             C 130 62, 136 52, 134 42
+             C 140 56, 138 72, 122 80
+             C 108 86, 90 80, 86 66
+             C 84 56, 88 46, 96 40
+             C 92 50, 94 58, 100 62
+             C 96 50, 96 36, 100 24 Z" fill="#ef7f2e" />
+    <path d="M100 40
+             C 104 48, 106 54, 102 62
+             C 98 58, 96 50, 100 40 Z" fill="#f7c04a" />
+
+    <!-- Open book -->
+    <path d="M40 148 C 55 140, 82 138, 100 145 L 100 172 C 82 165, 55 167, 40 175 Z" fill="#d8dadb" />
+    <path d="M160 148 C 145 140, 118 138, 100 145 L 100 172 C 118 165, 145 167, 160 175 Z" fill="#f4f4f4" />
+    <path d="M40 148 C 55 140, 82 138, 100 145 L 100 172 C 82 165, 55 167, 40 175 Z" fill="none" stroke="#3a3530" stroke-width="1.5" />
+    <path d="M160 148 C 145 140, 118 138, 100 145 L 100 172 C 118 165, 145 167, 160 175 Z" fill="none" stroke="#3a3530" stroke-width="1.5" />
+    <line x1="100" y1="145" x2="100" y2="172" stroke="#3a3530" stroke-width="1.5" />
+  </g>
+</svg>
