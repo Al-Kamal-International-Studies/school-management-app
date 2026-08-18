@@ -89,6 +89,7 @@ const ar: Dictionary = {
     auditLog: "سجل التدقيق",
     messages: "الرسائل",
     classChat: "محادثة الصف",
+    tutorial: "الجولة التعريفية",
     passwordResetRequests: "طلبات إعادة تعيين كلمة المرور",
     collapseSidebar: "طي الشريط الجانبي",
     expandSidebar: "توسيع الشريط الجانبي",
@@ -683,8 +684,6 @@ const ar: Dictionary = {
     finish: "إنهاء",
     stepOf: "الخطوة {current} من {total}",
     replayTitle: "الجولة التعريفية",
-    replayDescription: "أعد الجولة التعريفية الإرشادية للوحة التحكم الخاصة بك في أي وقت.",
-    replayButton: "إعادة الجولة التعريفية",
     welcome: {
       admin: {
         title: "مرحبًا بك في الكمال، أيها المسؤول!",

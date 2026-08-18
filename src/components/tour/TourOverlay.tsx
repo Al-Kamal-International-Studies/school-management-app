@@ -52,7 +52,26 @@ function computePlacement(rect: Rect | null, size: { width: number; height: numb
   const vh = window.innerHeight;
 
   if (!rect) {
-    return { top: Math.round(vh / 2), left: Math.round(vw / 2), transform: "translate(-50%, -50%)" };
+    // Deliberately NOT `left: 50%; transform: translate(-50%, -50%)` — this
+    // element also carries `animate-fade-in-up` (see the className below),
+    // whose keyframe sets its own `transform: translateY(...)`. A CSS
+    // keyframe animation replaces an element's *entire* computed transform
+    // for its duration and — with `fill-mode: both`, which this animation
+    // uses — permanently after it ends too, the exact same clobbering bug
+    // WelcomeRobot.tsx's own doc comments already warned about for a
+    // different element. It silently ate the `translate(-50%, -50%)` here,
+    // so the "centered" welcome step actually rendered flush against the
+    // container's top-left-of-center point, unshifted — invisible at a wide
+    // desktop viewport (still happens to fit on-screen), but genuinely
+    // off-screen on a narrow one (confirmed: at 375px wide, the panel's
+    // right edge landed 153px past the viewport edge). Computing the true
+    // pixel `left`/`top` from the already-known panel `size` instead avoids
+    // `transform` for positioning entirely, so there's nothing left for the
+    // entrance animation's own transform to clobber — same technique the
+    // "real target" branch below already uses.
+    const left = clamp1D(vw / 2 - size.width / 2, size.width, vw, VIEWPORT_MARGIN);
+    const top = clamp1D(vh / 2 - size.height / 2, size.height, vh, VIEWPORT_MARGIN);
+    return { top: Math.round(top), left: Math.round(left) };
   }
 
   // Space is measured from the spotlight ring's own (padded) edge, not the

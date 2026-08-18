@@ -90,6 +90,7 @@ const en = {
     auditLog: "Audit Log",
     messages: "Messages",
     classChat: "Class Chat",
+    tutorial: "Tutorial",
     passwordResetRequests: "Password Resets",
     collapseSidebar: "Collapse sidebar",
     expandSidebar: "Expand sidebar",
@@ -686,8 +687,6 @@ const en = {
     finish: "Finish",
     stepOf: "Step {current} of {total}",
     replayTitle: "Guided tour",
-    replayDescription: "Take the guided walkthrough of your dashboard again, anytime.",
-    replayButton: "Take the tour again",
     welcome: {
       admin: {
         title: "Welcome to Al Kamal, Administrator!",

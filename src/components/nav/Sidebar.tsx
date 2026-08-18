@@ -27,6 +27,7 @@ import {
   MessagesSquare,
   Hash,
   KeyRound,
+  Compass,
   ChevronLeft,
   X,
   type LucideIcon,
@@ -36,6 +37,7 @@ import { CenterLogo, CenterMark } from "@/components/auth/CenterLogo";
 import { knownCenterFor } from "@/lib/centers/knownCenters";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { dirForLocale } from "@/lib/i18n/locales";
+import { useTour } from "@/lib/tour/TourProvider";
 import type { Dictionary } from "@/lib/i18n/types";
 import type { UserRole } from "@/lib/types/database.types";
 
@@ -170,6 +172,7 @@ export function Sidebar({
   const { dict, locale } = useLocale();
   const isRtl = dirForLocale(locale) === "rtl";
   const items = NAV_ITEMS[role];
+  const { startTour } = useTour();
   // Which center's branding to show — the account's actual active center
   // (resolved by (dashboard)/layout.tsx from profile.center_id or, for a
   // multi-center account, the active_center_id cookie), not a hardcoded
@@ -377,11 +380,37 @@ export function Sidebar({
           {items.map(renderItem)}
         </ul>
 
-        {/* Settings is pinned to the bottom for every role, outside the
-            per-role scrollable nav list, so it's always reachable without
-            scrolling. */}
+        {/* Tutorial (the guided tour, see src/lib/tour) and Settings are
+            both pinned to the bottom, outside the per-role scrollable nav
+            list, so they're always reachable without scrolling — same
+            "always visible" reasoning Settings already had, extended to
+            Tutorial per Muhammad's request that it live beside Settings
+            rather than buried as a card inside the Settings page. Tutorial
+            sits above Settings in the same footer block, styled identically
+            to a real nav item (via renderItem's own classes below) even
+            though it triggers `startTour()` instead of navigating — it's a
+            <button>, not a <Link>, and deliberately never shows the
+            "active" highlight renderItem gives a real route, since there's
+            no page it corresponds to. */}
         <div className="relative border-t border-white/10 p-3">
-          <ul>{renderItem({ href: "/settings", labelKey: "settings", icon: SettingsIcon })}</ul>
+          <ul className="space-y-1">
+            <li>
+              <button
+                type="button"
+                onClick={startTour}
+                aria-label={dict.nav.tutorial}
+                title={collapsed ? dict.nav.tutorial : undefined}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-navy-200 transition-colors hover:text-white lg:py-2.5",
+                  collapsed && "lg:justify-center lg:px-0"
+                )}
+              >
+                <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+                <span className={cn(collapsed && "lg:hidden")}>{dict.nav.tutorial}</span>
+              </button>
+            </li>
+            {renderItem({ href: "/settings", labelKey: "settings", icon: SettingsIcon })}
+          </ul>
         </div>
       </nav>
     </>
