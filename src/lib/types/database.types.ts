@@ -377,6 +377,16 @@ export type ParentStudent = {
   created_at: string;
 };
 
+// Added by 0031_subject_chat.sql. channel_id is a class_subject_teachers.id
+// — the channel IS that row, there's no separate "channel" table.
+export type SubjectChatMessage = {
+  id: string;
+  channel_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+};
+
 export type ChatbotPersona = "muhammad" | "sheikha";
 
 export type ChatbotConversation = {
@@ -542,6 +552,12 @@ export type Database = {
         Row: WebauthnCredential;
         Insert: Partial<WebauthnCredential> & { user_id: string; credential_id: string; public_key: string };
         Update: Partial<WebauthnCredential>;
+        Relationships: [];
+      };
+      subject_chat_messages: {
+        Row: SubjectChatMessage;
+        Insert: Partial<SubjectChatMessage> & { channel_id: string; sender_id: string; content: string };
+        Update: Partial<SubjectChatMessage>;
         Relationships: [];
       };
     };

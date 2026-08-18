@@ -25,6 +25,7 @@ import {
   FolderOpen,
   History,
   MessagesSquare,
+  Hash,
   KeyRound,
   ChevronLeft,
   X,
@@ -115,6 +116,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   teacher: [
     { href: "/teacher", labelKey: "myClasses", icon: BookOpen },
+    { href: "/class-chat", labelKey: "classChat", icon: Hash },
     { href: "/teacher/timetable", labelKey: "myTimetable", icon: CalendarClock },
     { href: "/teacher/attendance", labelKey: "attendance", icon: CalendarCheck },
     { href: "/teacher/assignments", labelKey: "assignments", icon: FileText },
@@ -130,6 +132,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   student: [
     { href: "/student", labelKey: "dashboard", icon: LayoutDashboard },
+    { href: "/class-chat", labelKey: "classChat", icon: Hash },
     { href: "/student/timetable", labelKey: "myTimetable", icon: CalendarClock },
     { href: "/student/attendance", labelKey: "attendance", icon: CalendarCheck },
     { href: "/student/assignments", labelKey: "assignments", icon: FileText },
