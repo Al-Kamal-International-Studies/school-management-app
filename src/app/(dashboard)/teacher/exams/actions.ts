@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { notifyUsers } from "@/lib/notifications/notify";
 
 export interface ActionState {
   error?: string;
@@ -40,6 +41,21 @@ export async function createExamAction(_prevState: ActionState, formData: FormDa
   if (error) return { error: error.message };
 
   await logAuditEvent(me.id, "create_exam", "exams", created.id, { title: parsed.data.title, exam_date: parsed.data.exam_date });
+
+  // Best-effort notify — every student currently enrolled in the class.
+  // Never blocks the exam from being saved.
+  const { data: students } = await supabase.from("students").select("id").eq("class_id", parsed.data.class_id);
+  if (students?.length) {
+    await notifyUsers(
+      students.map((s) => s.id),
+      {
+        type: "exam",
+        title: `New ${parsed.data.exam_type}: ${parsed.data.title}`,
+        body: `${parsed.data.exam_date}${parsed.data.start_time ? ` at ${parsed.data.start_time}` : ""}`,
+        url: "/student/exams",
+      }
+    );
+  }
 
   revalidatePath("/teacher/exams");
   return { success: true };

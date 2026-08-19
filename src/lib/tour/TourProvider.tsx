@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, useTransition } from "react";
 import type { ReactNode } from "react";
-import { TOUR_STEPS, type TourStep } from "./steps";
+import { TOUR_STEPS, CURRENT_TOUR_VERSION, type TourStep } from "./steps";
 import { markTourSeenAction } from "./actions";
 import type { Profile } from "@/lib/types/database.types";
 
@@ -19,10 +19,10 @@ interface TourContextValue {
 
 const TourContext = createContext<TourContextValue | null>(null);
 
-/** Read from anywhere inside DashboardShell's tree (e.g. the "Take the tour
- * again" button in Settings) to control or inspect the tour. Works through
- * intervening Server Components the same way useLocale()/useTheme() already
- * do in this app — see LocaleProvider/ThemeProvider. */
+/** Read from anywhere inside DashboardShell's tree (e.g. the Tutorial button
+ * in Sidebar.tsx) to control or inspect the tour. Works through intervening
+ * Server Components the same way useLocale()/useTheme() already do in this
+ * app — see LocaleProvider/ThemeProvider. */
 export function useTour() {
   const ctx = useContext(TourContext);
   if (!ctx) throw new Error("useTour must be used within a TourProvider");
@@ -49,6 +49,15 @@ export function useTour() {
  * mobile sidebar drawer while a nav-item step is active — on desktop the
  * sidebar is always visible regardless (Sidebar.tsx's `lg:!transform-none`),
  * so this is a no-op there.
+ *
+ * `steps` is state, not a plain derivation of `profile.role` — it needs to
+ * hold two different lists depending on how the tour was triggered (see
+ * `startTour` vs. the auto-trigger effect below), which is what actually
+ * makes the "what's new" mechanism work: a manual replay (the sidebar's
+ * Tutorial button) always shows the complete, current step list for the
+ * role, while an automatic trigger for an account that's behind on
+ * `tour_version_seen` (0032_tour_versioning_and_notifications.sql) shows
+ * only the step(s) newer than what they've already seen.
  */
 export function TourProvider({
   profile,
@@ -59,29 +68,52 @@ export function TourProvider({
   onNavStepChange: (open: boolean) => void;
   children: ReactNode;
 }) {
-  const steps = TOUR_STEPS[profile.role];
+  const fullSteps = TOUR_STEPS[profile.role];
+  const [steps, setSteps] = useState<TourStep[]>(fullSteps);
   const [isOpen, setIsOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [, startTransition] = useTransition();
   const hasAutoTriggered = useRef(false);
 
-  // Auto-trigger exactly once per mount, for an account that hasn't
-  // finished/skipped the tour yet. A ref (not state) guards this so a
-  // later has_seen_tour flip from replaying elsewhere never re-fires it.
-  // The setState calls are deferred via queueMicrotask — same fix as
-  // HANDOVER.md Part 2 §17.2 ("Calling setState synchronously within an
-  // effect can trigger cascading renders", a React 19 / eslint-config-next
-  // 16 lint rule) — behavior is unchanged, just no longer synchronous.
+  // Auto-trigger exactly once per mount, for an account that hasn't fully
+  // caught up on the tour yet. A ref (not state) guards this so a later
+  // has_seen_tour/tour_version_seen flip from replaying elsewhere never
+  // re-fires it. The setState calls are deferred via queueMicrotask — same
+  // fix as HANDOVER.md Part 2 §17.2 ("Calling setState synchronously
+  // within an effect can trigger cascading renders", a React 19 /
+  // eslint-config-next 16 lint rule) — behavior is unchanged, just no
+  // longer synchronous.
   useEffect(() => {
     if (hasAutoTriggered.current) return;
     hasAutoTriggered.current = true;
+
     if (!profile.has_seen_tour) {
+      // First-ever login: the complete tour for this role.
       queueMicrotask(() => {
+        setSteps(fullSteps);
         setStepIndex(0);
         setIsOpen(true);
       });
+      return;
     }
-    // profile.has_seen_tour is read once, deliberately — see ref guard above.
+
+    if (profile.tour_version_seen < CURRENT_TOUR_VERSION) {
+      // Returning account, behind on the tour: show only what's new to
+      // them (a feature shipped after they last finished/skipped it), not
+      // the whole thing again. If nothing in their role's step list is
+      // actually newer than what they've seen (e.g. every version bump
+      // since only touched other roles), there's nothing to show — no
+      // popup fires, same as a fully caught-up account.
+      const newSteps = fullSteps.filter((s) => s.version > profile.tour_version_seen);
+      if (newSteps.length > 0) {
+        queueMicrotask(() => {
+          setSteps(newSteps);
+          setStepIndex(0);
+          setIsOpen(true);
+        });
+      }
+    }
+    // profile fields are read once, deliberately — see ref guard above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -100,6 +132,11 @@ export function TourProvider({
   }
 
   function startTour() {
+    // Manual replay (the sidebar's Tutorial button) is always the full
+    // tour, regardless of what an auto-trigger might have shown — someone
+    // asking to "take the tour again" wants the whole thing, not just
+    // whatever's newest.
+    setSteps(fullSteps);
     setStepIndex(0);
     setIsOpen(true);
   }

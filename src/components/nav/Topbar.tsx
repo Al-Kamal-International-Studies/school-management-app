@@ -4,7 +4,8 @@ import { signOutAction } from "@/app/logout/actions";
 import { initials } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { CenterSwitcher } from "@/components/nav/CenterSwitcher";
-import type { Center, Profile } from "@/lib/types/database.types";
+import { NotificationBell } from "@/components/nav/NotificationBell";
+import type { Center, Notification, Profile } from "@/lib/types/database.types";
 
 const ROLE_TONE = {
   admin: "navy",
@@ -17,11 +18,13 @@ export function Topbar({
   profile,
   centers,
   activeCenterId,
+  notifications,
   onMenuClick,
 }: {
   profile: Profile;
   centers: Center[];
   activeCenterId: string;
+  notifications: Notification[];
   onMenuClick: () => void;
 }) {
   return (
@@ -37,6 +40,7 @@ export function Topbar({
       <div className="hidden lg:block" />
       <div className="flex items-center gap-2 sm:gap-4">
         <CenterSwitcher centers={centers} activeCenterId={activeCenterId} />
+        <NotificationBell notifications={notifications} />
         <Badge tone={ROLE_TONE[profile.role]}>
           <span className="hidden sm:inline">{profile.title || profile.role}</span>
           <span className="sm:hidden">{(profile.title || profile.role)[0]?.toUpperCase()}</span>

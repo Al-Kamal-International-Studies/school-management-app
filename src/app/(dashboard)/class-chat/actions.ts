@@ -4,7 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { sendPushToUsers } from "@/lib/push/send";
+import { notifyUsers } from "@/lib/notifications/notify";
 
 export interface ActionState {
   error?: string;
@@ -56,7 +56,8 @@ export async function sendChannelMessageAction(_prevState: ActionState, formData
     ]);
     const studentIds = (students ?? []).map((s) => s.id);
     if (studentIds.length) {
-      await sendPushToUsers(studentIds, {
+      await notifyUsers(studentIds, {
+        type: "class_chat",
         title: `New message in ${subject?.name ?? "class"}`,
         body: parsed.data.content.slice(0, 120),
         url: `/class-chat/${parsed.data.channel_id}`,

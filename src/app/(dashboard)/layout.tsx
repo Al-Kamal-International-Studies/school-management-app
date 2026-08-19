@@ -4,6 +4,7 @@ import { DashboardShell } from "@/components/nav/DashboardShell";
 import { getAccessibleCenters } from "@/lib/centers/getAccessibleCenters";
 import { getActiveCenterId } from "@/lib/centers/activeCenterCookie";
 import { knownCenterFor } from "@/lib/centers/knownCenters";
+import { listMyNotifications } from "@/lib/notifications/queries";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();
@@ -37,8 +38,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // falls back to AKIS for anything unrecognized.
   const centerCode = knownCenterFor(activeCenterId).short_code.toLowerCase();
 
+  // Fetched here (not inside Topbar/DashboardShell, which render inside a
+  // "use client" boundary and can't fetch on their own) and passed down as
+  // a prop, same shape as `accessibleCenters` above.
+  const notifications = await listMyNotifications(profile.id);
+
   return (
-    <DashboardShell profile={profile} centers={accessibleCenters} activeCenterId={activeCenterId} centerCode={centerCode}>
+    <DashboardShell
+      profile={profile}
+      centers={accessibleCenters}
+      activeCenterId={activeCenterId}
+      centerCode={centerCode}
+      notifications={notifications}
+    >
       {children}
     </DashboardShell>
   );

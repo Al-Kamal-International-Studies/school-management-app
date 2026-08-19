@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { notifyUsers } from "@/lib/notifications/notify";
 
 export interface ActionState {
   error?: string;
@@ -37,6 +38,23 @@ export async function createAssignmentAction(_prevState: ActionState, formData: 
   if (error) return { error: error.message };
 
   await logAuditEvent(me.id, "create_assignment", "assignments", created.id, { title: parsed.data.title, due_date: parsed.data.due_date });
+
+  // Best-effort notify — every student currently enrolled in the class,
+  // same "resolve students from class_id" pattern used throughout this
+  // app (see e.g. class-chat/actions.ts). Never blocks the assignment from
+  // being saved.
+  const { data: students } = await supabase.from("students").select("id").eq("class_id", parsed.data.class_id);
+  if (students?.length) {
+    await notifyUsers(
+      students.map((s) => s.id),
+      {
+        type: "assignment",
+        title: `New assignment: ${parsed.data.title}`,
+        body: `Due ${parsed.data.due_date}`,
+        url: "/student/assignments",
+      }
+    );
+  }
 
   revalidatePath("/teacher/assignments");
   return { success: true };

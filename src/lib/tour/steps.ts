@@ -24,10 +24,34 @@ export interface TourStep {
   target: TourStepTarget;
   title: (dict: Dictionary) => string;
   body: (dict: Dictionary) => string;
+  /** See CURRENT_TOUR_VERSION below. */
+  version: number;
 }
 
-function step(id: string, target: TourStepTarget, pick: (dict: Dictionary) => { title: string; body: string }): TourStep {
-  return { id, target, title: (dict) => pick(dict).title, body: (dict) => pick(dict).body };
+/**
+ * Bump this, and tag the new/changed step(s) below with the new number,
+ * every time a shipped feature needs a tour step added or meaningfully
+ * changed. This is what makes the "what's new" mechanism in
+ * TourProvider.tsx actually work: an account that already finished the tour
+ * (has_seen_tour = true) but whose `profile.tour_version_seen` is behind
+ * this number gets shown, automatically on next login, just the step(s)
+ * whose `version` is newer than what they've already seen — not the whole
+ * tour again, and not silence either. See HANDOVER.md's standing rule
+ * ("keep the tour current") — this is the one line of code that rule
+ * actually means in practice.
+ *
+ * History: 1 = the original per-role tour (Part 6). 2 = Class Chat, added
+ * for teacher/student (Part 9).
+ */
+export const CURRENT_TOUR_VERSION = 2;
+
+function step(
+  id: string,
+  target: TourStepTarget,
+  pick: (dict: Dictionary) => { title: string; body: string },
+  version = 1
+): TourStep {
+  return { id, target, title: (dict) => pick(dict).title, body: (dict) => pick(dict).body, version };
 }
 
 const welcomeStep = (role: UserRole): TourStep => step("welcome", { kind: "center" }, (dict) => dict.tour.welcome[role]);
@@ -56,6 +80,7 @@ export const TOUR_STEPS: Record<UserRole, TourStep[]> = {
   teacher: [
     welcomeStep("teacher"),
     step("myClasses", { kind: "element", selector: '[data-tour="page-title"]' }, (d) => d.tour.steps.teacher.myClasses),
+    step("classChat", { kind: "nav", href: "/class-chat" }, (d) => d.tour.steps.teacher.classChat, 2),
     step("timetable", { kind: "nav", href: "/teacher/timetable" }, (d) => d.tour.steps.teacher.timetable),
     step("attendance", { kind: "nav", href: "/teacher/attendance" }, (d) => d.tour.steps.teacher.attendance),
     step("assignments", { kind: "nav", href: "/teacher/assignments" }, (d) => d.tour.steps.teacher.assignments),
@@ -67,6 +92,7 @@ export const TOUR_STEPS: Record<UserRole, TourStep[]> = {
   student: [
     welcomeStep("student"),
     step("dashboard", { kind: "element", selector: '[data-tour="page-title"]' }, (d) => d.tour.steps.student.dashboard),
+    step("classChat", { kind: "nav", href: "/class-chat" }, (d) => d.tour.steps.student.classChat, 2),
     step("timetable", { kind: "nav", href: "/student/timetable" }, (d) => d.tour.steps.student.timetable),
     step("attendance", { kind: "nav", href: "/student/attendance" }, (d) => d.tour.steps.student.attendance),
     step("assignments", { kind: "nav", href: "/student/assignments" }, (d) => d.tour.steps.student.assignments),

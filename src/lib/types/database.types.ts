@@ -44,6 +44,9 @@ export type Profile = {
   passkey_prompt_dismissed_at: string | null;
   // Added by 0029_tour_seen.sql.
   has_seen_tour: boolean;
+  // Added by 0032_tour_versioning_and_notifications.sql — see
+  // src/lib/tour/steps.ts's CURRENT_TOUR_VERSION doc comment.
+  tour_version_seen: number;
   // Added by 0027_centers.sql — the profile's home center. See
   // profile_center_access for which center(s) a profile may actually access
   // (usually just this one; more than one for a multi-center account).
@@ -387,6 +390,22 @@ export type SubjectChatMessage = {
   created_at: string;
 };
 
+// Added by 0032_tour_versioning_and_notifications.sql. The Topbar bell's
+// inbox — one row per notification, across every producer in the app (see
+// src/lib/notifications/notify.ts). `url` is where clicking the
+// notification navigates (the specific chat/exam/homework/etc. it's about);
+// null for a notification with nowhere specific to send the user.
+export type Notification = {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string;
+  url: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
 export type ChatbotPersona = "muhammad" | "sheikha";
 
 export type ChatbotConversation = {
@@ -558,6 +577,12 @@ export type Database = {
         Row: SubjectChatMessage;
         Insert: Partial<SubjectChatMessage> & { channel_id: string; sender_id: string; content: string };
         Update: Partial<SubjectChatMessage>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: Notification;
+        Insert: Partial<Notification> & { user_id: string; type: string; title: string; body: string };
+        Update: Partial<Notification>;
         Relationships: [];
       };
     };

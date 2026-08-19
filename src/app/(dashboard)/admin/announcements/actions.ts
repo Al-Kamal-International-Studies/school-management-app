@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendPushToUsers } from "@/lib/push/send";
+import { notifyUsers } from "@/lib/notifications/notify";
 import { logAuditEvent } from "@/lib/audit/log";
 
 export interface ActionState {
@@ -33,15 +33,15 @@ export async function createAnnouncementAction(_prevState: ActionState, formData
 
   await logAuditEvent(me.id, "create_announcement", "announcements", created.id, { title: parsed.data.title, audience: parsed.data.audience });
 
-  // Best-effort push — never blocks the announcement from being saved.
+  // Best-effort notify — never blocks the announcement from being saved.
   const admin = createAdminClient();
   let recipients = admin.from("profiles").select("id").is("archived_at", null);
   if (parsed.data.audience !== "all") recipients = recipients.eq("role", parsed.data.audience);
   const { data: profiles } = await recipients;
   if (profiles?.length) {
-    await sendPushToUsers(
+    await notifyUsers(
       profiles.map((p) => p.id),
-      { title: parsed.data.title, body: parsed.data.body, url: "/" }
+      { type: "announcement", title: parsed.data.title, body: parsed.data.body, url: "/" }
     );
   }
 

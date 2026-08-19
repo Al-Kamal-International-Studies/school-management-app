@@ -7,7 +7,7 @@ import { Topbar } from "@/components/nav/Topbar";
 import { PageTransition } from "@/components/nav/PageTransition";
 import { TourProvider } from "@/lib/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
-import type { Center, Profile } from "@/lib/types/database.types";
+import type { Center, Notification, Profile } from "@/lib/types/database.types";
 import type { ReactNode } from "react";
 
 export function DashboardShell({
@@ -15,11 +15,13 @@ export function DashboardShell({
   centers,
   activeCenterId,
   centerCode,
+  notifications,
   children,
 }: {
   profile: Profile;
   centers: Center[];
   activeCenterId: string;
+  notifications: Notification[];
   /** "akis" | "aket" — resolved server-side in (dashboard)/layout.tsx from
    *  the same validated activeCenterId, never a raw cookie read. Sets the
    *  `data-center` attribute that globals.css keys the whole navy/gold
@@ -58,7 +60,13 @@ export function DashboardShell({
         <div className="flex min-h-screen bg-slate-50 dark:bg-navy-950">
           <Sidebar role={profile.role} activeCenterId={activeCenterId} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
           <div className="flex min-w-0 flex-1 flex-col">
-            <Topbar profile={profile} centers={centers} activeCenterId={activeCenterId} onMenuClick={() => setMobileOpen(true)} />
+            <Topbar
+              profile={profile}
+              centers={centers}
+              activeCenterId={activeCenterId}
+              notifications={notifications}
+              onMenuClick={() => setMobileOpen(true)}
+            />
             <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
               <PageTransition>{children}</PageTransition>
             </main>

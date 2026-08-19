@@ -428,6 +428,11 @@ const en = {
     noConversations: "No conversations yet.",
     noMessages: "No messages yet — say hello.",
   },
+  notifications: {
+    title: "Notifications",
+    empty: "No notifications yet.",
+    markAllRead: "Mark all read",
+  },
   classChat: {
     title: "Class Chat",
     subtitle: "One chat per subject — share updates, links, and questions with your class.",
@@ -745,13 +750,17 @@ const en = {
         },
         settings: {
           title: "Settings",
-          body: "Change your password, manage your devices, and adjust language or theme. Replay this tour from here anytime.",
+          body: "Change your password, manage your devices, and adjust language or theme.",
         },
       },
       teacher: {
         myClasses: {
           title: "Your classes",
           body: "Your teaching schedule and assigned classes for today are right here.",
+        },
+        classChat: {
+          title: "Class Chat",
+          body: "New: one chat per subject you teach. Post an update or a link — like a Google Meet link for a live class — and your students can reply.",
         },
         timetable: {
           title: "My timetable",
@@ -779,13 +788,17 @@ const en = {
         },
         settings: {
           title: "Settings",
-          body: "Change your password, manage your devices, and adjust language or theme. Replay this tour from here anytime.",
+          body: "Change your password, manage your devices, and adjust language or theme.",
         },
       },
       student: {
         dashboard: {
           title: "Your dashboard",
           body: "Your academic progress, attendance, and today's schedule at a glance.",
+        },
+        classChat: {
+          title: "Class Chat",
+          body: "New: a chat for each of your subjects. Your teacher can post updates or a link here — like a Google Meet link — and you can reply.",
         },
         timetable: {
           title: "My timetable",
@@ -813,7 +826,7 @@ const en = {
         },
         settings: {
           title: "Settings",
-          body: "Change your password, manage your devices, and adjust language or theme. Replay this tour from here anytime.",
+          body: "Change your password, manage your devices, and adjust language or theme.",
         },
       },
       parent: {
@@ -835,7 +848,7 @@ const en = {
         },
         settings: {
           title: "Settings",
-          body: "Change your password, manage your devices, and adjust language or theme. Replay this tour from here anytime.",
+          body: "Change your password, manage your devices, and adjust language or theme.",
         },
       },
     },

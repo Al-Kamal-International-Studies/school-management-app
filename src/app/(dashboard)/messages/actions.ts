@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { sendPushToUser } from "@/lib/push/send";
+import { notifyUser } from "@/lib/notifications/notify";
 
 export interface ActionState {
   error?: string;
@@ -76,7 +76,12 @@ export async function sendDmMessageAction(_prevState: ActionState, formData: For
   await supabase.from("dm_conversations").update({ updated_at: new Date().toISOString() }).eq("id", parsed.data.conversation_id);
 
   const recipientId = conversation.participant_a === me.id ? conversation.participant_b : conversation.participant_a;
-  await sendPushToUser(recipientId, { title: `New message from ${me.full_name}`, body: parsed.data.content.slice(0, 120) });
+  await notifyUser(recipientId, {
+    type: "message",
+    title: `New message from ${me.full_name}`,
+    body: parsed.data.content.slice(0, 120),
+    url: `/messages/${parsed.data.conversation_id}`,
+  });
 
   revalidatePath(`/messages/${parsed.data.conversation_id}`);
   return {};
