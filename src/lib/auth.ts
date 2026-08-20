@@ -2,8 +2,10 @@ import "server-only";
 
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getDeviceIdCookie, isDeviceApproved } from "@/lib/auth/deviceCookie";
+import { WEBAUTHN_LOGIN_VERIFIED_COOKIE } from "@/lib/webauthn/config";
 import type { Profile, UserRole } from "@/lib/types/database.types";
 
 /**
@@ -109,9 +111,19 @@ async function requireDeviceApproved(userId: string): Promise<void> {
 /**
  * Redirects an admin to /mfa/setup (no factor enrolled yet — mandatory
  * first-time setup) or /mfa/verify (factor exists, this session hasn't
- * verified it yet) until they're at aal2. Never called for non-admins.
+ * verified it yet) until they're at aal2 — UNLESS this session was just
+ * established via a verified passkey/biometric login instead of a
+ * password, in which case that already stands in for the TOTP step-up (see
+ * WEBAUTHN_LOGIN_VERIFIED_COOKIE's doc comment for the full reasoning: a
+ * verified WebAuthn assertion is itself a real second factor, and this
+ * app's custom WebAuthn bridge never touches Supabase's own aal2, so
+ * without this check a passkey login would always still demand a
+ * redundant TOTP code on top of it). Checked first, and takes priority
+ * over the AAL check below when present — no network round trip needed to
+ * know an admin who just did a real biometric ceremony doesn't also need
+ * to type a code. Never called for non-admins.
  *
- * Fails OPEN, not closed, on an error from the AAL check itself (e.g. a
+ * The AAL check itself fails OPEN, not closed, on an error (e.g. a
  * transient Supabase Auth hiccup) — logged, not thrown. This is a
  * deliberate choice: an availability outage in one Auth sub-API turning
  * into "the admin cannot get into their own school's app at all" is a
@@ -120,6 +132,9 @@ async function requireDeviceApproved(userId: string): Promise<void> {
  * fully applies regardless.
  */
 export async function requireAdminMfaVerified(): Promise<void> {
+  const cookieStore = await cookies();
+  if (cookieStore.get(WEBAUTHN_LOGIN_VERIFIED_COOKIE)?.value === "1") return;
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 

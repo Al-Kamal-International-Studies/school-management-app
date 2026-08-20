@@ -7,7 +7,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createAuthClient } from "@/lib/supabase/authClient";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
 import { completeLogin } from "@/lib/auth/completeLogin";
-import { getRpID, getOrigin, WEBAUTHN_CHALLENGE_COOKIE, WEBAUTHN_LOGIN_EMAIL_COOKIE } from "@/lib/webauthn/config";
+import {
+  getRpID,
+  getOrigin,
+  WEBAUTHN_CHALLENGE_COOKIE,
+  WEBAUTHN_LOGIN_EMAIL_COOKIE,
+  WEBAUTHN_LOGIN_VERIFIED_COOKIE,
+} from "@/lib/webauthn/config";
 
 export interface WebauthnLoginState {
   error?: string;
@@ -169,6 +175,24 @@ export async function verifyWebauthnLoginAction(response: AuthenticationResponse
   if (verifyOtpError) {
     return { error: "Could not complete sign-in. Try your password instead." };
   }
+
+  // This session was just established via a verified WebAuthn ceremony —
+  // mark it as such so requireAdminMfaVerified() (lib/auth.ts) treats that
+  // as satisfying an admin's step-up-auth requirement instead of also
+  // sending them to /mfa/verify for a redundant TOTP code (see
+  // WEBAUTHN_LOGIN_VERIFIED_COOKIE's own doc comment for why one's needed
+  // at all). Persistence mirrors the auth session's own "remember me"
+  // choice via the same maxAge convention @supabase/ssr uses by default
+  // (see createAuthClient's doc comment) — this cookie has to outlive at
+  // least as long as the session it's vouching for, on every subsequent
+  // request, not just this one.
+  cookieStore.set(WEBAUTHN_LOGIN_VERIFIED_COOKIE, "1", {
+    path: "/",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    ...(remember ? { maxAge: 400 * 24 * 60 * 60 } : {}),
+  });
 
   return completeLogin(profile, { email, centerDeniedMessage: GENERIC_ERROR, next });
 }

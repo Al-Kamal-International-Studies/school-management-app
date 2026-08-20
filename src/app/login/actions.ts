@@ -1,11 +1,13 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { createAuthClient } from "@/lib/supabase/authClient";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
 import { setAccountBanned } from "@/lib/auth/accountAccess";
 import { logAuditEvent } from "@/lib/audit/log";
 import { completeLogin } from "@/lib/auth/completeLogin";
+import { WEBAUTHN_LOGIN_VERIFIED_COOKIE } from "@/lib/webauthn/config";
 
 export interface LoginState {
   error?: string;
@@ -29,6 +31,15 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
   if (!email || !password) {
     return { error: "Enter your email and password." };
   }
+
+  // This is a password sign-in, which must always require the full 2FA
+  // step-up for an admin (see requireAdminMfaVerified's doc comment) — a
+  // stale WEBAUTHN_LOGIN_VERIFIED_COOKIE from an earlier passkey login on
+  // this same browser must never carry over and silently satisfy that
+  // requirement for this new, weaker-factor session. Cleared unconditionally,
+  // before checking anything else, regardless of whether this attempt
+  // ultimately succeeds.
+  (await cookies()).delete(WEBAUTHN_LOGIN_VERIFIED_COOKIE);
 
   // Keyed by the submitted email, not IP — this app has no edge/proxy to
   // read a trustworthy client IP from yet (see docs/SECURITY.md §4, Phase
