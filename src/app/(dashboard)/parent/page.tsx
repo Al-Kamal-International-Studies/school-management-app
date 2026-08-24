@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { Megaphone } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { listMyChildren, getChildOverview } from "./queries";
+import { getLatestAutismVideo } from "../autism/queries";
+import { getAutismVideoUrlAction } from "@/lib/autism/getVideoUrl";
 import { listVisibleAnnouncements } from "@/lib/queries/announcements";
 import { ChildLeaveForm } from "./ChildLeaveForm";
 import { Card } from "@/components/ui/Card";
@@ -48,7 +51,17 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
     );
   }
 
-  const [overview, announcements] = await Promise.all([getChildOverview(activeChild.id), listVisibleAnnouncements(5)]);
+  const [overview, announcements, latestAutism] = await Promise.all([
+    getChildOverview(activeChild.id),
+    listVisibleAnnouncements(5),
+    getLatestAutismVideo(activeChild.id),
+  ]);
+  // Only fetched once we know there's actually a video to show — no point
+  // minting a signed URL (getAutismVideoUrlAction) for a widget that won't
+  // render. AKET-only in practice: an AKIS child will simply never have an
+  // autism_videos row, so `latestAutism` is null and this whole block is
+  // skipped, same as the sidebar/tour center-gating elsewhere in this Part.
+  const autismVideoUrl = latestAutism ? (await getAutismVideoUrlAction(latestAutism.video.id)).url : undefined;
   const presentCount = overview.attendance.filter((a) => a.status === "present").length;
   const attendanceRate = overview.attendance.length ? Math.round((presentCount / overview.attendance.length) * 1000) / 10 : null;
 
@@ -131,6 +144,29 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
           </Card>
         </FadeUpItem>
       </FadeUpStagger>
+
+      {latestAutism && (
+        <FadeUp delay={0.09} className="space-y-3">
+          <div data-tour="autism-widget">
+            <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.autismSection.widgetTitle}</h2>
+            <Card>
+              {autismVideoUrl && (
+                <video src={autismVideoUrl} controls className="w-full rounded-lg bg-black" />
+              )}
+              {latestAutism.video.title && <p className="mt-3 font-medium text-navy-900 dark:text-white">{latestAutism.video.title}</p>}
+              {latestAutism.latestComment && (
+                <p className="mt-2 text-sm text-slate-600 dark:text-navy-200">{latestAutism.latestComment.content}</p>
+              )}
+              <Link
+                href={`/autism/video/${latestAutism.video.id}`}
+                className="mt-3 inline-block text-sm font-medium text-navy-700 hover:text-navy-900 dark:text-gold-300 dark:hover:text-gold-200"
+              >
+                {dict.autismSection.watchFull}
+              </Link>
+            </Card>
+          </div>
+        </FadeUp>
+      )}
 
       <FadeUp delay={0.08} className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.announcements.title}</h2>

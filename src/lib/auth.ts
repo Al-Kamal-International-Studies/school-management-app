@@ -74,6 +74,22 @@ export async function requireRole(...roles: UserRole[]): Promise<Profile> {
     redirect(dashboardPathForRole(profile.role));
   }
 
+  // An admin who already has a real MFA factor enrolled must clear that
+  // challenge (reach aal2) before force-password-change is even attempted —
+  // Supabase's own Auth API rejects auth.updateUser({password}) at aal1
+  // once any factor exists, regardless of *why* the password is being
+  // changed ("AAL2 session is required to update email or password when
+  // MFA is enabled"). This only bites an admin whose password was
+  // reset/rotated *after* they'd already completed real enrollment (found
+  // live, 2026-08-24, rotating admin@/muhammad@'s passwords — see
+  // HANDOVER.md Part 13). A brand-new admin has no factor yet, so this is a
+  // no-op for them and must_change_password below still runs first exactly
+  // as before, with first-time MFA setup happening afterward via
+  // requireAdminMfaVerified() further down.
+  if (profile.role === "admin" && profile.must_change_password) {
+    await requireAdminMfaChallengeIfEnrolled();
+  }
+
   if (profile.must_change_password) {
     redirect("/force-password-change");
   }
@@ -146,6 +162,40 @@ export async function requireAdminMfaVerified(): Promise<void> {
   if (data.currentLevel === "aal2") return;
 
   redirect(data.nextLevel === "aal2" ? "/mfa/verify" : "/mfa/setup");
+}
+
+/**
+ * Narrower cousin of requireAdminMfaVerified(), called only when an admin
+ * still has must_change_password = true. Checks Supabase's *real* AAL
+ * status directly — deliberately does NOT honor the
+ * WEBAUTHN_LOGIN_VERIFIED_COOKIE short-circuit requireAdminMfaVerified()
+ * uses, because that cookie only affects whether *this app* treats the
+ * session as fully authenticated; Supabase's own auth.updateUser() call
+ * (in force-password-change/actions.ts) enforces its aal2 requirement
+ * server-side regardless of what this app believes, so a passkey-logged-in
+ * admin with an existing TOTP factor would still hit the same failure if
+ * this check deferred to that cookie.
+ *
+ * If no factor is enrolled yet (data.nextLevel !== "aal2"), this is a
+ * no-op — a genuinely new admin still goes through must_change_password
+ * first and /mfa/setup afterward, exactly as before this fix. Same
+ * fail-open-on-error reasoning as requireAdminMfaVerified(): a transient
+ * Auth API hiccup here must not turn into "can't get into the account at
+ * all, ever."
+ */
+async function requireAdminMfaChallengeIfEnrolled(): Promise<void> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+  if (error || !data) {
+    console.error("requireAdminMfaChallengeIfEnrolled: AAL check failed, failing open:", error?.message);
+    return;
+  }
+
+  if (data.currentLevel === "aal2") return;
+  if (data.nextLevel !== "aal2") return;
+
+  redirect("/mfa/verify");
 }
 
 /**

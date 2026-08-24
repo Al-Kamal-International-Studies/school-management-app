@@ -424,6 +424,122 @@ export type ChatbotMessage = {
   created_at: string;
 };
 
+// Added by 0033_autism_section.sql. Admin-managed teacher<->student
+// pairing, independent of class_subject_teachers/enrollments — see that
+// migration's header comment for why. `unique (teacher_id, student_id)`
+// makes the insert idempotent for re-assignment.
+export type AutismAssignment = {
+  id: string;
+  teacher_id: string;
+  student_id: string;
+  assigned_by: string | null;
+  created_at: string;
+};
+
+// Added by 0033_autism_section.sql. One row per uploaded video, stored in
+// the private "autism-videos" Storage bucket (file_size_limit/
+// allowed_mime_types enforced by 0034_autism_videos_storage_limits.sql).
+export type AutismVideo = {
+  id: string;
+  student_id: string;
+  uploaded_by: string;
+  title: string | null;
+  file_path: string;
+  mime_type: string;
+  file_size: number;
+  created_at: string;
+};
+
+// Added by 0033_autism_section.sql. Flat, chronological per-video thread —
+// same shape as SubjectChatMessage. Admins can read but never insert here
+// (product decision: view-only) — see can_comment_on_autism_video()'s
+// comment in that migration.
+export type AutismVideoComment = {
+  id: string;
+  video_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+};
+
+// Added by 0035_admissions.sql — see that migration's header comment for the
+// full status-lifecycle explanation ('pending' -> 'processed'/'failed').
+export type AdmissionStatus = "pending" | "processed" | "failed";
+export type AdmissionGender = "male" | "female";
+
+export type Admission = {
+  id: string;
+  center_id: string;
+  status: AdmissionStatus;
+  error: string | null;
+
+  student_full_name: string;
+  student_gender: AdmissionGender;
+  student_dob: string | null;
+  student_id_number: string | null;
+  student_religion: string | null;
+  student_nationality: string | null;
+
+  father_name: string | null;
+  father_job_title: string | null;
+  father_mobile: string | null;
+  father_email: string | null;
+  father_nationality: string | null;
+
+  mother_name: string | null;
+  mother_job_title: string | null;
+  mother_mobile: string | null;
+  mother_email: string | null;
+  mother_nationality: string | null;
+
+  address_emirate: string | null;
+  address_area: string | null;
+  address_street: string | null;
+  address_building: string | null;
+
+  medical_conditions: string | null;
+  medical_vision: boolean;
+  medical_motor: boolean;
+  medical_hearing: boolean;
+  medical_balance: boolean;
+  medical_speech: boolean;
+  medical_allergies: boolean;
+  medical_allergies_detail: string | null;
+
+  consent_accepted: boolean;
+  payment_policy_accepted: boolean;
+  additional_policies_accepted: boolean | null;
+
+  enrolment_grade: string | null;
+  package_name: string | null;
+
+  registration_date: string;
+  created_by: string | null;
+  created_at: string;
+
+  student_profile_id: string | null;
+  parent_profile_id: string | null;
+  pdf_file_path: string | null;
+};
+
+// Added by 0036_outbound_emails.sql — durable email outbox. See
+// src/lib/email/send.ts for the send-or-queue behavior that writes here.
+export type OutboundEmailStatus = "pending" | "sent" | "failed";
+
+export type OutboundEmail = {
+  id: string;
+  to_email: string;
+  subject: string;
+  body_html: string;
+  body_text: string;
+  status: OutboundEmailStatus;
+  error: string | null;
+  related_table: string | null;
+  related_id: string | null;
+  created_at: string;
+  sent_at: string | null;
+};
+
 // Minimal Database shape so `createClient<Database>()` gets useful typing
 // without needing the full Supabase CLI codegen output.
 export type Database = {
@@ -583,6 +699,43 @@ export type Database = {
         Row: Notification;
         Insert: Partial<Notification> & { user_id: string; type: string; title: string; body: string };
         Update: Partial<Notification>;
+        Relationships: [];
+      };
+      autism_assignments: {
+        Row: AutismAssignment;
+        Insert: Partial<AutismAssignment> & { teacher_id: string; student_id: string };
+        Update: Partial<AutismAssignment>;
+        Relationships: [];
+      };
+      autism_videos: {
+        Row: AutismVideo;
+        Insert: Partial<AutismVideo> & { student_id: string; uploaded_by: string; file_path: string; mime_type: string; file_size: number };
+        Update: Partial<AutismVideo>;
+        Relationships: [];
+      };
+      autism_video_comments: {
+        Row: AutismVideoComment;
+        Insert: Partial<AutismVideoComment> & { video_id: string; author_id: string; content: string };
+        Update: Partial<AutismVideoComment>;
+        Relationships: [];
+      };
+      admissions: {
+        Row: Admission;
+        Insert: Partial<Admission> & {
+          center_id: string;
+          student_full_name: string;
+          student_gender: AdmissionGender;
+          created_by: string;
+          consent_accepted: boolean;
+          payment_policy_accepted: boolean;
+        };
+        Update: Partial<Admission>;
+        Relationships: [];
+      };
+      outbound_emails: {
+        Row: OutboundEmail;
+        Insert: Partial<OutboundEmail> & { to_email: string; subject: string; body_html: string; body_text: string };
+        Update: Partial<OutboundEmail>;
         Relationships: [];
       };
     };
