@@ -5,6 +5,7 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { PasskeySetupPrompt } from "./PasskeySetupPrompt";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { knownCenterFor } from "@/lib/centers/knownCenters";
 
 /**
  * Reached via requireRole()'s requirePasskeyPromptResolved gate (lib/auth.ts)
@@ -32,9 +33,16 @@ export default async function SetupPasskeyPage() {
   if ((count ?? 0) > 0) redirect(dashboardPath);
 
   const dict = await getDictionary(await getLocale());
+  // Same pattern /mfa/setup, /mfa/verify, /devices/manage, and
+  // /force-password-change already use — the account (and its real center)
+  // is already known here, so this shouldn't fall back to AuthShell's AKIS
+  // default the way a pre-login page reasonably does. This was the one
+  // post-login AuthShell call site that got missed when that pattern was
+  // rolled out — found via live QA testing logging in as an AKET account.
+  const center = knownCenterFor(profile.center_id);
 
   return (
-    <AuthShell>
+    <AuthShell center={center}>
       <div className="mb-8">
         <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.passkeySuggestion.title}</h1>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-navy-400">{dict.passkeySuggestion.subtitle}</p>
