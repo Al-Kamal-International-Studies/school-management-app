@@ -12,6 +12,7 @@ import {
   KeyRound,
   CalendarDays,
   Activity,
+  FileSignature,
 } from "lucide-react";
 import { Card, StatCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -214,6 +215,12 @@ export default async function AdminOverviewPage() {
             <Button>
               <UserPlus className="h-4 w-4" />
               {dict.adminOverview.addStudentOrTeacher}
+            </Button>
+          </Link>
+          <Link href="/admin/admissions/new">
+            <Button variant="secondary">
+              <FileSignature className="h-4 w-4" />
+              {dict.adminOverview.newAdmission}
             </Button>
           </Link>
           <Link href="/admin/classes/new">

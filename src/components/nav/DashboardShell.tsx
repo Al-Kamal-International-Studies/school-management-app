@@ -48,7 +48,7 @@ export function DashboardShell({
   }
 
   return (
-    <TourProvider profile={profile} onNavStepChange={setMobileOpen}>
+    <TourProvider profile={profile} activeCenterId={activeCenterId} onNavStepChange={setMobileOpen}>
       {/* `display: contents` — a real DOM node (so `data-center` and the CSS
           custom properties it switches actually reach both children below,
           including TourOverlay which renders as a sibling of the shell div,

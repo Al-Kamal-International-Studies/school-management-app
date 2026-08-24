@@ -30,6 +30,8 @@ import {
   Compass,
   ChevronLeft,
   X,
+  HeartHandshake,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,7 +41,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { dirForLocale } from "@/lib/i18n/locales";
 import { useTour } from "@/lib/tour/TourProvider";
 import type { Dictionary } from "@/lib/i18n/types";
-import type { UserRole } from "@/lib/types/database.types";
+import { AKET_CENTER_ID, type UserRole } from "@/lib/types/database.types";
 
 // Persists the desktop-only collapsed/expanded rail preference across
 // sessions. Deliberately a plain localStorage flag (not the cookie+
@@ -97,12 +99,19 @@ interface NavItem {
   href: string;
   labelKey: keyof Dictionary["nav"];
   icon: LucideIcon;
+  /** Set only for an item that must be hidden unless the account's active
+   * center is this one — currently just the Autism Section links, which
+   * only make sense for AKET (see AGENTS.md/HANDOVER.md's AKET-only
+   * framing of the feature). Undefined means "visible in every center",
+   * the default for every pre-existing item. */
+  centerRestricted?: string;
 }
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   admin: [
     { href: "/admin", labelKey: "overview", icon: LayoutDashboard },
     { href: "/admin/users", labelKey: "users", icon: Users },
+    { href: "/admin/admissions", labelKey: "admissions", icon: UserPlus },
     { href: "/admin/password-reset-requests", labelKey: "passwordResetRequests", icon: KeyRound },
     { href: "/admin/classes", labelKey: "classes", icon: School },
     { href: "/admin/subjects", labelKey: "subjects", icon: BookMarked },
@@ -112,6 +121,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { href: "/admin/events", labelKey: "calendar", icon: CalendarDays },
     { href: "/admin/documents", labelKey: "documents", icon: FolderOpen },
     { href: "/admin/announcements", labelKey: "announcements", icon: Megaphone },
+    { href: "/admin/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID },
     { href: "/messages", labelKey: "messages", icon: MessagesSquare },
     { href: "/admin/feedback", labelKey: "feedback", icon: MessageSquareText },
     { href: "/admin/audit-log", labelKey: "auditLog", icon: History },
@@ -119,6 +129,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   teacher: [
     { href: "/teacher", labelKey: "myClasses", icon: BookOpen },
     { href: "/class-chat", labelKey: "classChat", icon: Hash },
+    { href: "/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID },
     { href: "/teacher/timetable", labelKey: "myTimetable", icon: CalendarClock },
     { href: "/teacher/attendance", labelKey: "attendance", icon: CalendarCheck },
     { href: "/teacher/assignments", labelKey: "assignments", icon: FileText },
@@ -149,6 +160,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   parent: [
     { href: "/parent", labelKey: "dashboard", icon: LayoutDashboard },
+    { href: "/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID },
     { href: "/calendar", labelKey: "calendar", icon: CalendarDays },
     { href: "/documents", labelKey: "documents", icon: FolderOpen },
     { href: "/messages", labelKey: "messages", icon: MessagesSquare },
@@ -171,7 +183,11 @@ export function Sidebar({
   const pathname = usePathname();
   const { dict, locale } = useLocale();
   const isRtl = dirForLocale(locale) === "rtl";
-  const items = NAV_ITEMS[role];
+  // centerRestricted items (currently just Autism Section) only show up
+  // when the account's active center actually matches — same
+  // activeCenterId prop DashboardShell already threads down for the
+  // branding/CenterSwitcher, no new plumbing needed.
+  const items = NAV_ITEMS[role].filter((item) => !item.centerRestricted || item.centerRestricted === activeCenterId);
   const { startTour } = useTour();
   // Which center's branding to show — the account's actual active center
   // (resolved by (dashboard)/layout.tsx from profile.center_id or, for a
