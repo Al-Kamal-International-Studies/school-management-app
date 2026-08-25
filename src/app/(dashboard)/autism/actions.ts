@@ -13,7 +13,7 @@ export interface ActionState {
 }
 
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
-const MAX_VIDEO_BYTES = 300 * 1024 * 1024; // 300MB — keep in sync with 0034_autism_videos_storage_limits.sql's file_size_limit, the real enforcement layer.
+const MAX_VIDEO_BYTES = 150 * 1024 * 1024; // 150MB — keep in sync with 0039_lower_autism_video_size_limit.sql's file_size_limit, the real enforcement layer.
 
 const uploadMetaSchema = z.object({
   student_id: z.string().uuid(),
@@ -36,7 +36,7 @@ export async function uploadAutismVideoAction(_prevState: ActionState, formData:
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose a video to upload." };
-  if (file.size > MAX_VIDEO_BYTES) return { error: "Video must be under 300MB." };
+  if (file.size > MAX_VIDEO_BYTES) return { error: "Video must be under 150MB." };
   if (!ALLOWED_VIDEO_TYPES.includes(file.type)) return { error: "Use an MP4, MOV, or WebM video." };
 
   const supabase = await createClient();

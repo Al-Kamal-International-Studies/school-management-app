@@ -2,7 +2,7 @@ import "server-only";
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type PDFImage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type PDFImage, type Color } from "pdf-lib";
 import type { Admission } from "@/lib/types/database.types";
 
 export type AdmissionRecord = Admission;
@@ -13,14 +13,9 @@ export type AdmissionCenter = "akis" | "aket";
 // the feature spec / HANDOVER.md Part 12). Kept as plain data here so the
 // layout code below stays generic and center-agnostic.
 //
-// Scope limitations (deliberate, documented — not oversights):
-//  - AKET has no PNG crest asset today, only an SVG (public/brand/aket-seal.
-//    svg) that pdf-lib cannot embed directly. Rather than pull in a new
-//    SVG-rasterization dependency for one logo, AKET's header is rendered
-//    text-only (school name, no image). AKIS uses its real PNG crest
-//    (public/brand/crest-navy.png).
-//  - Neither form's Arabic payment-policy translation page is reproduced —
-//    English content only, for both centers.
+// Scope limitation (deliberate, documented — not an oversight): neither
+// form's Arabic payment-policy translation page is reproduced — English
+// content only, for both centers.
 // ----------------------------------------------------------------------------
 
 const SCHOOL_NAME: Record<AdmissionCenter, string> = {
@@ -186,19 +181,72 @@ const ADDITIONAL_POLICIES: PolicySubsection[] = [
 
 // ----------------------------------------------------------------------------
 // Layout engine — a small, purpose-built helper (not a general PDF library
-// wrapper). Just enough to lay out headers, wrapped paragraphs, bullet
-// lists, label+blank fields (filled with the submitted value when known),
-// checkbox rows, and blank signature lines, with automatic pagination.
+// wrapper). Just enough to lay out a colored header band, tinted section
+// headers, wrapped paragraphs, bullet lists, label+blank fields (filled with
+// the submitted value when known), checkbox rows, blank signature lines, and
+// a page footer, with automatic pagination.
 // ----------------------------------------------------------------------------
 
 const PAGE_WIDTH = 595.28; // A4, points
 const PAGE_HEIGHT = 841.89;
-const MARGIN = 50;
+const MARGIN = 54;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 
-const NAVY = rgb(0.06, 0.11, 0.27);
 const BLACK = rgb(0.08, 0.08, 0.08);
 const GRAY = rgb(0.45, 0.45, 0.45);
+const FIELD_LINE = rgb(0.32, 0.32, 0.32);
+const FOOTER_GRAY = rgb(0.52, 0.52, 0.52);
+const FOOTER_RULE = rgb(0.85, 0.85, 0.85);
+const WHITE = rgb(1, 1, 1);
+
+/** Per-center brand palette, sourced verbatim from src/app/globals.css's
+ * `:root` (AKIS) and `[data-center="aket"]` (AKET) custom properties. */
+interface CenterPalette {
+  primary900: Color;
+  primary700: Color;
+  accent500: Color;
+  accent700: Color;
+  /** A very light tint of primary900, used for section-header background bands. */
+  tint: Color;
+  /** A pale, translucent-reading tint of accent500 over the dark header band, for the subtitle. */
+  onBandSubtitle: Color;
+}
+
+function rgb255(r: number, g: number, b: number): Color {
+  return rgb(r / 255, g / 255, b / 255);
+}
+
+/** Mixes a brand color into white at `strength` (0-1) to get a light tint
+ * suitable as a background band behind dark text. */
+function tint(r: number, g: number, b: number, strength: number): Color {
+  const mix = (channel: number) => (channel / 255) * strength + (1 - strength);
+  return rgb(mix(r), mix(g), mix(b));
+}
+
+/** Mixes a brand color into white at `strength` for pale text-on-dark use. */
+function paleOn(r: number, g: number, b: number, strength: number): Color {
+  const mix = (channel: number) => (channel / 255) * strength + (1 - strength);
+  return rgb(mix(r), mix(g), mix(b));
+}
+
+const PALETTE: Record<AdmissionCenter, CenterPalette> = {
+  akis: {
+    primary900: rgb255(15, 33, 49),
+    primary700: rgb255(28, 58, 86),
+    accent500: rgb255(212, 175, 55),
+    accent700: rgb255(148, 107, 10),
+    tint: tint(15, 33, 49, 0.07),
+    onBandSubtitle: paleOn(212, 175, 55, 0.85),
+  },
+  aket: {
+    primary900: rgb255(3, 40, 44),
+    primary700: rgb255(10, 71, 77),
+    accent500: rgb255(245, 144, 90),
+    accent700: rgb255(217, 109, 44),
+    tint: tint(3, 40, 44, 0.07),
+    onBandSubtitle: paleOn(245, 144, 90, 0.85),
+  },
+};
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
@@ -221,45 +269,106 @@ class PdfWriter {
   doc: PDFDocument;
   font: PDFFont;
   bold: PDFFont;
+  serifBold: PDFFont;
   center: AdmissionCenter;
+  palette: CenterPalette;
   logo: PDFImage | null;
   page!: PDFPage;
   y = 0;
 
-  constructor(doc: PDFDocument, font: PDFFont, bold: PDFFont, center: AdmissionCenter, logo: PDFImage | null) {
+  constructor(
+    doc: PDFDocument,
+    font: PDFFont,
+    bold: PDFFont,
+    serifBold: PDFFont,
+    center: AdmissionCenter,
+    logo: PDFImage | null
+  ) {
     this.doc = doc;
     this.font = font;
     this.bold = bold;
+    this.serifBold = serifBold;
     this.center = center;
+    this.palette = PALETTE[center];
     this.logo = logo;
   }
 
-  /** Starts a fresh page. `withHeader` draws the logo (AKIS only) + form title on it. */
+  /** Starts a fresh page. `withHeader` draws the full cover-page header band
+   * (crest + school name + form title); other pages get a slim continuity
+   * header with the school name and a thin accent rule. */
   newPage(withHeader: boolean) {
     this.page = this.doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     this.y = PAGE_HEIGHT - MARGIN;
 
     if (withHeader) {
+      const bandHeight = 112;
+      const accentHeight = 4;
+
+      this.page.drawRectangle({
+        x: 0,
+        y: PAGE_HEIGHT - bandHeight,
+        width: PAGE_WIDTH,
+        height: bandHeight,
+        color: this.palette.primary900,
+      });
+      this.page.drawRectangle({
+        x: 0,
+        y: PAGE_HEIGHT - bandHeight - accentHeight,
+        width: PAGE_WIDTH,
+        height: accentHeight,
+        color: this.palette.accent500,
+      });
+
+      const bandCenterY = PAGE_HEIGHT - bandHeight / 2;
+      let textX = MARGIN;
+
       if (this.logo) {
-        const logoHeight = 46;
+        const logoHeight = 66;
         const scale = logoHeight / this.logo.height;
         const logoWidth = this.logo.width * scale;
-        this.page.drawImage(this.logo, { x: MARGIN, y: this.y - logoHeight, width: logoWidth, height: logoHeight });
+        this.page.drawImage(this.logo, {
+          x: MARGIN,
+          y: bandCenterY - logoHeight / 2,
+          width: logoWidth,
+          height: logoHeight,
+        });
+        textX = MARGIN + logoWidth + 20;
       }
+
       this.page.drawText(SCHOOL_NAME[this.center], {
-        x: this.logo ? MARGIN + 60 : MARGIN,
-        y: this.y - 18,
-        size: 15,
-        font: this.bold,
-        color: NAVY,
+        x: textX,
+        y: bandCenterY + 6,
+        size: 18,
+        font: this.serifBold,
+        color: WHITE,
       });
-      this.y -= 60;
-      this.title("STUDENTS REGISTRATION FORM");
+      this.page.drawText("STUDENT REGISTRATION FORM", {
+        x: textX,
+        y: bandCenterY - 16,
+        size: 10.5,
+        font: this.bold,
+        color: this.palette.onBandSubtitle,
+      });
+
+      this.y = PAGE_HEIGHT - bandHeight - accentHeight - 30;
     } else {
       // Continuity header on every non-cover page, per the source forms'
       // own letterhead-on-every-page convention.
-      this.page.drawText(SCHOOL_NAME[this.center], { x: MARGIN, y: this.y, size: 9, font: this.bold, color: GRAY });
-      this.y -= 22;
+      this.page.drawText(SCHOOL_NAME[this.center], {
+        x: MARGIN,
+        y: this.y,
+        size: 9,
+        font: this.bold,
+        color: this.palette.primary700,
+      });
+      this.page.drawRectangle({
+        x: MARGIN,
+        y: this.y - 8,
+        width: CONTENT_WIDTH,
+        height: 1.5,
+        color: this.palette.accent500,
+      });
+      this.y -= 28;
     }
   }
 
@@ -267,32 +376,40 @@ class PdfWriter {
     if (this.y - height < MARGIN) this.newPage(false);
   }
 
-  title(text: string) {
-    this.ensureSpace(24);
-    this.page.drawText(text, { x: MARGIN, y: this.y, size: 16, font: this.bold, color: NAVY });
-    this.y -= 26;
-  }
-
   sectionHeader(text: string) {
-    this.ensureSpace(30);
-    this.page.drawText(text, { x: MARGIN, y: this.y, size: 13, font: this.bold, color: NAVY });
-    this.y -= 6;
-    this.page.drawLine({
-      start: { x: MARGIN, y: this.y },
-      end: { x: MARGIN + CONTENT_WIDTH, y: this.y },
-      thickness: 1,
-      color: NAVY,
+    const size = 13;
+    const bandHeight = 27;
+    this.ensureSpace(bandHeight + 20);
+
+    const bandTop = this.y + 7;
+    const bandBottom = bandTop - bandHeight;
+    this.page.drawRectangle({
+      x: 0,
+      y: bandBottom,
+      width: PAGE_WIDTH,
+      height: bandHeight,
+      color: this.palette.tint,
     });
+    this.page.drawText(text, {
+      x: MARGIN,
+      y: bandBottom + (bandHeight - size) / 2 + 1,
+      size,
+      font: this.bold,
+      color: this.palette.primary900,
+    });
+
+    this.y = bandBottom - 5;
+    this.page.drawRectangle({ x: MARGIN, y: this.y - 2.5, width: 56, height: 2.5, color: this.palette.accent500 });
     this.y -= 18;
   }
 
   subsectionHeader(text: string) {
     this.ensureSpace(20);
-    this.page.drawText(text, { x: MARGIN, y: this.y, size: 11, font: this.bold, color: BLACK });
+    this.page.drawText(text, { x: MARGIN, y: this.y, size: 11, font: this.bold, color: this.palette.primary700 });
     this.y -= 16;
   }
 
-  paragraph(text: string, opts?: { size?: number; bold?: boolean; color?: ReturnType<typeof rgb> }) {
+  paragraph(text: string, opts?: { size?: number; bold?: boolean; color?: Color }) {
     const size = opts?.size ?? 10;
     const font = opts?.bold ? this.bold : this.font;
     const lines = wrapText(text, font, size, CONTENT_WIDTH);
@@ -312,7 +429,7 @@ class PdfWriter {
       lines.forEach((line, i) => {
         this.ensureSpace(size + 4);
         const prefix = i === 0 ? "•" : "";
-        this.page.drawText(prefix, { x: MARGIN, y: this.y, size, font: this.font, color: BLACK });
+        this.page.drawText(prefix, { x: MARGIN, y: this.y, size, font: this.font, color: this.palette.accent700 });
         this.page.drawText(line, { x: MARGIN + indent, y: this.y, size, font: this.font, color: BLACK });
         this.y -= size + 4;
       });
@@ -328,9 +445,9 @@ class PdfWriter {
     this.page.drawText(label, { x: MARGIN, y: this.y, size, font: this.bold, color: BLACK });
     this.y -= 14;
     if (value) {
-      this.page.drawText(String(value), { x: MARGIN, y: this.y + 2, size, font: this.font, color: BLACK });
+      this.page.drawText(String(value), { x: MARGIN, y: this.y + 3, size, font: this.font, color: BLACK });
     }
-    this.page.drawLine({ start: { x: MARGIN, y: this.y }, end: { x: MARGIN + width, y: this.y }, thickness: 0.75, color: GRAY });
+    this.page.drawLine({ start: { x: MARGIN, y: this.y }, end: { x: MARGIN + width, y: this.y }, thickness: 1, color: FIELD_LINE });
     this.y -= 16;
   }
 
@@ -344,11 +461,11 @@ class PdfWriter {
       const width = colWidth - 12;
       this.page.drawText(f.label, { x, y: this.y, size, font: this.bold, color: BLACK });
       if (f.value) {
-        this.page.drawText(String(f.value), { x, y: this.y - 12, size, font: this.font, color: BLACK });
+        this.page.drawText(String(f.value), { x, y: this.y - 15, size, font: this.font, color: BLACK });
       }
-      this.page.drawLine({ start: { x, y: this.y - 14 }, end: { x: x + width, y: this.y - 14 }, thickness: 0.75, color: GRAY });
+      this.page.drawLine({ start: { x, y: this.y - 18 }, end: { x: x + width, y: this.y - 18 }, thickness: 1, color: FIELD_LINE });
     });
-    this.y -= 30;
+    this.y -= 34;
   }
 
   /** A checkbox + label, several per row, wrapping onto new rows as needed. */
@@ -372,11 +489,11 @@ class PdfWriter {
         width: boxSize,
         height: boxSize,
         borderWidth: 1,
-        borderColor: BLACK,
-        color: item.checked ? BLACK : undefined,
+        borderColor: this.palette.primary700,
+        color: item.checked ? this.palette.primary700 : undefined,
       });
       if (item.checked) {
-        this.page.drawText("X", { x: x + 1, y: this.y - boxSize + 1.5, size: boxSize - 1, font: this.bold, color: rgb(1, 1, 1) });
+        this.page.drawText("X", { x: x + 1, y: this.y - boxSize + 1.5, size: boxSize - 1, font: this.bold, color: WHITE });
       }
       this.page.drawText(item.label, { x: x + boxSize + 4, y: this.y - boxSize + 1.5, size, font: this.font, color: BLACK });
       x += itemWidth + gap;
@@ -393,7 +510,7 @@ class PdfWriter {
     labels.forEach((label, i) => {
       const x = MARGIN + i * colWidth;
       const width = colWidth - 16;
-      this.page.drawLine({ start: { x, y: this.y }, end: { x: x + width, y: this.y }, thickness: 0.75, color: BLACK });
+      this.page.drawLine({ start: { x, y: this.y }, end: { x: x + width, y: this.y }, thickness: 1.1, color: this.palette.primary900 });
       this.page.drawText(label, { x, y: this.y - 12, size, font: this.font, color: GRAY });
     });
     this.y -= 26;
@@ -423,6 +540,35 @@ function guardianDisplayName(admission: AdmissionRecord): string | null {
   return admission.father_name ?? admission.mother_name ?? null;
 }
 
+/** Draws a subtle footer (page number, center name, generated-on date) on
+ * every page of the finished document. Run as a final pass so the total
+ * page count is known. */
+function drawFooters(doc: PDFDocument, font: PDFFont, center: AdmissionCenter) {
+  const generatedOn = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const pages = doc.getPages();
+  const total = pages.length;
+  const size = 8;
+
+  pages.forEach((page, i) => {
+    page.drawRectangle({
+      x: MARGIN,
+      y: 34,
+      width: CONTENT_WIDTH,
+      height: 0.75,
+      color: FOOTER_RULE,
+    });
+    const text = `${SCHOOL_NAME[center]}   •   Page ${i + 1} of ${total}   •   Generated ${generatedOn}`;
+    const textWidth = font.widthOfTextAtSize(text, size);
+    page.drawText(text, {
+      x: (PAGE_WIDTH - textWidth) / 2,
+      y: 20,
+      size,
+      font,
+      color: FOOTER_GRAY,
+    });
+  });
+}
+
 export async function generateAdmissionPdf(admission: AdmissionRecord, center: AdmissionCenter): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`${SCHOOL_NAME[center]} — Registration Form — ${fullName(admission)}`);
@@ -430,22 +576,20 @@ export async function generateAdmissionPdf(admission: AdmissionRecord, center: A
 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const serifBold = await doc.embedFont(StandardFonts.TimesRomanBold);
 
+  const logoFile = center === "akis" ? "crest-navy.png" : "aket-seal.png";
   let logo: PDFImage | null = null;
-  if (center === "akis") {
-    try {
-      const bytes = await readFile(path.join(process.cwd(), "public", "brand", "crest-navy.png"));
-      logo = await doc.embedPng(bytes);
-    } catch {
-      // Missing/unreadable asset shouldn't block generating the rest of the
-      // form — falls back to the text-only header used for AKET.
-      logo = null;
-    }
+  try {
+    const bytes = await readFile(path.join(process.cwd(), "public", "brand", logoFile));
+    logo = await doc.embedPng(bytes);
+  } catch {
+    // Missing/unreadable asset shouldn't block generating the rest of the
+    // form — falls back to the text-only header.
+    logo = null;
   }
-  // AKET: no PNG crest exists today (only an SVG pdf-lib can't embed
-  // directly) — text-only header, documented scope limitation above.
 
-  const writer = new PdfWriter(doc, font, bold, center, logo);
+  const writer = new PdfWriter(doc, font, bold, serifBold, center, logo);
 
   // ---------------------------------------------------------------------
   // Page 1: Personal Information
@@ -599,6 +743,8 @@ export async function generateAdmissionPdf(admission: AdmissionRecord, center: A
     ]);
     writer.signatureRow(["Parent/Guardian Signature", "Principal Signature"]);
   }
+
+  drawFooters(doc, font, center);
 
   return doc.save();
 }

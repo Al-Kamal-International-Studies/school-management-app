@@ -34,6 +34,11 @@ export interface TourStep {
    * AKIS-only account never sees a step pointing at a nav item (or, for
    * the parent widget step, a page section) it doesn't have. */
   centerRestricted?: string;
+  /** Set only on the parent role's Autism Section step — same concept as
+   * Sidebar.tsx's NavItem.autismGated. A parent must actually have a child
+   * flagged autistic, not just be at the right center, to see this step.
+   * See lib/autism/hasAutismAccess.ts. */
+  autismGated?: boolean;
 }
 
 /**
@@ -62,9 +67,10 @@ function step(
   target: TourStepTarget,
   pick: (dict: Dictionary) => { title: string; body: string },
   version = 1,
-  centerRestricted?: string
+  centerRestricted?: string,
+  autismGated?: boolean
 ): TourStep {
-  return { id, target, title: (dict) => pick(dict).title, body: (dict) => pick(dict).body, version, centerRestricted };
+  return { id, target, title: (dict) => pick(dict).title, body: (dict) => pick(dict).body, version, centerRestricted, autismGated };
 }
 
 const welcomeStep = (role: UserRole): TourStep => step("welcome", { kind: "center" }, (dict) => dict.tour.welcome[role]);
@@ -120,7 +126,7 @@ export const TOUR_STEPS: Record<UserRole, TourStep[]> = {
   parent: [
     welcomeStep("parent"),
     step("dashboard", { kind: "element", selector: '[data-tour="page-title"]' }, (d) => d.tour.steps.parent.dashboard),
-    step("autismSection", { kind: "element", selector: '[data-tour="autism-widget"]' }, (d) => d.tour.steps.parent.autismSection, 3, AKET_CENTER_ID),
+    step("autismSection", { kind: "element", selector: '[data-tour="autism-widget"]' }, (d) => d.tour.steps.parent.autismSection, 3, AKET_CENTER_ID, true),
     step("calendar", { kind: "nav", href: "/calendar" }, (d) => d.tour.steps.parent.calendar),
     step("documents", { kind: "nav", href: "/documents" }, (d) => d.tour.steps.parent.documents),
     step("messages", { kind: "nav", href: "/messages" }, (d) => d.tour.steps.parent.messages),

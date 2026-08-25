@@ -92,6 +92,10 @@ export type Student = {
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_relationship: string | null;
+  // Added by 0040_admissions_autism_and_class.sql — set from
+  // admissions.is_autistic at account-creation time. Gates Autism Section
+  // visibility for this student's parent(s); see Sidebar.tsx.
+  is_autistic: boolean;
   created_at: string;
 };
 
@@ -513,6 +517,18 @@ export type Admission = {
   enrolment_grade: string | null;
   package_name: string | null;
 
+  // Added by 0040_admissions_autism_and_class.sql.
+  is_autistic: boolean;
+  autism_diagnosed_before: boolean;
+  autism_diagnosis_date: string | null;
+  autism_diagnosed_by: string | null;
+  autism_current_support: string | null;
+  autism_communication_ability: string | null;
+  autism_sensory_notes: string | null;
+  autism_behavioral_notes: string | null;
+  autism_parent_notes: string | null;
+  enrolment_class_id: string | null;
+
   registration_date: string;
   created_by: string | null;
   created_at: string;
@@ -520,6 +536,10 @@ export type Admission = {
   student_profile_id: string | null;
   parent_profile_id: string | null;
   pdf_file_path: string | null;
+  // Added by 0040_admissions_autism_and_class.sql — denormalized copy of
+  // students.enrollment_number, set once processAdmission succeeds. Used to
+  // build the PDF download filename without an extra join.
+  enrollment_number: string | null;
 };
 
 // Added by 0036_outbound_emails.sql — durable email outbox. See

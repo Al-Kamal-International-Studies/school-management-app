@@ -62,6 +62,7 @@ export function useTour() {
 export function TourProvider({
   profile,
   activeCenterId,
+  hasAutismAccess,
   onNavStepChange,
   children,
 }: {
@@ -72,10 +73,17 @@ export function TourProvider({
    * shown a step pointing at a nav item or page section it doesn't have
    * (currently just the Autism Section steps; see steps.ts). */
   activeCenterId: string;
+  /** Same signal Sidebar.tsx uses to hide the parent Autism Section nav
+   * item — drops the matching `autismGated` tour step too, so the tour
+   * never tries to spotlight a page section that isn't there. Always true
+   * for non-parent roles. */
+  hasAutismAccess: boolean;
   onNavStepChange: (open: boolean) => void;
   children: ReactNode;
 }) {
-  const fullSteps = TOUR_STEPS[profile.role].filter((s) => !s.centerRestricted || s.centerRestricted === activeCenterId);
+  const fullSteps = TOUR_STEPS[profile.role].filter(
+    (s) => (!s.centerRestricted || s.centerRestricted === activeCenterId) && (!s.autismGated || hasAutismAccess)
+  );
   const [steps, setSteps] = useState<TourStep[]>(fullSteps);
   const [isOpen, setIsOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);

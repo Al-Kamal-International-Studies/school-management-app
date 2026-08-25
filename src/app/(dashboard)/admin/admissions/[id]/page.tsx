@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAdmission } from "../queries";
 import { DownloadPdfButton } from "./DownloadPdfButton";
 import { RetryButton } from "./RetryButton";
+import { DeleteAdmissionButton } from "./DeleteAdmissionButton";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Alert";
 import { FadeUp } from "@/components/motion/FadeUp";
@@ -17,6 +18,10 @@ const STATUS_TONE: Record<AdmissionStatus, "green" | "red" | "amber"> = {
   failed: "red",
   pending: "amber",
 };
+
+// Same reasoning as new/page.tsx's maxDuration — Retry re-runs the same
+// multi-step processAdmission chain.
+export const maxDuration = 60;
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -74,9 +79,25 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
         </FadeUp>
       )}
 
+      {/* A row stuck at 'pending' (not 'failed') means processing started but
+          never finished within the request — most likely a slow cold start
+          hitting the server-action timeout (see new/page.tsx's maxDuration
+          comment) rather than a reported error. Previously this state had
+          no Retry button at all (only status === "failed" showed one), so
+          it looked identical to "nothing is wrong yet" with no way forward
+          — the real bug behind "it just shows Pending, why?". */}
+      {admission.status === "pending" && (
+        <FadeUp delay={0.02}>
+          <Alert tone="warning">
+            <strong>{dict.admissions.stillProcessing}:</strong> {dict.admissions.stillProcessingBody}
+          </Alert>
+        </FadeUp>
+      )}
+
       <FadeUp delay={0.04} className="card flex flex-wrap items-center gap-3 p-6">
         {admission.pdf_file_path && <DownloadPdfButton admissionId={admission.id} dict={dict} />}
-        {admission.status === "failed" && <RetryButton admissionId={admission.id} dict={dict} />}
+        {(admission.status === "failed" || admission.status === "pending") && <RetryButton admissionId={admission.id} dict={dict} />}
+        <DeleteAdmissionButton admissionId={admission.id} />
       </FadeUp>
 
       <FadeUp delay={0.06} className="card space-y-4 p-6">

@@ -10,6 +10,7 @@ import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit
 import { generatePassword } from "@/lib/security/generatePassword";
 import { generateAdmissionPdf, type AdmissionCenter } from "@/lib/admissions/generatePdf";
 import { sendEmail } from "@/lib/email/send";
+import { setAccountBanned } from "@/lib/auth/accountAccess";
 import { AKIS_CENTER_ID, AKET_CENTER_ID, type Admission } from "@/lib/types/database.types";
 
 export interface ActionState {
@@ -56,6 +57,18 @@ const admissionSchema = z.object({
 
   enrolment_grade: optional(),
   package_name: optional(),
+  enrolment_class_id: optional(),
+
+  // Autism intake fields — collected only when is_autistic is checked (see
+  // AdmissionForm.tsx). Deliberately not a clinical determination; see
+  // 0040_admissions_autism_and_class.sql's header comment.
+  autism_diagnosis_date: optional(),
+  autism_diagnosed_by: optional(),
+  autism_current_support: optional(),
+  autism_communication_ability: optional(),
+  autism_sensory_notes: optional(),
+  autism_behavioral_notes: optional(),
+  autism_parent_notes: optional(),
 });
 
 /**
@@ -92,6 +105,18 @@ export async function createAdmissionAction(_prevState: ActionState, formData: F
   if (!paymentPolicyAccepted) return { error: "The payment policy acknowledgment is required." };
   if (data.center === "AKIS" && !additionalPoliciesAccepted) {
     return { error: "The additional policies acknowledgment is required for AKIS." };
+  }
+
+  // Autism Section is AKET-only (0033_autism_section.sql's confirmed product
+  // decision, mirrored as a DB check constraint in
+  // 0040_admissions_autism_and_class.sql) — AdmissionForm.tsx already hides
+  // the toggle entirely for AKIS, but the server action must not trust that;
+  // if a spoofed/replayed AKIS submission somehow sets it, fail cleanly
+  // here rather than letting the insert hit the DB constraint and turn into
+  // an opaque "Could not save the admission" error.
+  const isAutistic = data.center === "AKET" && readCheckbox(formData, "is_autistic");
+  if (readCheckbox(formData, "is_autistic") && data.center === "AKIS") {
+    return { error: "The Autism Section is only available for AKET admissions." };
   }
 
   const admin = createAdminClient();
@@ -141,6 +166,16 @@ export async function createAdmissionAction(_prevState: ActionState, formData: F
       additional_policies_accepted: data.center === "AKIS" ? additionalPoliciesAccepted : null,
       enrolment_grade: data.center === "AKIS" ? (data.enrolment_grade ?? null) : null,
       package_name: data.center === "AKET" ? (data.package_name ?? null) : null,
+      enrolment_class_id: data.enrolment_class_id ?? null,
+      is_autistic: isAutistic,
+      autism_diagnosed_before: isAutistic && readCheckbox(formData, "autism_diagnosed_before"),
+      autism_diagnosis_date: isAutistic ? (data.autism_diagnosis_date ?? null) : null,
+      autism_diagnosed_by: isAutistic ? (data.autism_diagnosed_by ?? null) : null,
+      autism_current_support: isAutistic ? (data.autism_current_support ?? null) : null,
+      autism_communication_ability: isAutistic ? (data.autism_communication_ability ?? null) : null,
+      autism_sensory_notes: isAutistic ? (data.autism_sensory_notes ?? null) : null,
+      autism_behavioral_notes: isAutistic ? (data.autism_behavioral_notes ?? null) : null,
+      autism_parent_notes: isAutistic ? (data.autism_parent_notes ?? null) : null,
       created_by: me.id,
     })
     .select("id")
@@ -194,6 +229,72 @@ export async function retryAdmissionProcessingAction(admissionId: string): Promi
 
   revalidatePath("/admin/admissions");
   revalidatePath(`/admin/admissions/${admissionId}`);
+  return {};
+}
+
+/**
+ * Deletes an admission record — the "no option to delete an admission" gap.
+ * Two different things happen underneath, deliberately not the same
+ * operation:
+ *
+ *  - The `admissions` intake row itself (plus its generated PDF in Storage
+ *    and any queued outbound_emails tied to it) is genuinely, permanently
+ *    removed. It's just a stale/duplicate/mistaken form submission, not a
+ *    person's account or history.
+ *  - If the admission had already created a student and/or parent LOGIN,
+ *    those accounts are archived, not hard-deleted — the exact same
+ *    reversible effect adminUsers' own "Permanently Delete" button already
+ *    uses everywhere else in this app (is_active = false, banned at the
+ *    Supabase Auth level so sign-in is genuinely blocked, audit-logged) —
+ *    see ArchiveUserButton.tsx / archiveUserAction and dict.deletion's own
+ *    copy, which is already explicit that this app's "permanent delete"
+ *    means "archived and access-revoked, not erased." Their academic
+ *    records (attendance, grades, etc., if any exist by the time this
+ *    runs) survive intact for the institution's own continuity, exactly
+ *    like every other archived account in this app — access is what gets
+ *    permanently removed, not history.
+ */
+export async function deleteAdmissionAction(admissionId: string): Promise<{ error?: string }> {
+  const me = await requireRole("admin");
+
+  const bucket = `delete_admission:${me.id}`;
+  const { limited } = await checkRateLimit(bucket, { maxAttempts: 20, windowSeconds: 60 * 60 });
+  if (limited) return { error: "Too many admissions deleted recently. Wait a while before deleting more." };
+
+  const admin = createAdminClient();
+  const { data: admission } = await admin
+    .from("admissions")
+    .select("id, student_full_name, center_id, pdf_file_path, student_profile_id, parent_profile_id")
+    .eq("id", admissionId)
+    .single();
+  if (!admission) return { error: "Admission not found." };
+
+  for (const linkedId of [admission.student_profile_id, admission.parent_profile_id]) {
+    if (!linkedId) continue;
+    await admin
+      .from("profiles")
+      .update({ is_active: false, archived_at: new Date().toISOString(), archived_by: me.id })
+      .eq("id", linkedId);
+    await setAccountBanned(linkedId, true);
+  }
+
+  if (admission.pdf_file_path) {
+    await admin.storage.from("admissions-pdfs").remove([admission.pdf_file_path]);
+  }
+  await admin.from("outbound_emails").delete().eq("related_table", "admissions").eq("related_id", admissionId);
+
+  const { error: deleteError } = await admin.from("admissions").delete().eq("id", admissionId);
+  if (deleteError) return { error: `Could not delete the admission: ${deleteError.message}` };
+
+  await recordRateLimitAttempt(bucket);
+  await logAuditEvent(me.id, "delete_admission", "admissions", admissionId, {
+    center_id: admission.center_id,
+    student_full_name: admission.student_full_name,
+    archived_student_profile_id: admission.student_profile_id,
+    archived_parent_profile_id: admission.parent_profile_id,
+  });
+
+  revalidatePath("/admin/admissions");
   return {};
 }
 
@@ -367,13 +468,18 @@ async function processAdmission(admissionId: string, actorId: string): Promise<v
       .update({ must_change_password: true, date_of_birth: admission.student_dob })
       .eq("id", studentCreated.user.id);
 
-    // 3. students row — intake only, no class assignment yet (an admin
-    // places the student into a class manually later, see spec).
+    // 3. students row — placed directly into the class chosen on the intake
+    // form (enrolment_class_id), if any, so the student sees themselves
+    // already enrolled the first time they log in rather than "Not
+    // assigned" until a separate manual step. is_autistic mirrors the
+    // admission's own flag — this is what gates Autism Section visibility
+    // for this student's parent(s), see Sidebar.tsx.
     const enrollmentNumber = await generateEnrollmentNumber(admin);
     const { error: studentRowError } = await admin.from("students").insert({
       id: studentCreated.user.id,
       enrollment_number: enrollmentNumber,
-      class_id: null,
+      class_id: admission.enrolment_class_id ?? null,
+      is_autistic: admission.is_autistic,
       guardian_name: parentName,
       guardian_phone: admission.father_email ? admission.father_mobile : admission.mother_mobile,
       guardian_email: parentEmail,
@@ -422,6 +528,7 @@ async function processAdmission(admissionId: string, actorId: string): Promise<v
         student_profile_id: studentCreated.user.id,
         parent_profile_id: parentCreated.user.id,
         pdf_file_path: pdfPath,
+        enrollment_number: enrollmentNumber,
       })
       .eq("id", admissionId);
     if (updateError) throw new Error(`Accounts and PDF were created, but the admission record couldn't be updated: ${updateError.message}`);

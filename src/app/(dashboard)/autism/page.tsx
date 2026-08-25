@@ -57,7 +57,17 @@ export default async function AutismSectionPage() {
   // parent: full video history for each linked child, right on this index
   // page (no separate nested route for parents — see this file's header
   // note and the approved plan's own reasoning for that choice).
-  const children = await listMyChildren(me.id);
+  //
+  // Filtered to is_autistic children only — a real bug fix (see
+  // lib/autism/hasAutismAccess.ts): previously EVERY linked child appeared
+  // here (with "no videos yet" for a non-autistic one), which is what the
+  // nav-hiding fix alone wouldn't catch for a parent who reaches this route
+  // directly. A parent with zero autistic children is redirected, same
+  // pattern as the role check above — this route genuinely doesn't apply
+  // to them, not just "nothing to show yet".
+  const allChildren = await listMyChildren(me.id);
+  const children = allChildren.filter((c) => c.is_autistic);
+  if (children.length === 0) redirect(dashboardPathForRole(me.role));
   const feeds = (await Promise.all(children.map((c) => getStudentAutismFeed(c.id, me)))).filter((f): f is NonNullable<typeof f> => !!f);
 
   return (

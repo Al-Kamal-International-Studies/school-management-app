@@ -105,6 +105,12 @@ interface NavItem {
    * framing of the feature). Undefined means "visible in every center",
    * the default for every pre-existing item. */
   centerRestricted?: string;
+  /** Set only on the parent role's Autism Section link. In addition to the
+   * center check above, a parent must actually have a child flagged
+   * autistic at admission time (students.is_autistic) — otherwise every
+   * AKET parent saw "Autism Program" regardless of whether their own child
+   * was enrolled in it. See lib/autism/hasAutismAccess.ts. */
+  autismGated?: boolean;
 }
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
@@ -160,7 +166,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   parent: [
     { href: "/parent", labelKey: "dashboard", icon: LayoutDashboard },
-    { href: "/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID },
+    { href: "/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID, autismGated: true },
     { href: "/calendar", labelKey: "calendar", icon: CalendarDays },
     { href: "/documents", labelKey: "documents", icon: FolderOpen },
     { href: "/messages", labelKey: "messages", icon: MessagesSquare },
@@ -172,11 +178,15 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
 export function Sidebar({
   role,
   activeCenterId,
+  hasAutismAccess,
   mobileOpen,
   onClose,
 }: {
   role: UserRole;
   activeCenterId: string;
+  /** See DashboardShell's own doc comment — always true for non-parent
+   * roles, so this never restricts admin/teacher/student. */
+  hasAutismAccess: boolean;
   mobileOpen: boolean;
   onClose: () => void;
 }) {
@@ -186,8 +196,12 @@ export function Sidebar({
   // centerRestricted items (currently just Autism Section) only show up
   // when the account's active center actually matches — same
   // activeCenterId prop DashboardShell already threads down for the
-  // branding/CenterSwitcher, no new plumbing needed.
-  const items = NAV_ITEMS[role].filter((item) => !item.centerRestricted || item.centerRestricted === activeCenterId);
+  // branding/CenterSwitcher, no new plumbing needed. autismGated items
+  // additionally require hasAutismAccess (parent role only, see NavItem's
+  // own doc comment).
+  const items = NAV_ITEMS[role].filter(
+    (item) => (!item.centerRestricted || item.centerRestricted === activeCenterId) && (!item.autismGated || hasAutismAccess)
+  );
   const { startTour } = useTour();
   // Which center's branding to show — the account's actual active center
   // (resolved by (dashboard)/layout.tsx from profile.center_id or, for a

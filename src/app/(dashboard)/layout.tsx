@@ -5,6 +5,7 @@ import { getAccessibleCenters } from "@/lib/centers/getAccessibleCenters";
 import { getActiveCenterId } from "@/lib/centers/activeCenterCookie";
 import { knownCenterFor } from "@/lib/centers/knownCenters";
 import { listMyNotifications } from "@/lib/notifications/queries";
+import { hasAutismAccess } from "@/lib/autism/hasAutismAccess";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();
@@ -43,6 +44,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // a prop, same shape as `accessibleCenters` above.
   const notifications = await listMyNotifications(profile.id);
 
+  // Gates the Autism Section nav link for parents specifically — see
+  // hasAutismAccess's own doc comment. A no-op query for every other role.
+  const autismAccess = await hasAutismAccess(profile);
+
   return (
     <DashboardShell
       profile={profile}
@@ -50,6 +55,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       activeCenterId={activeCenterId}
       centerCode={centerCode}
       notifications={notifications}
+      hasAutismAccess={autismAccess}
     >
       {children}
     </DashboardShell>
