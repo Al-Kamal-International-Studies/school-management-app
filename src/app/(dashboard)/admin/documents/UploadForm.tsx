@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { uploadDocumentAction, type ActionState } from "./actions";
 import { Input, Select } from "@/components/ui/Field";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -56,12 +57,13 @@ export function UploadForm({ students }: { students: { id: string; full_name: st
           </option>
         ))}
       </Select>
-      <div>
-        <label htmlFor="file" className="label">
-          {dict.documents.file}
-        </label>
-        <input id="file" name="file" type="file" required className="input" />
-      </div>
+      <FileUpload
+        label={dict.documents.file}
+        name="file"
+        required
+        dropzoneLabel={dict.documents.fileDropHint}
+        removeLabel={dict.documents.removeFile}
+      />
       <SubmitButton />
     </form>
   );

@@ -16,12 +16,16 @@ export function DashboardShell({
   activeCenterId,
   centerCode,
   notifications,
+  hasAutismAccess,
   children,
 }: {
   profile: Profile;
   centers: Center[];
   activeCenterId: string;
   notifications: Notification[];
+  /** Parent-only gate on top of the existing AKET center check — see
+   * lib/autism/hasAutismAccess.ts. Always true for non-parent roles. */
+  hasAutismAccess: boolean;
   /** "akis" | "aket" — resolved server-side in (dashboard)/layout.tsx from
    *  the same validated activeCenterId, never a raw cookie read. Sets the
    *  `data-center` attribute that globals.css keys the whole navy/gold
@@ -48,7 +52,7 @@ export function DashboardShell({
   }
 
   return (
-    <TourProvider profile={profile} activeCenterId={activeCenterId} onNavStepChange={setMobileOpen}>
+    <TourProvider profile={profile} activeCenterId={activeCenterId} hasAutismAccess={hasAutismAccess} onNavStepChange={setMobileOpen}>
       {/* `display: contents` — a real DOM node (so `data-center` and the CSS
           custom properties it switches actually reach both children below,
           including TourOverlay which renders as a sibling of the shell div,
@@ -58,7 +62,13 @@ export function DashboardShell({
           `display: contents` doesn't block it. */}
       <div data-center={centerCode} className="contents">
         <div className="flex min-h-screen bg-slate-50 dark:bg-navy-950">
-          <Sidebar role={profile.role} activeCenterId={activeCenterId} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+          <Sidebar
+            role={profile.role}
+            activeCenterId={activeCenterId}
+            hasAutismAccess={hasAutismAccess}
+            mobileOpen={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+          />
           <div className="flex min-w-0 flex-1 flex-col">
             <Topbar
               profile={profile}
