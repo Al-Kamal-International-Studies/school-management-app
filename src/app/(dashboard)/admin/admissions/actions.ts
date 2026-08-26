@@ -253,6 +253,12 @@ export async function retryAdmissionProcessingAction(admissionId: string): Promi
  *    runs) survive intact for the institution's own continuity, exactly
  *    like every other archived account in this app — access is what gets
  *    permanently removed, not history.
+ *
+ * The parent account specifically is only archived if it isn't ALSO the
+ * guardian of a different, still-active student — a parent can be shared
+ * across siblings (see processAdmission's findExistingParentForFamily), so
+ * deleting one sibling's admission must never cut off a parent's access to
+ * another child who's still enrolled.
  */
 export async function deleteAdmissionAction(admissionId: string): Promise<{ error?: string }> {
   const me = await requireRole("admin");
@@ -269,13 +275,38 @@ export async function deleteAdmissionAction(admissionId: string): Promise<{ erro
     .single();
   if (!admission) return { error: "Admission not found." };
 
-  for (const linkedId of [admission.student_profile_id, admission.parent_profile_id]) {
-    if (!linkedId) continue;
+  if (admission.student_profile_id) {
     await admin
       .from("profiles")
       .update({ is_active: false, archived_at: new Date().toISOString(), archived_by: me.id })
-      .eq("id", linkedId);
-    await setAccountBanned(linkedId, true);
+      .eq("id", admission.student_profile_id);
+    await setAccountBanned(admission.student_profile_id, true);
+  }
+
+  // The parent account is only archived if it isn't also the guardian of
+  // another still-active student — a parent can now be shared across
+  // siblings (see processAdmission's findExistingParentForFamily), so
+  // deleting one sibling's admission must never cut off a parent's access
+  // to a different, still-enrolled child.
+  if (admission.parent_profile_id) {
+    const { data: otherLinks } = await admin
+      .from("parent_students")
+      .select("student_id")
+      .eq("parent_id", admission.parent_profile_id)
+      .neq("student_id", admission.student_profile_id ?? "");
+    const otherStudentIds = (otherLinks ?? []).map((l) => l.student_id);
+    const { data: otherActiveStudents } =
+      otherStudentIds.length > 0
+        ? await admin.from("profiles").select("id").in("id", otherStudentIds).is("archived_at", null)
+        : { data: [] };
+
+    if ((otherActiveStudents ?? []).length === 0) {
+      await admin
+        .from("profiles")
+        .update({ is_active: false, archived_at: new Date().toISOString(), archived_by: me.id })
+        .eq("id", admission.parent_profile_id);
+      await setAccountBanned(admission.parent_profile_id, true);
+    }
   }
 
   if (admission.pdf_file_path) {
@@ -312,6 +343,83 @@ function assembleAddress(admission: Admission): string | null {
 /** a.b.c -> "abc" (lowercase, non-alphanumeric stripped) — see synthesizeStudentEmail. */
 function cleanToken(token: string): string {
   return token.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function domainFor(center: AdmissionCenter): string {
+  return center === "akis" ? "alkamalinternational.com" : "alkamaleducation.com";
+}
+
+/**
+ * A parent account's LOGIN email is always synthesized — never the real
+ * address typed into the form (that's `father_email`/`mother_email`,
+ * preserved as-is on `students.guardian_email` and used as the welcome
+ * email's `to` address; it's real contact info, just not a login
+ * credential). Per Muhammad's explicit request (chat, 2026-08-26): a single
+ * child's parent gets `parent.<firstname>@<domain>`; when siblings share a
+ * parent (see findExistingParentForFamily below), the SAME parent account is
+ * reused and its login email is recomputed to include every linked child's
+ * first name in the order they were admitted — `parent.<child1>.<child2>@
+ * <domain>`, growing with every further sibling rather than staying frozen
+ * at whichever child came first.
+ */
+async function buildParentLoginEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  parentId: string,
+  domain: string
+): Promise<string> {
+  const { data: links } = await admin
+    .from("parent_students")
+    .select("student_id, created_at")
+    .eq("parent_id", parentId)
+    .order("created_at", { ascending: true });
+  const studentIds = (links ?? []).map((l) => l.student_id);
+  const { data: profiles } =
+    studentIds.length > 0 ? await admin.from("profiles").select("id, full_name").in("id", studentIds) : { data: [] };
+  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+
+  const firstNames = studentIds
+    .map((id) => nameById.get(id))
+    .filter((n): n is string => Boolean(n))
+    .map((n) => cleanToken(n.trim().split(/\s+/)[0] ?? ""))
+    .filter(Boolean);
+  const base = firstNames.length > 0 ? firstNames.join(".") : "family";
+
+  // Collision guard, same shape as synthesizeStudentEmail's — checked
+  // against every OTHER profile's email (this parent's own current email
+  // doesn't count as a collision against itself).
+  let candidate = `parent.${base}@${domain}`;
+  let suffix = 2;
+  while (true) {
+    const { data: existing } = await admin.from("profiles").select("id").eq("email", candidate).maybeSingle();
+    if (!existing || existing.id === parentId) return candidate;
+    candidate = `parent.${base}.${suffix}@${domain}`;
+    suffix += 1;
+  }
+}
+
+/**
+ * Looks up an existing, still-active parent account for this family via
+ * `students.guardian_email` — the real contact address is the only
+ * consistent link between two admissions for siblings (their synthesized
+ * login emails are unrelated strings). Returns null when no sibling
+ * relationship is found, which is the common case (an only/first child).
+ */
+async function findExistingParentForFamily(
+  admin: ReturnType<typeof createAdminClient>,
+  contactEmail: string
+): Promise<{ parentId: string; parentName: string } | null> {
+  const { data: siblingStudents } = await admin.from("students").select("id").eq("guardian_email", contactEmail);
+  const siblingIds = (siblingStudents ?? []).map((s) => s.id);
+  if (siblingIds.length === 0) return null;
+
+  const { data: links } = await admin.from("parent_students").select("parent_id").in("student_id", siblingIds).limit(1);
+  const parentId = links?.[0]?.parent_id;
+  if (!parentId) return null;
+
+  const { data: parentProfile } = await admin.from("profiles").select("full_name, archived_at").eq("id", parentId).single();
+  if (!parentProfile || parentProfile.archived_at) return null; // never resurrect a sibling link onto an archived account
+
+  return { parentId, parentName: parentProfile.full_name };
 }
 
 /**
@@ -352,37 +460,65 @@ async function generateEnrollmentNumber(admin: ReturnType<typeof createAdminClie
   }
 }
 
+/**
+ * Two shapes, depending on `parentPassword`:
+ *  - A brand-new family (parentPassword set): both accounts are new, both
+ *    get a temporary password.
+ *  - An existing parent gaining a sibling (parentPassword null): no new
+ *    parent password exists to show (no new auth user was created — see
+ *    findExistingParentForFamily) — instead the email explains their LOGIN
+ *    EMAIL has changed (it now includes every linked child's name) while
+ *    their existing password still works.
+ */
 function welcomeEmailBody(opts: {
   center: AdmissionCenter;
   studentName: string;
   studentEmail: string;
   studentPassword: string;
-  parentEmail: string;
-  parentPassword: string;
+  parentLoginEmail: string;
+  parentPassword: string | null;
 }) {
   const schoolName = opts.center === "akis" ? "Al Kamal International Studies" : "Al Kamal Education Technology";
+  const parentSection = opts.parentPassword
+    ? `Parent account (yours)
+  Email: ${opts.parentLoginEmail}
+  Temporary password: ${opts.parentPassword}`
+    : `Parent account (yours — now also linked to ${opts.studentName})
+  Your existing password still works, but your login email has changed to:
+  ${opts.parentLoginEmail}
+  (it now covers every child of yours registered with us)`;
+
   const text = `Welcome to ${schoolName}!
 
-We're delighted to confirm ${opts.studentName}'s registration. Two accounts have been created for your family so you can both use the app right away:
+We're delighted to confirm ${opts.studentName}'s registration. ${
+    opts.parentPassword ? "Two accounts have been created for your family so you can both use the app right away" : "A new student account has been created"
+  }:
 
 Student account
   Email: ${opts.studentEmail}
   Temporary password: ${opts.studentPassword}
 
-Parent account (yours)
-  Email: ${opts.parentEmail}
-  Temporary password: ${opts.parentPassword}
+${parentSection}
 
-Getting started is simple: sign in with either account above, and you'll be asked to choose your own new password right away. After that, a short guided tour will walk you through everything the app can do.
+Getting started is simple: sign in with the accounts above${opts.parentPassword ? ", and you'll be asked to choose your own new password right away" : ""}. After that, a short guided tour will walk you through everything the app can do.
 
-Both passwords above are temporary and must be changed the first time you sign in — please don't share them by forwarding this email on. If you have any trouble signing in, contact the school office and we'll be glad to help.
+${opts.parentPassword ? "Both passwords above are temporary and must be changed the first time you sign in — please don't share them by forwarding this email on." : "The student password above is temporary and must be changed on first sign-in."} If you have any trouble signing in, contact the school office and we'll be glad to help.
 
 Welcome to the family!
 ${schoolName}`;
 
+  const parentSectionHtml = opts.parentPassword
+    ? `<strong>Parent account (yours)</strong><br/>
+        Email: ${opts.parentLoginEmail}<br/>
+        Temporary password: <code>${opts.parentPassword}</code>`
+    : `<strong>Parent account (yours — now also linked to ${opts.studentName})</strong><br/>
+        Your existing password still works, but your login email has changed to:<br/>
+        <code>${opts.parentLoginEmail}</code><br/>
+        <span style="color:#5a5f6e;font-size:13px;">(it now covers every child of yours registered with us)</span>`;
+
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a2e;max-width:560px;margin:0 auto;">
   <h2 style="color:#0b1b3d;margin-bottom:4px;">Welcome to ${schoolName}!</h2>
-  <p>We're delighted to confirm <strong>${opts.studentName}</strong>'s registration. Two accounts have been created for your family so you can both use the app right away:</p>
+  <p>We're delighted to confirm <strong>${opts.studentName}</strong>'s registration.</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;">
     <tr>
       <td style="padding:12px;border:1px solid #d9dce3;border-radius:6px;">
@@ -394,14 +530,12 @@ ${schoolName}`;
     <tr><td style="height:10px;"></td></tr>
     <tr>
       <td style="padding:12px;border:1px solid #d9dce3;border-radius:6px;">
-        <strong>Parent account (yours)</strong><br/>
-        Email: ${opts.parentEmail}<br/>
-        Temporary password: <code>${opts.parentPassword}</code>
+        ${parentSectionHtml}
       </td>
     </tr>
   </table>
-  <p>Getting started is simple: sign in with either account above, and you'll be asked to choose your own new password right away. After that, a short guided tour will walk you through everything the app can do.</p>
-  <p><strong>Both passwords above are temporary</strong> and must be changed the first time you sign in — please don't share them by forwarding this email on. If you have any trouble signing in, contact the school office and we'll be glad to help.</p>
+  <p>Getting started is simple: sign in with the accounts above${opts.parentPassword ? ", and you'll be asked to choose your own new password right away" : ""}. After that, a short guided tour will walk you through everything the app can do.</p>
+  <p>${opts.parentPassword ? "<strong>Both passwords above are temporary</strong> and must be changed the first time you sign in" : "The student password above is temporary and must be changed on first sign-in"} — please don't share them by forwarding this email on. If you have any trouble signing in, contact the school office and we'll be glad to help.</p>
   <p>Welcome to the family!<br/>${schoolName}</p>
 </div>`;
 
@@ -429,27 +563,71 @@ async function processAdmission(admissionId: string, actorId: string): Promise<v
 
   const center = centerOf(admission);
   const createdUserIds: string[] = [];
+  // Set inside the try block only when an EXISTING sibling's parent login
+  // email actually gets renamed (step 4b) — read by the catch block below
+  // to restore it if a later step in this same attempt fails.
+  let renamedParentId: string | null = null;
+  let previousParentEmailToRestore: string | null = null;
 
   try {
-    const parentEmail = admission.father_email || admission.mother_email;
-    if (!parentEmail) throw new Error("Provide at least one parent email.");
-    const parentName = (admission.father_email ? admission.father_name : admission.mother_name) || "Parent";
+    // The real address typed into the form — never a login credential (see
+    // domainFor/buildParentLoginEmail's own doc comment above). Used as
+    // students.guardian_email (the sibling-matching key) and as the welcome
+    // email's `to` address.
+    const parentContactEmail = admission.father_email || admission.mother_email;
+    if (!parentContactEmail) throw new Error("Provide at least one parent email.");
+    const formParentName = (admission.father_email ? admission.father_name : admission.mother_name) || "Parent";
+    const domain = domainFor(center);
 
     const studentEmail = await synthesizeStudentEmail(admin, admission.student_full_name, center);
 
-    // 1. Parent account
-    const parentPassword = generatePassword(20);
-    const { data: parentCreated, error: parentCreateError } = await admin.auth.admin.createUser({
-      email: parentEmail,
-      password: parentPassword,
-      email_confirm: true,
-      user_metadata: { full_name: parentName, role: "parent", center_id: admission.center_id },
-    });
-    if (parentCreateError || !parentCreated.user) {
-      throw new Error(`Could not create the parent account: ${parentCreateError?.message ?? "unknown error"}`);
+    // 1. Parent account — reuse an existing one if this is a sibling
+    // (matched via parentContactEmail against students.guardian_email; see
+    // findExistingParentForFamily), otherwise create a fresh one. Either
+    // way `parentId` ends up set; `parentPassword`/`parentIsNewAccount`
+    // record which path was taken, since the rest of this function (rollback
+    // list, welcome email) needs to behave differently for each.
+    let parentId: string;
+    let parentName: string;
+    let parentPassword: string | null = null;
+    let parentIsNewAccount: boolean;
+
+    const existingParent = await findExistingParentForFamily(admin, parentContactEmail);
+    if (existingParent) {
+      parentId = existingParent.parentId;
+      parentName = existingParent.parentName;
+      parentIsNewAccount = false;
+      // Not pushed onto createdUserIds — this account already existed
+      // before this call and must never be rolled back/deleted on failure.
+    } else {
+      parentName = formParentName;
+      parentPassword = generatePassword(20);
+      // Collision-checked the same way synthesizeStudentEmail/
+      // buildParentLoginEmail are — two unrelated families' first children
+      // sharing a first name is unlikely but not impossible.
+      const firstNameToken = cleanToken(admission.student_full_name.trim().split(/\s+/)[0] || "family");
+      let newParentLoginEmail = `parent.${firstNameToken}@${domain}`;
+      let suffix = 2;
+      while (true) {
+        const { data: existing } = await admin.from("profiles").select("id").eq("email", newParentLoginEmail).maybeSingle();
+        if (!existing) break;
+        newParentLoginEmail = `parent.${firstNameToken}.${suffix}@${domain}`;
+        suffix += 1;
+      }
+      const { data: parentCreated, error: parentCreateError } = await admin.auth.admin.createUser({
+        email: newParentLoginEmail,
+        password: parentPassword,
+        email_confirm: true,
+        user_metadata: { full_name: parentName, role: "parent", center_id: admission.center_id },
+      });
+      if (parentCreateError || !parentCreated.user) {
+        throw new Error(`Could not create the parent account: ${parentCreateError?.message ?? "unknown error"}`);
+      }
+      parentId = parentCreated.user.id;
+      parentIsNewAccount = true;
+      createdUserIds.push(parentId);
+      await admin.from("profiles").update({ must_change_password: true }).eq("id", parentId);
     }
-    createdUserIds.push(parentCreated.user.id);
-    await admin.from("profiles").update({ must_change_password: true }).eq("id", parentCreated.user.id);
 
     // 2. Student account
     const studentPassword = generatePassword(20);
@@ -482,16 +660,38 @@ async function processAdmission(admissionId: string, actorId: string): Promise<v
       is_autistic: admission.is_autistic,
       guardian_name: parentName,
       guardian_phone: admission.father_email ? admission.father_mobile : admission.mother_mobile,
-      guardian_email: parentEmail,
+      guardian_email: parentContactEmail,
       address: assembleAddress(admission),
     });
     if (studentRowError) throw new Error(`Could not save student details: ${studentRowError.message}`);
 
     // 4. Link parent <-> student
-    const { error: linkError } = await admin
-      .from("parent_students")
-      .insert({ parent_id: parentCreated.user.id, student_id: studentCreated.user.id });
+    const { error: linkError } = await admin.from("parent_students").insert({ parent_id: parentId, student_id: studentCreated.user.id });
     if (linkError) throw new Error(`Could not link parent and student: ${linkError.message}`);
+
+    // 4b. Sibling case only: recompute the parent's login email now that
+    // it's linked to one more child than before (buildParentLoginEmail
+    // reads parent_students fresh, so it already sees the row just
+    // inserted above) and rename both the Auth user and the profiles row —
+    // Supabase Auth doesn't propagate an email change to `profiles.email`
+    // on its own, so both are updated explicitly. A brand-new parent
+    // account's login email is already correct for its one child (set at
+    // creation, step 1) and is left untouched here.
+    let parentLoginEmail: string;
+    if (parentIsNewAccount) {
+      const { data: newParentProfile } = await admin.from("profiles").select("email").eq("id", parentId).single();
+      parentLoginEmail = newParentProfile?.email ?? "";
+    } else {
+      const { data: parentBeforeRename } = await admin.from("profiles").select("email").eq("id", parentId).single();
+      renamedParentId = parentId;
+      previousParentEmailToRestore = parentBeforeRename?.email ?? null;
+      const nextLoginEmail = await buildParentLoginEmail(admin, parentId, domain);
+      const { error: renameAuthError } = await admin.auth.admin.updateUserById(parentId, { email: nextLoginEmail, email_confirm: true });
+      if (renameAuthError) throw new Error(`Could not update the parent's login email: ${renameAuthError.message}`);
+      const { error: renameProfileError } = await admin.from("profiles").update({ email: nextLoginEmail }).eq("id", parentId);
+      if (renameProfileError) throw new Error(`Could not update the parent's login email: ${renameProfileError.message}`);
+      parentLoginEmail = nextLoginEmail;
+    }
 
     // 5-7. PDF generation + upload
     const pdfBytes = await generateAdmissionPdf(admission, center);
@@ -508,11 +708,11 @@ async function processAdmission(admissionId: string, actorId: string): Promise<v
       studentName: admission.student_full_name,
       studentEmail,
       studentPassword,
-      parentEmail,
+      parentLoginEmail,
       parentPassword,
     });
     await sendEmail({
-      to: parentEmail,
+      to: parentContactEmail,
       subject: "Welcome to Al Kamal — Your Account is Ready",
       html,
       text,
@@ -526,7 +726,7 @@ async function processAdmission(admissionId: string, actorId: string): Promise<v
         status: "processed",
         error: null,
         student_profile_id: studentCreated.user.id,
-        parent_profile_id: parentCreated.user.id,
+        parent_profile_id: parentId,
         pdf_file_path: pdfPath,
         enrollment_number: enrollmentNumber,
       })
@@ -540,6 +740,22 @@ async function processAdmission(admissionId: string, actorId: string): Promise<v
   } catch (err) {
     for (const userId of createdUserIds) {
       await admin.auth.admin.deleteUser(userId).catch(() => {});
+    }
+    // Restore an existing sibling's parent login email if THIS attempt
+    // renamed it — otherwise a rolled-back child (deleted above/cascaded
+    // away via the parent_students FK) would leave the parent's real login
+    // pointing at a name that no longer resolves to anything. A retry
+    // recomputes it fresh anyway (buildParentLoginEmail always reads live
+    // parent_students state), but this keeps a failed-and-abandoned attempt
+    // from leaving the parent's account in a wrong state in the meantime.
+    if (renamedParentId && previousParentEmailToRestore) {
+      await admin.auth.admin.updateUserById(renamedParentId, { email: previousParentEmailToRestore, email_confirm: true }).catch(() => {});
+      try {
+        await admin.from("profiles").update({ email: previousParentEmailToRestore }).eq("id", renamedParentId);
+      } catch {
+        // Best-effort restore, same philosophy as the deleteUser rollback
+        // above — don't let a cleanup failure mask the original error.
+      }
     }
     const message = err instanceof Error ? err.message : "Unknown error while processing the admission.";
     await admin.from("admissions").update({ status: "failed", error: message }).eq("id", admissionId);
