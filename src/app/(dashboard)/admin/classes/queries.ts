@@ -1,12 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 
-export async function listClassesWithCounts() {
+/**
+ * Scoped to the active center — without this a multi-center admin always
+ * saw every AKIS+AKET class combined here regardless of the center
+ * switcher. A no-op filter for every single-center admin.
+ */
+export async function listClassesWithCounts(activeCenterId: string) {
   const supabase = await createClient();
-  const { data: classes } = await supabase.from("classes").select("*").order("name");
+  const { data: classes } = await supabase.from("classes").select("*").eq("center_id", activeCenterId).order("name");
   if (!classes) return [];
 
   const { data: students } = await supabase.from("students").select("id, class_id");
-  const { data: teachers } = await supabase.from("profiles").select("id, full_name").eq("role", "teacher");
+  const { data: teachers } = await supabase.from("profiles").select("id, full_name").eq("role", "teacher").eq("center_id", activeCenterId);
   const teacherMap = new Map((teachers ?? []).map((t) => [t.id, t.full_name]));
 
   const counts = new Map<string, number>();
@@ -22,19 +27,30 @@ export async function listClassesWithCounts() {
   }));
 }
 
-export async function listTeachersForSelect() {
+/** For the homeroom-teacher / subject-teacher dropdowns — scoped to the active center so a class can never be assigned a teacher from the other center. */
+export async function listTeachersForSelect(activeCenterId: string) {
   const supabase = await createClient();
-  const { data } = await supabase.from("profiles").select("id, full_name").eq("role", "teacher").order("full_name");
+  const { data } = await supabase.from("profiles").select("id, full_name").eq("role", "teacher").eq("center_id", activeCenterId).order("full_name");
   return data ?? [];
 }
 
-export async function listSubjectsForSelect() {
+/** For the "assign a subject" dropdown — scoped to the active center so a class can never be assigned a subject from the other center. */
+export async function listSubjectsForSelect(activeCenterId: string) {
   const supabase = await createClient();
-  const { data } = await supabase.from("subjects").select("id, name, code").order("name");
+  const { data } = await supabase.from("subjects").select("id, name, code").eq("center_id", activeCenterId).order("name");
   return data ?? [];
 }
 
-export async function getClassDetail(id: string) {
+/**
+ * Fetched by id, not by list — deliberately NOT filtered by activeCenterId
+ * itself (RLS's has_center_access(center_id) already gates which classes a
+ * multi-center admin can reach here, same reasoning as getUserDetail).
+ * `activeCenterId` is still threaded through to scope the *dropdowns* this
+ * detail page renders (assignable subjects/teachers) to the admin's
+ * currently-active center — matching every other admin form, and matching
+ * the class itself in the ordinary case where it belongs to that center.
+ */
+export async function getClassDetail(id: string, activeCenterId: string) {
   const supabase = await createClient();
   const { data: classRow } = await supabase.from("classes").select("*").eq("id", id).single();
   if (!classRow) return null;
@@ -44,8 +60,8 @@ export async function getClassDetail(id: string) {
     supabase.from("students").select("id, enrollment_number").eq("class_id", id),
   ]);
 
-  const subjects = await listSubjectsForSelect();
-  const teachers = await listTeachersForSelect();
+  const subjects = await listSubjectsForSelect(activeCenterId);
+  const teachers = await listTeachersForSelect(activeCenterId);
   const subjectMap = new Map(subjects.map((s) => [s.id, s]));
   const teacherMap = new Map(teachers.map((t) => [t.id, t]));
 

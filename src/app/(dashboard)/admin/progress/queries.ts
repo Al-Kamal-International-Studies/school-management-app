@@ -6,9 +6,23 @@ export interface ProgressListFilters {
   month?: string;
 }
 
-export async function listAllProgressEntries(filters: ProgressListFilters = {}) {
+/**
+ * monthly_progress_entries has no center_id of its own (see
+ * 0027_centers.sql's SCOPE comment) — reachable only via
+ * class_id -> classes.center_id — so this first resolves which classes
+ * belong to `activeCenterId` and filters on those, the same
+ * fetch-ids-then-filter shape every cross-table query in this codebase
+ * uses. A center with zero classes short-circuits straight to an empty
+ * list rather than sending an empty `.in()`.
+ */
+export async function listAllProgressEntries(filters: ProgressListFilters = {}, activeCenterId: string) {
   const supabase = await createClient();
-  let query = supabase.from("monthly_progress_entries").select("*").order("month", { ascending: false });
+
+  const { data: classesInCenter } = await supabase.from("classes").select("id").eq("center_id", activeCenterId);
+  const classIdsInCenter = (classesInCenter ?? []).map((c) => c.id);
+  if (classIdsInCenter.length === 0) return [];
+
+  let query = supabase.from("monthly_progress_entries").select("*").in("class_id", classIdsInCenter).order("month", { ascending: false });
 
   if (filters.studentId) query = query.eq("student_id", filters.studentId);
   if (filters.classId) query = query.eq("class_id", filters.classId);
@@ -41,20 +55,21 @@ export async function listAllProgressEntries(filters: ProgressListFilters = {}) 
   }));
 }
 
-export async function listAllClassesForFilter() {
+/** For the class filter dropdown — scoped to the active center. */
+export async function listAllClassesForFilter(activeCenterId: string) {
   const supabase = await createClient();
-  const { data } = await supabase.from("classes").select("id, name, section").order("name");
+  const { data } = await supabase.from("classes").select("id, name, section").eq("center_id", activeCenterId).order("name");
   return data ?? [];
 }
 
-export async function listAllStudentsForFilter() {
+/** For the student filter dropdown — scoped to the active center. */
+export async function listAllStudentsForFilter(activeCenterId: string) {
   const supabase = await createClient();
-  const { data: students } = await supabase.from("students").select("id");
-  if (!students || students.length === 0) return [];
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, full_name")
-    .in("id", students.map((s) => s.id))
+    .eq("role", "student")
+    .eq("center_id", activeCenterId)
     .order("full_name");
   return profiles ?? [];
 }

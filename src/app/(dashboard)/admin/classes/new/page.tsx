@@ -2,9 +2,13 @@ import { listTeachersForSelect } from "../queries";
 import { ClassForm } from "../ClassForm";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export default async function NewClassPage() {
-  const teachers = await listTeachersForSelect();
+  // admin/layout.tsx's requireRole("admin") guarantees a profile, so this
+  // is never actually null — see getActiveCenterForRequest's doc comment.
+  const activeCenterId = (await getActiveCenterForRequest())!;
+  const teachers = await listTeachersForSelect(activeCenterId);
   const dict = await getDictionary(await getLocale());
 
   return (

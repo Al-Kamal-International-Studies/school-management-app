@@ -6,6 +6,7 @@ import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { computeOverallScore, formatMonth } from "@/lib/progress/calculate";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export default async function AdminProgressPage({
   searchParams,
@@ -15,11 +16,17 @@ export default async function AdminProgressPage({
   await requireRole("admin");
   const dict = await getDictionary(await getLocale());
   const { student, class: classId, month } = await searchParams;
+  // requireRole("admin") above guarantees a profile, so this is never
+  // actually null — see getActiveCenterForRequest's doc comment.
+  const activeCenterId = (await getActiveCenterForRequest())!;
 
   const [entries, classes, students] = await Promise.all([
-    listAllProgressEntries({ studentId: student || undefined, classId: classId || undefined, month: month ? `${month}-01` : undefined }),
-    listAllClassesForFilter(),
-    listAllStudentsForFilter(),
+    listAllProgressEntries(
+      { studentId: student || undefined, classId: classId || undefined, month: month ? `${month}-01` : undefined },
+      activeCenterId
+    ),
+    listAllClassesForFilter(activeCenterId),
+    listAllStudentsForFilter(activeCenterId),
   ]);
 
   return (

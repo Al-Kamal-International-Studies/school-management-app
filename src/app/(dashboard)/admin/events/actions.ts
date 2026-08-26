@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export interface ActionState {
   error?: string;
@@ -24,9 +25,15 @@ export async function createEventAction(_prevState: ActionState, formData: FormD
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
 
   const supabase = await createClient();
+  // Without an explicit center_id, this insert falls back to the column's
+  // schema default (AKIS — see 0027_centers.sql) regardless of which
+  // center the admin is actually looking at. `me.center_id` is
+  // deliberately NOT used here — that's the admin's own home center, not
+  // necessarily the one they're currently working in.
+  const activeCenterId = (await getActiveCenterForRequest())!;
   const { data: created, error } = await supabase
     .from("events")
-    .insert({ ...parsed.data, description: parsed.data.description || null, created_by: me.id })
+    .insert({ ...parsed.data, description: parsed.data.description || null, created_by: me.id, center_id: activeCenterId })
     .select("id")
     .single();
   if (error) return { error: error.message };

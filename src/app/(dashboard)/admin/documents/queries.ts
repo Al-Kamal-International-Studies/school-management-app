@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 
-export async function listAllDocuments() {
+/** Scoped to the active center — documents has its own center_id (see 0027_centers.sql), so this filters directly rather than via a join. */
+export async function listAllDocuments(activeCenterId: string) {
   const supabase = await createClient();
-  const { data: docs } = await supabase.from("documents").select("*").order("created_at", { ascending: false });
+  const { data: docs } = await supabase.from("documents").select("*").eq("center_id", activeCenterId).order("created_at", { ascending: false });
   if (!docs || docs.length === 0) return [];
 
   const studentIds = [...new Set(docs.map((d) => d.student_id).filter((id): id is string => !!id))];
@@ -12,14 +13,14 @@ export async function listAllDocuments() {
   return docs.map((d) => ({ ...d, studentName: d.student_id ? nameMap.get(d.student_id) ?? "Unknown" : null }));
 }
 
-export async function listStudentsForSelect() {
+/** For the "attach to a student" dropdown on the upload form — scoped to the active center. */
+export async function listStudentsForSelect(activeCenterId: string) {
   const supabase = await createClient();
-  const { data: students } = await supabase.from("students").select("id");
-  if (!students || students.length === 0) return [];
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, full_name")
-    .in("id", students.map((s) => s.id))
+    .eq("role", "student")
+    .eq("center_id", activeCenterId)
     .order("full_name");
   return profiles ?? [];
 }

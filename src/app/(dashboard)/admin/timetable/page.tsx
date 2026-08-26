@@ -7,10 +7,14 @@ import { EmptyState } from "@/components/ui/Table";
 import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export default async function AdminTimetablePage({ searchParams }: { searchParams: Promise<{ class?: string }> }) {
   const { class: classParam } = await searchParams;
-  const classes = await listClassesForSelect();
+  // admin/layout.tsx's requireRole("admin") guarantees a profile, so this
+  // is never actually null — see getActiveCenterForRequest's doc comment.
+  const activeCenterId = (await getActiveCenterForRequest())!;
+  const classes = await listClassesForSelect(activeCenterId);
   const selectedClassId = classParam ?? classes[0]?.id;
   const schedule = selectedClassId ? await getClassSchedule(selectedClassId) : null;
   const dict = await getDictionary(await getLocale());

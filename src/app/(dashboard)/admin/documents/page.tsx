@@ -9,11 +9,15 @@ import { EmptyState } from "@/components/ui/Table";
 import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export default async function AdminDocumentsPage() {
   await requireRole("admin");
   const dict = await getDictionary(await getLocale());
-  const [documents, students] = await Promise.all([listAllDocuments(), listStudentsForSelect()]);
+  // requireRole("admin") above guarantees a profile, so this is never
+  // actually null — see getActiveCenterForRequest's doc comment.
+  const activeCenterId = (await getActiveCenterForRequest())!;
+  const [documents, students] = await Promise.all([listAllDocuments(activeCenterId), listStudentsForSelect(activeCenterId)]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">

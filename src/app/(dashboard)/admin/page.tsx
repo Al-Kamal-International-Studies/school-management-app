@@ -23,6 +23,7 @@ import { getCurrentProfile } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { cn } from "@/lib/utils";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 import { getOverviewCounts, getAttendanceTrend, listRecentActivity, listUpcomingEvents } from "./queries";
 import type { EventType } from "@/lib/types/database.types";
 
@@ -44,16 +45,22 @@ const ROW_CARD_CLASS = "card-hover transition-colors hover:border-navy-200 dark:
 export default async function AdminOverviewPage() {
   const dict = await getDictionary(await getLocale());
 
+  // admin/layout.tsx's requireRole("admin") already guarantees a logged-in
+  // profile exists before this page ever renders, so the null case here
+  // (see getActiveCenterForRequest's own doc comment) never actually
+  // happens — the `!` just avoids re-deriving that same guarantee locally.
+  const activeCenterId = (await getActiveCenterForRequest())!;
+
   const [profile, counts, attendanceTrend, recentActivity, upcomingEvents] = await Promise.all([
     // Already resolved by the (dashboard) layout's own auth check and
     // cache()-deduped (see lib/auth.ts) — this costs no extra round trip,
     // just the name for the new "Welcome, {name}" line above the page's
     // real title below.
     getCurrentProfile(),
-    getOverviewCounts(),
-    getAttendanceTrend(),
+    getOverviewCounts(activeCenterId),
+    getAttendanceTrend(activeCenterId),
     listRecentActivity(6),
-    listUpcomingEvents(5),
+    listUpcomingEvents(activeCenterId, 5),
   ]);
 
   const needsAttentionTiles = [

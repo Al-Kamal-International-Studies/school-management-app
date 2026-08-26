@@ -8,6 +8,7 @@ import { ExportCsvButton } from "@/components/ui/ExportCsvButton";
 import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export default async function UsersPage({
   searchParams,
@@ -15,7 +16,10 @@ export default async function UsersPage({
   searchParams: Promise<{ q?: string; role?: "teacher" | "student" | "parent" }>;
 }) {
   const { q, role } = await searchParams;
-  const users = await listUsers({ role, q });
+  // admin/layout.tsx's requireRole("admin") guarantees a profile, so this
+  // is never actually null — see getActiveCenterForRequest's doc comment.
+  const activeCenterId = (await getActiveCenterForRequest())!;
+  const users = await listUsers({ role, q }, activeCenterId);
   const dict = await getDictionary(await getLocale());
   const roleLabel = { admin: dict.common.roleAdmin, teacher: dict.common.roleTeacher, student: dict.common.roleStudent, parent: dict.common.roleParent };
 

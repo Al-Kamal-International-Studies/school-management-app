@@ -5,9 +5,13 @@ import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
 import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export default async function ClassesPage() {
-  const classes = await listClassesWithCounts();
+  // admin/layout.tsx's requireRole("admin") guarantees a profile, so this
+  // is never actually null — see getActiveCenterForRequest's doc comment.
+  const activeCenterId = (await getActiveCenterForRequest())!;
+  const classes = await listClassesWithCounts(activeCenterId);
   const dict = await getDictionary(await getLocale());
 
   return (

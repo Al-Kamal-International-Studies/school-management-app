@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 
-export async function listAllFeedback() {
+/** Scoped to the active center — feedback has its own center_id (see 0030_feedback_center_id.sql), so this filters directly rather than via a join. */
+export async function listAllFeedback(activeCenterId: string) {
   const supabase = await createClient();
-  const { data: entries } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
+  const { data: entries } = await supabase.from("feedback").select("*").eq("center_id", activeCenterId).order("created_at", { ascending: false });
   if (!entries || entries.length === 0) return [];
 
   const userIds = [...new Set(entries.map((e) => e.user_id))];

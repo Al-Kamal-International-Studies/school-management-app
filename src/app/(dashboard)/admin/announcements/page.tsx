@@ -9,6 +9,7 @@ import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import type { AnnouncementAudience } from "@/lib/types/database.types";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 const AUDIENCE_TONE: Record<AnnouncementAudience, "navy" | "green" | "gold" | "slate"> = {
   all: "navy",
@@ -21,7 +22,17 @@ export default async function AdminAnnouncementsPage() {
   await requireRole("admin");
   const dict = await getDictionary(await getLocale());
   const supabase = await createClient();
-  const { data: announcements } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
+  // requireRole("admin") above guarantees a profile, so this is never
+  // actually null — see getActiveCenterForRequest's doc comment. Scoped to
+  // the active center — without this a multi-center admin always saw every
+  // AKIS+AKET announcement combined here regardless of the center switcher
+  // (announcements has its own center_id, see 0027_centers.sql).
+  const activeCenterId = (await getActiveCenterForRequest())!;
+  const { data: announcements } = await supabase
+    .from("announcements")
+    .select("*")
+    .eq("center_id", activeCenterId)
+    .order("created_at", { ascending: false });
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">

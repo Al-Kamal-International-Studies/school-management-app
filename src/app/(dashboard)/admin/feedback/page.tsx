@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 const CATEGORY_TONE = {
   technical: "red",
@@ -17,7 +18,10 @@ const CATEGORY_TONE = {
 export default async function AdminFeedbackPage() {
   await requireRole("admin");
   const dict = await getDictionary(await getLocale());
-  const entries = await listAllFeedback();
+  // requireRole("admin") above guarantees a profile, so this is never
+  // actually null — see getActiveCenterForRequest's doc comment.
+  const activeCenterId = (await getActiveCenterForRequest())!;
+  const entries = await listAllFeedback(activeCenterId);
 
   return (
     <div className="space-y-6">

@@ -6,10 +6,17 @@ import { Card } from "@/components/ui/Card";
 import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export default async function SubjectsPage() {
   const supabase = await createClient();
-  const { data: subjects } = await supabase.from("subjects").select("*").order("name");
+  // admin/layout.tsx's requireRole("admin") guarantees a profile, so this
+  // is never actually null — see getActiveCenterForRequest's doc comment.
+  // Scoped to the active center — without this a multi-center admin always
+  // saw every AKIS+AKET subject combined here regardless of the center
+  // switcher (subjects has its own center_id, see 0027_centers.sql).
+  const activeCenterId = (await getActiveCenterForRequest())!;
+  const { data: subjects } = await supabase.from("subjects").select("*").eq("center_id", activeCenterId).order("name");
   const dict = await getDictionary(await getLocale());
 
   return (

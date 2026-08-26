@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAuditEvent } from "@/lib/audit/log";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export interface ActionState {
   error?: string;
@@ -56,6 +57,13 @@ export async function uploadDocumentAction(_prevState: ActionState, formData: Fo
   const { error: uploadError } = await admin.storage.from("documents").upload(path, buffer, { contentType: file.type });
   if (uploadError) return { error: uploadError.message };
 
+  // Without an explicit center_id, this insert falls back to the column's
+  // schema default (AKIS — see 0027_centers.sql) regardless of which
+  // center the admin is actually looking at. `me.center_id` is
+  // deliberately NOT used here — that's the admin's own home center, not
+  // necessarily the one they're currently working in.
+  const activeCenterId = (await getActiveCenterForRequest())!;
+
   const { error: insertError, data: inserted } = await admin
     .from("documents")
     .insert({
@@ -65,6 +73,7 @@ export async function uploadDocumentAction(_prevState: ActionState, formData: Fo
       student_id: parsed.data.student_id || null,
       file_path: path,
       uploaded_by: me.id,
+      center_id: activeCenterId,
     })
     .select("id")
     .single();

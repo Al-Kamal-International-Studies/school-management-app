@@ -9,19 +9,27 @@ import { ArchiveUserButton } from "./ArchiveUserButton";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { MIN_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH_ADMIN } from "@/lib/security/password";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const detail = await getUserDetail(id);
   if (!detail) notFound();
   const dict = await getDictionary(await getLocale());
+  // admin/layout.tsx's requireRole("admin") guarantees a profile, so this
+  // is never actually null — see getActiveCenterForRequest's doc comment.
+  // Deliberately the admin's *own* active center, not detail.profile's own
+  // center_id — these dropdowns (class / linkable children) offer choices
+  // scoped to whichever center the admin is currently working in, matching
+  // every other admin form on this page.
+  const activeCenterId = (await getActiveCenterForRequest())!;
 
-  const classes = detail.profile.role === "student" ? await listClassesForSelect() : [];
+  const classes = detail.profile.role === "student" ? await listClassesForSelect(activeCenterId) : [];
 
   let allStudents: { id: string; label: string }[] | undefined;
   let linkedChildIds: string[] | undefined;
   if (detail.profile.role === "parent") {
-    allStudents = await listStudentsForParentLink();
+    allStudents = await listStudentsForParentLink(activeCenterId);
     const supabase = await createClient();
     const { data: links } = await supabase.from("parent_students").select("student_id").eq("parent_id", id);
     linkedChildIds = (links ?? []).map((l) => l.student_id);

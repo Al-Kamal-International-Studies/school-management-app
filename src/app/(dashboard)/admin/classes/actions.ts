@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export interface ActionState {
   error?: string;
@@ -24,6 +25,14 @@ export async function createClassAction(_prevState: ActionState, formData: FormD
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
 
   const supabase = await createClient();
+  // Without an explicit center_id, this insert falls back to the column's
+  // schema default (AKIS — see 0027_centers.sql) regardless of which
+  // center the admin is actually looking at, so a multi-center admin
+  // creating a class while viewing AKET would silently get an
+  // AKIS-centered class instead. `me.center_id` is deliberately NOT used
+  // here — that's the admin's own home center, not necessarily the one
+  // they're currently working in.
+  const activeCenterId = (await getActiveCenterForRequest())!;
   const { data: created, error } = await supabase
     .from("classes")
     .insert({
@@ -31,6 +40,7 @@ export async function createClassAction(_prevState: ActionState, formData: FormD
       section: parsed.data.section,
       academic_year: parsed.data.academic_year,
       homeroom_teacher_id: parsed.data.homeroom_teacher_id || null,
+      center_id: activeCenterId,
     })
     .select("id")
     .single();

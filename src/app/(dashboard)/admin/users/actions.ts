@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
 import { setAccountBanned } from "@/lib/auth/accountAccess";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 import { passwordZodSchema, MIN_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH_ADMIN } from "@/lib/security/password";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
 
@@ -67,11 +68,20 @@ export async function createUserAction(_prevState: ActionState, formData: FormDa
 
   const admin = createAdminClient();
 
+  // The on_auth_user_created trigger (see 0027_centers.sql) reads
+  // center_id straight out of user_metadata and falls back to AKIS if it's
+  // absent — so without this, every account a multi-center admin creates
+  // while viewing AKET would silently land in AKIS instead, regardless of
+  // which center's dropdown they were just looking at. `me.center_id` is
+  // deliberately NOT used here — that's the admin's own home center, not
+  // necessarily the one they're currently working in.
+  const activeCenterId = (await getActiveCenterForRequest())!;
+
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email: data.email,
     password: data.password,
     email_confirm: true,
-    user_metadata: { full_name: data.full_name, role: data.role },
+    user_metadata: { full_name: data.full_name, role: data.role, center_id: activeCenterId },
   });
 
   if (createError || !created.user) {
