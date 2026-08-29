@@ -377,6 +377,19 @@ export type PushSubscriptionRow = {
   created_at: string;
 };
 
+// Added by 0041_native_push_tokens.sql — APNs/FCM device tokens for the
+// native (Capacitor) app shell. See that migration's own header comment
+// for why this is separate from PushSubscriptionRow (Web Push, browser-only).
+export type NativePlatform = "ios" | "android";
+
+export type NativePushToken = {
+  id: string;
+  user_id: string;
+  platform: NativePlatform;
+  token: string;
+  created_at: string;
+};
+
 export type ParentStudent = {
   id: string;
   parent_id: string;
@@ -677,6 +690,12 @@ export type Database = {
         Row: PushSubscriptionRow;
         Insert: Partial<PushSubscriptionRow> & { user_id: string; endpoint: string; p256dh: string; auth: string };
         Update: Partial<PushSubscriptionRow>;
+        Relationships: [];
+      };
+      native_push_tokens: {
+        Row: NativePushToken;
+        Insert: Partial<NativePushToken> & { user_id: string; platform: NativePlatform; token: string };
+        Update: Partial<NativePushToken>;
         Relationships: [];
       };
       parent_students: {

@@ -127,3 +127,48 @@ export async function unsubscribeFromPushAction(endpoint: string) {
   const supabase = await createClient();
   await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint).eq("user_id", me.id);
 }
+
+const nativeTokenSchema = z.object({
+  platform: z.enum(["ios", "android"]),
+  token: z.string().min(1),
+});
+
+/**
+ * Registers this device for native push (APNs/FCM via
+ * @capacitor/push-notifications — see 0041_native_push_tokens.sql's own
+ * header comment for why this is a separate table/path from
+ * subscribeToPushAction's Web Push). Called only from inside the native
+ * Capacitor shell (see NativeAppBootstrap.tsx) — a no-op path for every
+ * regular browser visitor, who never has a token to send here at all.
+ */
+export async function registerNativePushTokenAction(input: { platform: "ios" | "android"; token: string }) {
+  const me = await getCurrentProfile();
+  if (!me) return { error: "You must be signed in." };
+
+  const parsed = nativeTokenSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid device token." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("native_push_tokens")
+    .upsert({ user_id: me.id, ...parsed.data }, { onConflict: "platform,token" });
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
+
+/**
+ * Removes every stored native token for this user on this platform — not
+ * just one specific token — since Capacitor has no "get my current token"
+ * API to identify a single row to delete (see PushNotificationToggle.tsx's
+ * own comment on this). This is the actually-effective way to make "turn
+ * push off" durable: no more sends are attempted regardless of what the OS
+ * permission state still says, and it also cleans up any stale token left
+ * over from a previous install/re-registration.
+ */
+export async function unregisterAllNativePushTokensAction(platform: "ios" | "android") {
+  const me = await getCurrentProfile();
+  if (!me) return;
+  const supabase = await createClient();
+  await supabase.from("native_push_tokens").delete().eq("platform", platform).eq("user_id", me.id);
+}

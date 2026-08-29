@@ -47,6 +47,25 @@ export function NativeAppBootstrap() {
     })().catch(() => {
       // Splash/status-bar setup is cosmetic — never block the app over it.
     });
+
+    // Tapping a native push notification (delivered via sendNative.ts's
+    // FCM/APNs send, once configured — see that file's own doc comment)
+    // navigates to its `url`, same as sw.js's own `notificationclick`
+    // handler already does for Web Push. Registration/permission itself is
+    // NOT requested here — that stays an explicit opt-in via
+    // PushNotificationToggle.tsx (Settings), same UX on native as on web,
+    // not an automatic prompt on every app open.
+    let removeListener: (() => void) | undefined;
+    import("@capacitor/push-notifications").then(({ PushNotifications }) => {
+      PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
+        const url = (action.notification.data as { url?: string } | undefined)?.url;
+        if (url) window.location.href = url;
+      }).then((handle) => {
+        removeListener = () => handle.remove();
+      });
+    });
+
+    return () => removeListener?.();
   }, []);
 
   return null;

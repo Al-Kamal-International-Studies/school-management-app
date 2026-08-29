@@ -2,6 +2,7 @@ import "server-only";
 
 import webpush, { WebPushError } from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendNativePushToUser } from "./sendNative";
 
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
@@ -20,13 +21,24 @@ export interface PushPayload {
 }
 
 /**
- * Best-effort push send — uses the free, standards-based Web Push protocol
- * (VAPID), not a paid third-party push service. Silently does nothing if
- * VAPID keys aren't configured, or if the user has no subscriptions, so
- * callers never need to guard for that themselves. Prunes subscriptions the
- * push service reports as gone (404/410).
+ * Best-effort push send — fans out to BOTH audiences a single user might
+ * have: Web Push (the free, standards-based VAPID protocol, for anyone
+ * using this app in a browser) and native push (APNs/FCM, for anyone using
+ * the installed Capacitor app — see sendNative.ts's own doc comment for why
+ * that's a genuinely separate mechanism, not just a different payload
+ * shape). A user can have both at once (e.g. checks the app in a browser
+ * AND has it installed) and gets notified on each. Every existing call
+ * site already using this function picks up native delivery automatically,
+ * with zero changes needed there — this is the one place that fan-out
+ * happens. Silently does nothing for whichever half isn't configured/
+ * subscribed, so callers never need to guard for either themselves. Prunes
+ * subscriptions/tokens each provider reports as gone.
  */
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
+  await Promise.allSettled([sendWebPushToUser(userId, payload), sendNativePushToUser(userId, payload)]);
+}
+
+async function sendWebPushToUser(userId: string, payload: PushPayload): Promise<void> {
   if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
   ensureConfigured();
 
