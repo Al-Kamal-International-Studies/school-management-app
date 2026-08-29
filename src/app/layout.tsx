@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Lora } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
 import { NativeAppBootstrap } from "@/components/NativeAppBootstrap";
+import { OfflineBanner } from "@/components/offline/OfflineBanner";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { dirForLocale } from "@/lib/i18n/locales";
@@ -64,6 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <body>
+        <OfflineBanner />
         <ThemeProvider theme={theme}>
           <LocaleProvider locale={locale} dict={dict}>
             {children}

@@ -18,6 +18,7 @@ import { formatMonth } from "@/lib/progress/calculate";
 import { initials } from "@/lib/utils";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
 import type { AttendanceStatus, LeaveStatus } from "@/lib/types/database.types";
 
 const ATTENDANCE_TONE: Record<AttendanceStatus, "green" | "red" | "amber" | "slate"> = {
@@ -67,6 +68,22 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
 
   return (
     <div className="space-y-8">
+      {/* Real offline behavior for Apple's Guideline 4.2 review (see
+          HANDOVER.md's App Store plan) — not visible UI, just a client-side
+          write of this render's already-RLS-scoped data into localStorage
+          so app/offline/page.tsx has something real to show if this same
+          parent opens the app later with no connection. */}
+      <CacheDashboardForOffline
+        userId={me.id}
+        role="parent"
+        summary={{
+          displayName: activeChild.full_name,
+          subtitle: [activeChild.className ?? dict.common.notAssigned, `#${activeChild.enrollment_number}`].join(" · "),
+          overallScore: overview.overallScore,
+          attendanceRate,
+          announcements: announcements.map((a) => ({ title: a.title, date: new Date(a.created_at).toLocaleDateString() })),
+        }}
+      />
       <FadeUp className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <WelcomeRobot name={me.full_name} role="parent" dict={dict} as="p" className="mb-1" />

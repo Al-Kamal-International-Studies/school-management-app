@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { LogOut, Menu } from "lucide-react";
-import { signOutAction } from "@/app/logout/actions";
+import { Menu } from "lucide-react";
 import { initials } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { CenterSwitcher } from "@/components/nav/CenterSwitcher";
 import { NotificationBell } from "@/components/nav/NotificationBell";
+import { SignOutForm } from "@/components/nav/SignOutForm";
 import type { Center, Notification, Profile } from "@/lib/types/database.types";
 
 const ROLE_TONE = {
@@ -59,15 +59,7 @@ export function Topbar({
           </div>
           <span className="hidden text-sm font-medium text-slate-700 dark:text-navy-100 sm:inline">{profile.full_name}</span>
         </Link>
-        <form action={signOutAction}>
-          <button
-            type="submit"
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-navy-300 dark:hover:bg-red-500/10 dark:hover:text-red-300"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
-        </form>
+        <SignOutForm label="Sign out" />
       </div>
     </header>
   );
