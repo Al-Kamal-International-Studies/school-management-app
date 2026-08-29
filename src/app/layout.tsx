@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Lora } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
+import { NativeAppBootstrap } from "@/components/NativeAppBootstrap";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { dirForLocale } from "@/lib/i18n/locales";
@@ -69,6 +70,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </LocaleProvider>
         </ThemeProvider>
         <PwaRegister />
+        <NativeAppBootstrap />
       </body>
     </html>
   );

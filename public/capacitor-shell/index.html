@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Al Kamal</title>
+    <!--
+      This page is NOT the app — it's a local fallback bundled into the
+      native shell (see ../../capacitor.config.ts's own doc comment) shown
+      only for the brief instant before the real app (loaded live from
+      server.url) takes over, or if that load genuinely fails (no network
+      at all on cold start). Deliberately dependency-free and inline-styled
+      — no external CSS/JS/image requests, no build step, so it can never
+      itself be the reason something fails to load. Colors match
+      public/manifest.json's background_color/theme_color exactly.
+    -->
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #0b2138;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      }
+      .wrap {
+        text-align: center;
+        color: #f4d88c;
+      }
+      .mark {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 16px;
+      }
+      .name {
+        color: #ffffff;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .tagline {
+        margin-top: 6px;
+        color: #9fb3c8;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <svg class="mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="32" cy="32" r="30" stroke="#f4d88c" stroke-width="2.5" />
+        <path d="M20 40 L32 18 L44 40 Z" stroke="#f4d88c" stroke-width="2.5" stroke-linejoin="round" />
+      </svg>
+      <div class="name">Al Kamal</div>
+      <div class="tagline">Knowledge is Light</div>
+    </div>
+  </body>
+</html>

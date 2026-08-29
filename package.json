@@ -8,9 +8,20 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "create-admin": "node scripts/create-admin.mjs"
+    "create-admin": "node scripts/create-admin.mjs",
+    "cap:sync": "cap sync",
+    "cap:assets": "capacitor-assets generate",
+    "cap:open:android": "cap open android",
+    "cap:open:ios": "cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "7.6.8",
+    "@capacitor/app": "7.1.2",
+    "@capacitor/cli": "7.6.8",
+    "@capacitor/core": "7.6.8",
+    "@capacitor/ios": "7.6.8",
+    "@capacitor/splash-screen": "7.0.5",
+    "@capacitor/status-bar": "7.0.6",
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.2",
     "@supabase/ssr": "^0.12.4",
@@ -27,6 +38,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@types/node": "^20.14.15",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
