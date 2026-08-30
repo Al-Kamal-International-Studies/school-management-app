@@ -25,6 +25,7 @@ import { getLocale } from "@/lib/i18n/getLocale";
 import { cn } from "@/lib/utils";
 import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 import { getOverviewCounts, getAttendanceTrend, listRecentActivity, listUpcomingEvents } from "./queries";
+import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
 import type { EventType } from "@/lib/types/database.types";
 
 // Same tone mapping as /admin/events and /calendar, for a consistent look
@@ -89,6 +90,24 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-10">
+      {/* Real offline behavior for Apple's Guideline 4.2 review — see the
+          identical setup + comment in (dashboard)/parent/page.tsx. No
+          per-student "overall score" concept for an admin, so that tile is
+          left null; upcoming events stand in for "announcements" here since
+          admin has no announcements feed of its own on this page. */}
+      {profile && (
+        <CacheDashboardForOffline
+          userId={profile.id}
+          role="admin"
+          summary={{
+            displayName: profile.full_name,
+            subtitle: dict.adminOverview.subtitle,
+            overallScore: null,
+            attendanceRate: attendanceTrend.thisWeekRate,
+            announcements: upcomingEvents.map((e) => ({ title: e.title, date: e.event_date })),
+          }}
+        />
+      )}
       <FadeUp>
         {profile && <WelcomeRobot name={profile.full_name} role="admin" dict={dict} as="p" className="mb-1" />}
         <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminOverview.title}</h1>

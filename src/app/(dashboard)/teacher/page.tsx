@@ -11,6 +11,7 @@ import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
 
 // Shared focus/hover treatment for dashboard rows that are now real links —
 // see the identical constant + comment in admin/page.tsx.
@@ -42,6 +43,23 @@ export default async function TeacherDashboardPage() {
 
   return (
     <div className="space-y-10">
+      {/* Real offline behavior for Apple's Guideline 4.2 review — see the
+          identical setup + comment in (dashboard)/parent/page.tsx. Teachers
+          have no single "overall score"/"attendance rate" of their own
+          (those concepts are per-student), so both are left null — the
+          offline card in app/offline/page.tsx already hides those tiles
+          when null. */}
+      <CacheDashboardForOffline
+        userId={profile!.id}
+        role="teacher"
+        summary={{
+          displayName: profile!.full_name,
+          subtitle: `${distinctClasses.size} ${dict.nav.myClasses} · ${totalStudents} ${dict.adminClasses.students}`,
+          overallScore: null,
+          attendanceRate: null,
+          announcements: announcements.map((a) => ({ title: a.title, date: new Date(a.created_at).toLocaleDateString() })),
+        }}
+      />
       <FadeUp className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <WelcomeRobot name={profile!.full_name} role="teacher" dict={dict} dataTour="page-title" />

@@ -22,6 +22,7 @@ import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
 
 const UPCOMING_KIND_TONE = { assignment: "navy", exam: "navy", quiz: "gold" } as const;
 // Where each upcoming-item kind's own list page lives — assignments and
@@ -66,6 +67,22 @@ export default async function StudentDashboardPage() {
 
   return (
     <div className="space-y-10">
+      {/* Real offline behavior for Apple's Guideline 4.2 review — see the
+          identical setup + comment in (dashboard)/parent/page.tsx. */}
+      <CacheDashboardForOffline
+        userId={profile!.id}
+        role="student"
+        summary={{
+          displayName: profile!.full_name,
+          subtitle: [
+            classRow ? `${classRow.name} - ${classRow.section}` : dict.studentDashboard.noClassAssignedShort,
+            `${dict.studentDashboard.enrollmentHash}${student?.enrollment_number ?? ""}`,
+          ].join(" · "),
+          overallScore: latest ? latest.averageScore : null,
+          attendanceRate: latest ? latest.averageAttendance : null,
+          announcements: announcements.map((a) => ({ title: a.title, date: new Date(a.created_at).toLocaleDateString() })),
+        }}
+      />
       <FadeUp>
         <WelcomeRobot name={profile!.full_name} role="student" dict={dict} dataTour="page-title" />
         <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">
