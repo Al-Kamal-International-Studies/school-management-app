@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1001491341248",
+    "project_id": "al-kamal-schools",
+    "storage_bucket": "al-kamal-schools.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1001491341248:android:d34d4991b79775444ff225",
+        "android_client_info": {
+          "package_name": "com.alkamalinternational.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtG_rKA1RAvS0L3iJjJBgOTqJOHu8cLR8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
