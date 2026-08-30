@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "create-admin": "node scripts/create-admin.mjs",
     "cap:sync": "cap sync",
-    "cap:assets": "capacitor-assets generate",
+    "cap:assets": "npx --yes @capacitor/assets generate",
     "cap:open:android": "cap open android",
     "cap:open:ios": "cap open ios"
   },
@@ -39,7 +39,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@types/node": "^20.14.15",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
