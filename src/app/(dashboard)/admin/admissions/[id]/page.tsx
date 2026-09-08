@@ -6,6 +6,8 @@ import { getAdmission } from "../queries";
 import { DownloadPdfButton } from "./DownloadPdfButton";
 import { RetryButton } from "./RetryButton";
 import { DeleteAdmissionButton } from "./DeleteAdmissionButton";
+import { Button } from "@/components/ui/Button";
+import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Alert";
 import { FadeUp } from "@/components/motion/FadeUp";
@@ -97,6 +99,12 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
       <FadeUp delay={0.04} className="card flex flex-wrap items-center gap-3 p-6">
         {admission.pdf_file_path && <DownloadPdfButton admissionId={admission.id} dict={dict} />}
         {(admission.status === "failed" || admission.status === "pending") && <RetryButton admissionId={admission.id} dict={dict} />}
+        <Link href={`/admin/admissions/${admission.id}/edit`}>
+          <Button type="button" variant="secondary">
+            <Pencil className="h-4 w-4" />
+            {dict.admissions.editAdmission}
+          </Button>
+        </Link>
         <DeleteAdmissionButton admissionId={admission.id} />
       </FadeUp>
 

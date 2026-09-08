@@ -233,6 +233,114 @@ export async function retryAdmissionProcessingAction(admissionId: string): Promi
 }
 
 /**
+ * Edits an existing admission's own saved intake data — the "no way to fix
+ * a mistake after submitting" gap (e.g. a missing parent email that made
+ * processing fail with no way to correct it, only retry the same broken
+ * data or delete the whole record). Available for a row in ANY status,
+ * including 'processed' — an admin can still be correcting a typo in a
+ * finished record for future reference, per Muhammad's explicit request
+ * (chat, 2026-09-08: "I should be able to edit the form even after it has
+ * been processed since I am an admin").
+ *
+ * Deliberately scoped to ONLY the admissions row's own stored fields —
+ * unlike retryAdmissionProcessingAction, this never re-runs processAdmission
+ * itself. That matters most for an already-'processed' row: editing its
+ * intake data here does NOT retroactively touch the student/parent accounts
+ * already created from it, resend the welcome email, or regenerate the
+ * already-issued PDF — those are separate, deliberate actions (edit the
+ * account directly via /admin/users/[id]; a corrected PDF isn't offered at
+ * all, since a signed physical form's digital copy shouldn't silently
+ * change after the fact). For a 'failed' row this is the fix-then-Retry
+ * two-step: save the corrected data here, then press the existing Retry
+ * button to actually process it.
+ */
+export async function updateAdmissionAction(admissionId: string, _prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const me = await requireRole("admin");
+
+  const raw = Object.fromEntries(formData.entries());
+  const parsed = admissionSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
+  const data = parsed.data;
+
+  const consentAccepted = readCheckbox(formData, "consent_accepted");
+  const paymentPolicyAccepted = readCheckbox(formData, "payment_policy_accepted");
+  const additionalPoliciesAccepted = readCheckbox(formData, "additional_policies_accepted");
+
+  if (!consentAccepted) return { error: "The informed consent acknowledgment is required." };
+  if (!paymentPolicyAccepted) return { error: "The payment policy acknowledgment is required." };
+  if (data.center === "AKIS" && !additionalPoliciesAccepted) {
+    return { error: "The additional policies acknowledgment is required for AKIS." };
+  }
+
+  const isAutistic = data.center === "AKET" && readCheckbox(formData, "is_autistic");
+  if (readCheckbox(formData, "is_autistic") && data.center === "AKIS") {
+    return { error: "The Autism Section is only available for AKET admissions." };
+  }
+
+  const admin = createAdminClient();
+  const { data: existing } = await admin.from("admissions").select("id").eq("id", admissionId).single();
+  if (!existing) return { error: "Admission not found." };
+
+  const centerId = data.center === "AKIS" ? AKIS_CENTER_ID : AKET_CENTER_ID;
+
+  const { error: updateError } = await admin
+    .from("admissions")
+    .update({
+      center_id: centerId,
+      student_full_name: data.student_full_name,
+      student_gender: data.student_gender,
+      student_dob: data.student_dob ?? null,
+      student_id_number: data.student_id_number ?? null,
+      student_religion: data.student_religion ?? null,
+      student_nationality: data.student_nationality ?? null,
+      father_name: data.father_name ?? null,
+      father_job_title: data.father_job_title ?? null,
+      father_mobile: data.father_mobile ?? null,
+      father_email: data.father_email ?? null,
+      father_nationality: data.father_nationality ?? null,
+      mother_name: data.mother_name ?? null,
+      mother_job_title: data.mother_job_title ?? null,
+      mother_mobile: data.mother_mobile ?? null,
+      mother_email: data.mother_email ?? null,
+      mother_nationality: data.mother_nationality ?? null,
+      address_emirate: data.address_emirate ?? null,
+      address_area: data.address_area ?? null,
+      address_street: data.address_street ?? null,
+      address_building: data.address_building ?? null,
+      medical_conditions: data.medical_conditions ?? null,
+      medical_vision: readCheckbox(formData, "medical_vision"),
+      medical_motor: readCheckbox(formData, "medical_motor"),
+      medical_hearing: readCheckbox(formData, "medical_hearing"),
+      medical_balance: readCheckbox(formData, "medical_balance"),
+      medical_speech: readCheckbox(formData, "medical_speech"),
+      medical_allergies: readCheckbox(formData, "medical_allergies"),
+      medical_allergies_detail: data.medical_allergies_detail ?? null,
+      consent_accepted: consentAccepted,
+      payment_policy_accepted: paymentPolicyAccepted,
+      additional_policies_accepted: data.center === "AKIS" ? additionalPoliciesAccepted : null,
+      enrolment_grade: data.center === "AKIS" ? (data.enrolment_grade ?? null) : null,
+      package_name: data.center === "AKET" ? (data.package_name ?? null) : null,
+      enrolment_class_id: data.enrolment_class_id ?? null,
+      is_autistic: isAutistic,
+      autism_diagnosed_before: isAutistic && readCheckbox(formData, "autism_diagnosed_before"),
+      autism_diagnosis_date: isAutistic ? (data.autism_diagnosis_date ?? null) : null,
+      autism_diagnosed_by: isAutistic ? (data.autism_diagnosed_by ?? null) : null,
+      autism_current_support: isAutistic ? (data.autism_current_support ?? null) : null,
+      autism_communication_ability: isAutistic ? (data.autism_communication_ability ?? null) : null,
+      autism_sensory_notes: isAutistic ? (data.autism_sensory_notes ?? null) : null,
+      autism_behavioral_notes: isAutistic ? (data.autism_behavioral_notes ?? null) : null,
+      autism_parent_notes: isAutistic ? (data.autism_parent_notes ?? null) : null,
+    })
+    .eq("id", admissionId);
+
+  if (updateError) return { error: `Could not save changes: ${updateError.message}` };
+
+  await logAuditEvent(me.id, "update_admission", "admissions", admissionId);
+  revalidatePath(`/admin/admissions/${admissionId}`);
+  redirect(`/admin/admissions/${admissionId}`);
+}
+
+/**
  * Deletes an admission record — the "no option to delete an admission" gap.
  * Two different things happen underneath, deliberately not the same
  * operation:
@@ -448,15 +556,48 @@ async function synthesizeStudentEmail(
   }
 }
 
-/** AD-<year>-<5 random alphanumeric chars>, checked against students.enrollment_number for uniqueness. */
-async function generateEnrollmentNumber(admin: ReturnType<typeof createAdminClient>): Promise<string> {
-  const year = new Date().getFullYear();
-  const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+/**
+ * The one canonical student ID format for this whole app (Muhammad's
+ * explicit request, chat, 2026-09-08 — previously every batch of accounts
+ * had picked its own scheme: G<grade>-<NN> from the original bulk-onboard
+ * scripts, AD-<year>-<5 random chars> from an earlier version of this exact
+ * function, AKIS-<year>-<5 random chars> as a one-off for two class-less
+ * students, plus a handful of TEST-/DEMO-/AKET-STU- fixtures — see
+ * scripts/normalize-student-ids.mjs for the one-time backfill that brought
+ * every existing row onto this format):
+ *
+ *   <AKIS|AKET>-<admission year>-<4-digit sequence, zero-padded>
+ *
+ * e.g. AKIS-2026-0001. The sequence is per center+year (not global, not
+ * reset by class/grade — a grade change or center transfer must never
+ * change a student's own ID once assigned) and assigned in admission order.
+ * `admissionDate` should be the admission's own registration_date, not
+ * `now()` — a retried/late-processed admission still gets the ID for the
+ * year it was actually registered, not the year processing happened to
+ * finish.
+ */
+async function generateEnrollmentNumber(
+  admin: ReturnType<typeof createAdminClient>,
+  center: AdmissionCenter,
+  admissionDate: Date
+): Promise<string> {
+  const centerLabel = center === "akis" ? "AKIS" : "AKET";
+  const year = admissionDate.getFullYear();
+  const prefix = `${centerLabel}-${year}-`;
+
   while (true) {
-    const suffix = Array.from({ length: 5 }, () => charset[Math.floor(Math.random() * charset.length)]).join("");
-    const candidate = `AD-${year}-${suffix}`;
-    const { data: existing } = await admin.from("students").select("id").eq("enrollment_number", candidate).maybeSingle();
-    if (!existing) return candidate;
+    const { data: existing } = await admin.from("students").select("enrollment_number").like("enrollment_number", `${prefix}%`);
+    const maxSeq = (existing ?? []).reduce((max, row) => {
+      const match = /^\d{4}$/.exec((row.enrollment_number ?? "").slice(prefix.length));
+      return match ? Math.max(max, Number(match[0])) : max;
+    }, 0);
+    const candidate = `${prefix}${String(maxSeq + 1).padStart(4, "0")}`;
+    // Re-check uniqueness directly (not just trusting the max-so-far) to
+    // guard the rare case of two admissions processing concurrently — same
+    // collision-retry shape as synthesizeStudentEmail/buildParentLoginEmail
+    // above.
+    const { data: collision } = await admin.from("students").select("id").eq("enrollment_number", candidate).maybeSingle();
+    if (!collision) return candidate;
   }
 }
 
@@ -652,7 +793,7 @@ async function processAdmission(admissionId: string, actorId: string): Promise<v
     // assigned" until a separate manual step. is_autistic mirrors the
     // admission's own flag — this is what gates Autism Section visibility
     // for this student's parent(s), see Sidebar.tsx.
-    const enrollmentNumber = await generateEnrollmentNumber(admin);
+    const enrollmentNumber = await generateEnrollmentNumber(admin, center, new Date(admission.registration_date));
     const { error: studentRowError } = await admin.from("students").insert({
       id: studentCreated.user.id,
       enrollment_number: enrollmentNumber,

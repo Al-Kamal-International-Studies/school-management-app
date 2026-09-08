@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, Loader2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
@@ -68,6 +69,15 @@ function encodeCanvas(canvas: HTMLCanvasElement): Promise<Blob> {
  * stuck invisible if the post-hydration effect never runs). Pan/zoom
  * itself is driven directly by pointer/wheel state, not by an animation
  * library, so that risk doesn't apply to the interactive part either.
+ *
+ * Rendered through a portal to `document.body` — same real bug as
+ * ConfirmDialog.tsx (see that component's own doc comment for the full
+ * root cause): AvatarUpload.tsx, which renders this modal, sits inside the
+ * profile page's `FadeUp`-wrapped card, and `FadeUp`'s own entrance
+ * animation leaves a non-`none` transform on that ancestor forever
+ * (`animation-fill-mode: both`) — making it the containing block for this
+ * modal's `fixed inset-0` backdrop instead of the viewport. A portal
+ * escapes that ancestor entirely.
  */
 export function AvatarCropperModal({
   imageSrc,
@@ -257,7 +267,13 @@ export function AvatarCropperModal({
     }
   }
 
-  return (
+  // `document` doesn't exist during SSR — see ConfirmDialog.tsx's own doc
+  // comment for why gating on it directly (not a mounted-after-effect) is
+  // safe: AvatarUpload.tsx only ever mounts this modal in response to a
+  // real client file-picker interaction, never on a server render.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 animate-fade-in bg-navy-950/60 backdrop-blur-[2px]"
@@ -341,6 +357,7 @@ export function AvatarCropperModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

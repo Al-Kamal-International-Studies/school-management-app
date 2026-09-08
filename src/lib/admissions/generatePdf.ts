@@ -578,7 +578,14 @@ export async function generateAdmissionPdf(admission: AdmissionRecord, center: A
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const serifBold = await doc.embedFont(StandardFonts.TimesRomanBold);
 
-  const logoFile = center === "akis" ? "crest-navy.png" : "aket-seal.png";
+  // AKIS's header band is dark navy (PALETTE.akis.primary900 above) — the
+  // navy-line crest is invisible against it, so the white-line variant is
+  // used here specifically (crest-navy.png is still the right choice
+  // anywhere the crest sits on a light background, e.g. the web app itself).
+  // AKET's seal already has enough of its own internal contrast (a lighter
+  // blue border + cream text) against AKET's dark teal band, so it's
+  // unchanged.
+  const logoFile = center === "akis" ? "crest-white.png" : "aket-seal.png";
   let logo: PDFImage | null = null;
   try {
     const bytes = await readFile(path.join(process.cwd(), "public", "brand", logoFile));

@@ -1,34 +1,35 @@
-import type { AdmissionCenter } from "./generatePdf";
-
 /**
  * Builds the download/attachment filename for a generated admission PDF.
  *
- * Format: `<AKIS|AKET>-<enrollmentNumber>-<Student-Full-Name>.pdf`, e.g.
- * `AKIS-AD-2026-7K2QM-Talal-A-M-Awad.pdf`.
+ * Format (Muhammad's explicit request, chat, 2026-09-08):
+ * `<Full Student Name>_<Student ID>_<Academic Year>.pdf`, e.g.
+ * `Talal A M Awad_AKIS-2026-0001_2025-2026.pdf`.
  *
- * The name portion keeps only alphanumeric characters and hyphens — any run
- * of other characters (spaces, punctuation, etc.) becomes a single hyphen,
- * repeated hyphens collapse to one, and leading/trailing hyphens are
- * stripped. Falls back to "Student" if the name sanitizes to nothing, so the
- * filename is never empty.
+ * The student ID already starts with the center code (AKIS-/AKET-, see
+ * generateEnrollmentNumber in (dashboard)/admin/admissions/actions.ts), so
+ * there's no separate center segment here the way the old format had one.
+ *
+ * The name segment keeps spaces (a real person's name reads better with
+ * them, and every modern OS/browser handles a space in a downloaded
+ * filename fine) but strips characters that are unsafe or meaningless in a
+ * filename (path separators, quotes, control characters); the underscore is
+ * reserved as the segment separator, so any underscore embedded in the name
+ * itself becomes a space to keep the three segments unambiguous. Falls back
+ * to "Student" if the name sanitizes to nothing, so the filename is never
+ * empty.
  *
  * Pure string logic only — no I/O. Intended to be called by the code that
- * actually serves/downloads the PDF (see actions.ts / DownloadPdfButton.tsx).
+ * actually serves/downloads the PDF (see getAdmissionPdfUrl.ts).
  */
-export function buildAdmissionPdfFilename(opts: {
-  center: AdmissionCenter;
-  studentFullName: string;
-  enrollmentNumber: string;
-}): string {
-  const centerLabel = opts.center === "akis" ? "AKIS" : "AKET";
-
+export function buildAdmissionPdfFilename(opts: { studentFullName: string; enrollmentNumber: string; academicYear: string }): string {
   const sanitizedName = opts.studentFullName
     .trim()
-    .replace(/[^a-zA-Z0-9-]+/g, "-")
-    .replace(/-{2,}/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/_/g, " ")
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   const namePart = sanitizedName.length > 0 ? sanitizedName : "Student";
 
-  return `${centerLabel}-${opts.enrollmentNumber}-${namePart}.pdf`;
+  return `${namePart}_${opts.enrollmentNumber}_${opts.academicYear}.pdf`;
 }

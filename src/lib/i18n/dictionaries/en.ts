@@ -711,6 +711,13 @@ const en = {
     submit: "Submit admission",
     submitting: "Submitting…",
 
+    editAdmission: "Edit admission",
+    editTitle: "Edit admission",
+    editSubtitle: "Correct the submitted information below. This only updates the admission's own saved record — it does not resend the welcome email, regenerate the PDF, or change an already-created student/parent account.",
+    editScopeNote: "Editing here only updates this admission's saved intake data. If a student or parent account has already been created from it, use that account's own edit page to change its details.",
+    saveChanges: "Save changes",
+    savingChanges: "Saving…",
+
     detailTitle: "Admission details",
     downloadPdf: "Download PDF",
     downloading: "Preparing…",
