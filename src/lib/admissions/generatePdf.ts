@@ -251,7 +251,7 @@ export const PALETTE: Record<AdmissionCenter, CenterPalette> = {
   },
 };
 
-function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+export function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
