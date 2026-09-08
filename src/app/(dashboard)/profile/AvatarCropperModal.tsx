@@ -40,12 +40,32 @@ function extForBlob(blob: Blob): string {
   return "png";
 }
 
-/** Encodes the canvas as a Blob, preferring WEBP and falling back to JPEG
- * (then whatever the browser's default fallback is, typically PNG) for
- * environments that can't encode WEBP via canvas.toBlob. */
-function encodeCanvas(canvas: HTMLCanvasElement): Promise<Blob> {
+/**
+ * Encodes the canvas as a Blob. Default behavior (`outputFormat: "auto"`,
+ * every existing caller): prefers WEBP, falling back to JPEG (then
+ * whatever the browser's own default fallback is, typically PNG) for
+ * environments that can't encode WEBP via canvas.toBlob — unchanged from
+ * before `outputFormat` existed.
+ *
+ * `outputFormat: "png"` skips straight to PNG — added for
+ * IdCardPhotoUpload.tsx, whose uploaded photo gets embedded into a
+ * generated PDF (generateIdCard.ts) via pdf-lib, which can only embed
+ * PNG/JPEG, never WEBP. Rather than have the ID card's own generator
+ * silently fall back to an initials placeholder for the common case of a
+ * browser encoding WEBP successfully (nearly all modern ones do), the ID
+ * card's own upload path asks for a format it KNOWS will embed correctly.
+ */
+function encodeCanvas(canvas: HTMLCanvasElement, outputFormat: "auto" | "png" = "auto"): Promise<Blob> {
   const tryType = (type: string) =>
     new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, 0.92));
+
+  if (outputFormat === "png") {
+    return (async () => {
+      const png = await tryType("image/png");
+      if (png) return png;
+      throw new Error("Canvas encoding failed.");
+    })();
+  }
 
   return (async () => {
     const webp = await tryType("image/webp");
@@ -86,6 +106,7 @@ export function AvatarCropperModal({
   error,
   onCancel,
   onConfirm,
+  outputFormat = "auto",
 }: {
   imageSrc: string;
   altText: string;
@@ -93,6 +114,10 @@ export function AvatarCropperModal({
   error?: string;
   onCancel: () => void;
   onConfirm: (blob: Blob, ext: string) => void;
+  /** See encodeCanvas's own doc comment above — "png" forces a
+   * pdf-lib-embeddable output for IdCardPhotoUpload.tsx; every other
+   * caller omits this and keeps the existing WEBP-preferred behavior. */
+  outputFormat?: "auto" | "png";
 }) {
   const { dict } = useLocale();
   const imgRef = useRef<HTMLImageElement>(null);
@@ -260,7 +285,7 @@ export function AvatarCropperModal({
     ctx.drawImage(img, outX, outY, outW, outH);
 
     try {
-      const blob = await encodeCanvas(canvas);
+      const blob = await encodeCanvas(canvas, outputFormat);
       onConfirm(blob, extForBlob(blob));
     } catch {
       setLoadError(true);

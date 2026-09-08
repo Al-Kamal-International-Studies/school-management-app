@@ -62,6 +62,56 @@ export async function getMySchedule(teacherId: string) {
   }));
 }
 
+export interface MyStudentRow {
+  id: string;
+  fullName: string;
+  avatarUrl: string | null;
+  enrollmentNumber: string;
+  className: string | null;
+}
+
+/** Every student in a class this teacher is assigned to teach (any
+ * subject) — the same "my students" relationship canViewIdCard's teacher
+ * branch checks (lib/idcard/authorizeIdCardAccess.ts), listed here for
+ * /teacher/id-cards. Archived students are excluded (they wouldn't have a
+ * viewable id-card page anyway — see getIdCardData's own archived_at
+ * check). Sorted by name, not by class, since a teacher may teach several
+ * classes and there's no single natural class ordering to default to. */
+export async function listMyStudents(teacherId: string): Promise<MyStudentRow[]> {
+  const supabase = await createClient();
+  const { data: assignments } = await supabase.from("class_subject_teachers").select("class_id").eq("teacher_id", teacherId);
+  if (!assignments || assignments.length === 0) return [];
+
+  const classIds = [...new Set(assignments.map((a) => a.class_id))];
+  const [{ data: classes }, { data: students }] = await Promise.all([
+    supabase.from("classes").select("id, name, section").in("id", classIds),
+    supabase.from("students").select("id, enrollment_number, class_id").in("class_id", classIds),
+  ]);
+  if (!students || students.length === 0) return [];
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .in("id", students.map((s) => s.id))
+    .is("archived_at", null);
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const classMap = new Map((classes ?? []).map((c) => [c.id, `${c.name} - ${c.section}`]));
+
+  return students
+    .filter((s) => profileMap.has(s.id))
+    .map((s) => {
+      const profile = profileMap.get(s.id)!;
+      return {
+        id: s.id,
+        fullName: profile.full_name,
+        avatarUrl: profile.avatar_url,
+        enrollmentNumber: s.enrollment_number,
+        className: s.class_id ? (classMap.get(s.class_id) ?? null) : null,
+      };
+    })
+    .sort((a, b) => a.fullName.localeCompare(b.fullName));
+}
+
 export interface TeacherOverviewStats {
   upcomingExamCount: number;
   pendingGradingCount: number;

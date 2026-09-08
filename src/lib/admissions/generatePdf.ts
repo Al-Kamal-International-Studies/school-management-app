@@ -200,8 +200,11 @@ const FOOTER_RULE = rgb(0.85, 0.85, 0.85);
 const WHITE = rgb(1, 1, 1);
 
 /** Per-center brand palette, sourced verbatim from src/app/globals.css's
- * `:root` (AKIS) and `[data-center="aket"]` (AKET) custom properties. */
-interface CenterPalette {
+ * `:root` (AKIS) and `[data-center="aket"]` (AKET) custom properties.
+ * Exported for reuse by other generated PDFs that need the same brand
+ * colors (see lib/idcard/generateIdCard.ts) — kept as one source of truth
+ * rather than a second hardcoded copy drifting out of sync. */
+export interface CenterPalette {
   primary900: Color;
   primary700: Color;
   accent500: Color;
@@ -212,7 +215,7 @@ interface CenterPalette {
   onBandSubtitle: Color;
 }
 
-function rgb255(r: number, g: number, b: number): Color {
+export function rgb255(r: number, g: number, b: number): Color {
   return rgb(r / 255, g / 255, b / 255);
 }
 
@@ -229,7 +232,7 @@ function paleOn(r: number, g: number, b: number, strength: number): Color {
   return rgb(mix(r), mix(g), mix(b));
 }
 
-const PALETTE: Record<AdmissionCenter, CenterPalette> = {
+export const PALETTE: Record<AdmissionCenter, CenterPalette> = {
   akis: {
     primary900: rgb255(15, 33, 49),
     primary700: rgb255(28, 58, 86),

@@ -32,6 +32,7 @@ import {
   X,
   HeartHandshake,
   UserPlus,
+  IdCard,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -118,6 +119,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { href: "/admin", labelKey: "overview", icon: LayoutDashboard },
     { href: "/admin/users", labelKey: "users", icon: Users },
     { href: "/admin/admissions", labelKey: "admissions", icon: UserPlus },
+    { href: "/admin/id-cards", labelKey: "idCards", icon: IdCard },
     { href: "/admin/password-reset-requests", labelKey: "passwordResetRequests", icon: KeyRound },
     { href: "/admin/classes", labelKey: "classes", icon: School },
     { href: "/admin/subjects", labelKey: "subjects", icon: BookMarked },
@@ -134,6 +136,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   teacher: [
     { href: "/teacher", labelKey: "myClasses", icon: BookOpen },
+    { href: "/teacher/id-cards", labelKey: "idCards", icon: IdCard },
     { href: "/class-chat", labelKey: "classChat", icon: Hash },
     { href: "/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID },
     { href: "/teacher/timetable", labelKey: "myTimetable", icon: CalendarClock },
@@ -151,6 +154,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   student: [
     { href: "/student", labelKey: "dashboard", icon: LayoutDashboard },
+    { href: "/student/id-card", labelKey: "idCard", icon: IdCard },
     { href: "/class-chat", labelKey: "classChat", icon: Hash },
     { href: "/student/timetable", labelKey: "myTimetable", icon: CalendarClock },
     { href: "/student/attendance", labelKey: "attendance", icon: CalendarCheck },
@@ -166,6 +170,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   parent: [
     { href: "/parent", labelKey: "dashboard", icon: LayoutDashboard },
+    { href: "/parent/id-card", labelKey: "idCard", icon: IdCard },
     { href: "/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID, autismGated: true },
     { href: "/calendar", labelKey: "calendar", icon: CalendarDays },
     { href: "/documents", labelKey: "documents", icon: FolderOpen },
