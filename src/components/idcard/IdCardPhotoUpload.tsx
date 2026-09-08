@@ -4,8 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Camera, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { setStudentPhotoAction } from "@/lib/idcard/actions";
+import { uploadStudentPhotoAction } from "@/lib/idcard/actions";
 import { initials } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { AvatarCropperModal } from "@/app/(dashboard)/profile/AvatarCropperModal";
@@ -76,26 +75,15 @@ export function IdCardPhotoUpload({
 
     setUploading(true);
 
-    const supabase = createClient();
-    const path = `${studentId}/avatar.${ext}`;
-
-    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, blob, {
-      upsert: true,
-      cacheControl: "3600",
-    });
-
-    if (uploadError) {
-      setError(uploadError.message);
-      setUploading(false);
-      return;
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("avatars").getPublicUrl(path);
-    const bustedUrl = `${publicUrl}?v=${Date.now()}`;
-
-    const result = await setStudentPhotoAction(studentId, bustedUrl);
+    // Uploaded server-side (uploadStudentPhotoAction), not via the browser's
+    // own Supabase client — see that action's own doc comment for why: the
+    // `avatars` bucket's Storage RLS only allows writing to a folder that
+    // matches the CALLER's own auth.uid(), which blocks exactly this case
+    // (an admin/parent uploading to a different student's folder) with
+    // "new row violates row-level security policy".
+    const formData = new FormData();
+    formData.append("file", blob, `avatar.${ext}`);
+    const result = await uploadStudentPhotoAction(studentId, formData);
     setUploading(false);
 
     if (result.error) {
