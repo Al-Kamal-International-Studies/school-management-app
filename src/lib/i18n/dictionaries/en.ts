@@ -759,7 +759,9 @@ const en = {
     academicYearLabel: "Academic Year",
     notAssigned: "Not assigned",
     photoLabel: "Photo",
-    download: "Download ID Card",
+    downloadPdf: "Download PDF",
+    saveAsImage: "Save as Image",
+    downloadError: "Couldn't download the ID card. Please try again.",
     helpText: "The photo above is used for this ID card. Changing it here updates the same photo shown throughout the app.",
   },
   adminOverview: {

@@ -758,7 +758,9 @@ const ar: Dictionary = {
     academicYearLabel: "العام الدراسي",
     notAssigned: "غير محدد",
     photoLabel: "الصورة",
-    download: "تنزيل بطاقة الهوية",
+    downloadPdf: "تنزيل PDF",
+    saveAsImage: "حفظ كصورة",
+    downloadError: "تعذّر تنزيل بطاقة الهوية. حاول مرة أخرى.",
     helpText: "الصورة أعلاه تُستخدم لبطاقة الهوية هذه. تغييرها هنا يُحدّث نفس الصورة المعروضة في جميع أنحاء التطبيق.",
   },
   adminOverview: {

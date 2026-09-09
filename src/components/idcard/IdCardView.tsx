@@ -1,7 +1,6 @@
-import { Download } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { IdCardPhotoUpload } from "./IdCardPhotoUpload";
+import { IdCardDownloadButtons } from "./IdCardDownloadButtons";
 import { initials } from "@/lib/utils";
 import {
   CARD_WIDTH,
@@ -212,12 +211,7 @@ export function IdCardView({
               <IdCardPhotoUpload studentId={data.studentId} fullName={data.fullName} avatarUrl={data.avatarUrl} />
             </div>
           )}
-          <a href={`/api/id-card/${data.studentId}`} download>
-            <Button type="button">
-              <Download className="h-4 w-4" />
-              {dict.idCard.download}
-            </Button>
-          </a>
+          <IdCardDownloadButtons studentId={data.studentId} />
         </div>
       </div>
 

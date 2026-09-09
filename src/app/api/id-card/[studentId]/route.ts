@@ -2,9 +2,7 @@ import "server-only";
 
 import type { NextRequest } from "next/server";
 import { requireRole } from "@/lib/auth";
-import { canViewIdCard } from "@/lib/idcard/authorizeIdCardAccess";
-import { getIdCardData } from "@/lib/idcard/getIdCardData";
-import { generateIdCardPdf, type IdCardPhoto } from "@/lib/idcard/generateIdCard";
+import { buildIdCardPdf, idCardFilenameBase } from "@/lib/idcard/buildIdCardPdf";
 
 /**
  * Serves a freshly-generated ID card PDF as a real download — the first
@@ -20,47 +18,23 @@ import { generateIdCardPdf, type IdCardPhoto } from "@/lib/idcard/generateIdCard
  * before relying on it, given AGENTS.md's standing instruction to check
  * this Next version's actual docs rather than assume prior-training
  * behavior).
+ *
+ * The authorization + PDF-build steps live in buildIdCardPdf.ts, shared
+ * with the sibling .../image/route.ts (the "Save as Image" PNG download —
+ * Muhammad, chat, 2026-09-09) so the two can never disagree on who's
+ * allowed to see a given card.
  */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ studentId: string }> }) {
   const me = await requireRole("admin", "teacher", "student", "parent");
   const { studentId } = await params;
 
-  const allowed = await canViewIdCard(me, studentId);
-  if (!allowed) return new Response("Not found.", { status: 404 });
+  const result = await buildIdCardPdf(me, studentId);
+  if (!result.ok) return new Response("Not found.", { status: result.status });
 
-  const data = await getIdCardData(studentId);
-  if (!data) return new Response("Not found.", { status: 404 });
-
-  // Fetch the avatar server-side and sniff its actual content-type — pdf-lib
-  // can only embed PNG/JPEG, not WEBP (the format AvatarCropperModal's own
-  // encodeCanvas() prefers for the general profile-avatar upload flow
-  // elsewhere in this app). A WEBP avatar, a fetch failure, or no avatar at
-  // all all fall back to the initials placeholder generateIdCardPdf draws
-  // itself — never a failed download over a missing/incompatible photo.
-  let photo: IdCardPhoto | null = null;
-  if (data.avatarUrl) {
-    try {
-      const res = await fetch(data.avatarUrl, { cache: "no-store" });
-      if (res.ok) {
-        const contentType = res.headers.get("content-type") ?? "";
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        if (contentType.includes("png")) photo = { bytes, format: "png" };
-        else if (contentType.includes("jpeg") || contentType.includes("jpg")) photo = { bytes, format: "jpg" };
-      }
-    } catch {
-      photo = null;
-    }
-  }
-
-  const pdfBytes = await generateIdCardPdf(data, photo);
-
-  const sanitizedName = data.fullName.trim().replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() || "Student";
-  const filename = `${sanitizedName}_${data.enrollmentNumber}_ID-Card.pdf`;
-
-  return new Response(new Uint8Array(pdfBytes), {
+  return new Response(new Uint8Array(result.pdfBytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `attachment; filename="${idCardFilenameBase(result.data)}.pdf"`,
       "Cache-Control": "private, no-store",
     },
   });
