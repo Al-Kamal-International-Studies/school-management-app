@@ -136,7 +136,47 @@ export default async function AdminOverviewPage() {
         </FadeUpItem>
       </FadeUpStagger>
 
-      <FadeUp delay={0.1} className="space-y-4">
+      {/* Muhammad, chat, 2026-09-09: "Quick actions section to be on the top
+          part with the Overview" — moved up from the bottom of the page to
+          sit directly under the stat cards, ahead of Needs Attention/events/
+          activity, instead of being the very last thing on the page. */}
+      <FadeUp delay={0.08}>
+        <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.adminOverview.quickActions}</h2>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/admin/users/new">
+            <Button>
+              <UserPlus className="h-4 w-4" />
+              {dict.adminOverview.addStudentOrTeacher}
+            </Button>
+          </Link>
+          <Link href="/admin/admissions/new">
+            <Button variant="secondary">
+              <FileSignature className="h-4 w-4" />
+              {dict.adminOverview.newAdmission}
+            </Button>
+          </Link>
+          <Link href="/admin/classes/new">
+            <Button variant="secondary">
+              <School className="h-4 w-4" />
+              {dict.adminOverview.createClass}
+            </Button>
+          </Link>
+          <Link href="/admin/subjects">
+            <Button variant="secondary">
+              <BookMarked className="h-4 w-4" />
+              {dict.adminOverview.manageSubjects}
+            </Button>
+          </Link>
+          <Link href="/admin/timetable">
+            <Button variant="secondary">
+              <CalendarClock className="h-4 w-4" />
+              {dict.adminOverview.buildTimetable}
+            </Button>
+          </Link>
+        </div>
+      </FadeUp>
+
+      <FadeUp delay={0.14} className="space-y-4">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.adminOverview.needsAttention}</h2>
         <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-3" staggerDelay={0.06}>
           {needsAttentionTiles.map((tile) => (
@@ -154,7 +194,7 @@ export default async function AdminOverviewPage() {
         </FadeUpStagger>
       </FadeUp>
 
-      <FadeUp delay={0.16} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <FadeUp delay={0.2} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
@@ -231,42 +271,6 @@ export default async function AdminOverviewPage() {
               ))}
             </div>
           )}
-        </div>
-      </FadeUp>
-
-      <FadeUp delay={0.22}>
-        <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.adminOverview.quickActions}</h2>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/admin/users/new">
-            <Button>
-              <UserPlus className="h-4 w-4" />
-              {dict.adminOverview.addStudentOrTeacher}
-            </Button>
-          </Link>
-          <Link href="/admin/admissions/new">
-            <Button variant="secondary">
-              <FileSignature className="h-4 w-4" />
-              {dict.adminOverview.newAdmission}
-            </Button>
-          </Link>
-          <Link href="/admin/classes/new">
-            <Button variant="secondary">
-              <School className="h-4 w-4" />
-              {dict.adminOverview.createClass}
-            </Button>
-          </Link>
-          <Link href="/admin/subjects">
-            <Button variant="secondary">
-              <BookMarked className="h-4 w-4" />
-              {dict.adminOverview.manageSubjects}
-            </Button>
-          </Link>
-          <Link href="/admin/timetable">
-            <Button variant="secondary">
-              <CalendarClock className="h-4 w-4" />
-              {dict.adminOverview.buildTimetable}
-            </Button>
-          </Link>
         </div>
       </FadeUp>
     </div>
