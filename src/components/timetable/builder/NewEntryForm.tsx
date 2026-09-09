@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { createTimetableEntryAction, type ActionState } from "./actions";
+import { createTimetableEntryAction, type ActionState } from "@/lib/timetable/builderActions";
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
@@ -21,6 +21,7 @@ function SubmitButton() {
   );
 }
 
+/** Shared by /admin/timetable and /teacher/timetable-builder — see builderActions.ts's doc comment. */
 export function NewEntryForm({
   classId,
   assignableSubjects,

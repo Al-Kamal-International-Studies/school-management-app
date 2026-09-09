@@ -20,8 +20,16 @@ const entrySchema = z.object({
   room: z.string().optional(),
 });
 
+/**
+ * Shared by both /admin/timetable and /teacher/timetable-builder — Muhammad,
+ * chat, 2026-09-09: "give the teachers the exact same access for creating
+ * timetables that the admins have." requireRole now allows either role (was
+ * admin-only); 0042_teacher_timetable_write.sql is the matching RLS
+ * widening behind this app-level gate, same relationship every other
+ * admin-write action in this app already has to its own RLS policy.
+ */
 export async function createTimetableEntryAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const me = await requireRole("admin");
+  const me = await requireRole("admin", "teacher");
   const parsed = entrySchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
 
@@ -50,12 +58,13 @@ export async function createTimetableEntryAction(_prevState: ActionState, formDa
 
   revalidatePath("/admin/timetable");
   revalidatePath("/teacher/timetable");
+  revalidatePath("/teacher/timetable-builder");
   revalidatePath("/student/timetable");
   return {};
 }
 
 export async function deleteTimetableEntryAction(id: string) {
-  const me = await requireRole("admin");
+  const me = await requireRole("admin", "teacher");
   const supabase = await createClient();
   const { error } = await supabase.from("timetable_entries").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -63,5 +72,6 @@ export async function deleteTimetableEntryAction(id: string) {
 
   revalidatePath("/admin/timetable");
   revalidatePath("/teacher/timetable");
+  revalidatePath("/teacher/timetable-builder");
   revalidatePath("/student/timetable");
 }

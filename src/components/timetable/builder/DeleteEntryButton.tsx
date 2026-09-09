@@ -1,8 +1,9 @@
 "use client";
 
 import { useTransition } from "react";
-import { deleteTimetableEntryAction } from "./actions";
+import { deleteTimetableEntryAction } from "@/lib/timetable/builderActions";
 
+/** Shared by /admin/timetable and /teacher/timetable-builder — see builderActions.ts's doc comment. */
 export function DeleteEntryButton({ id }: { id: string }) {
   const [pending, startTransition] = useTransition();
   return (

@@ -140,6 +140,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { href: "/class-chat", labelKey: "classChat", icon: Hash },
     { href: "/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID },
     { href: "/teacher/timetable", labelKey: "myTimetable", icon: CalendarClock },
+    { href: "/teacher/timetable-builder", labelKey: "timetable", icon: CalendarClock },
     { href: "/teacher/attendance", labelKey: "attendance", icon: CalendarCheck },
     { href: "/teacher/assignments", labelKey: "assignments", icon: FileText },
     { href: "/teacher/exams", labelKey: "exams", icon: FileQuestion },

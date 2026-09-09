@@ -2,6 +2,7 @@
 
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
+/** Shared by /admin/timetable and /teacher/timetable-builder — see builderActions.ts's doc comment. */
 export function ClassSelect({
   classes,
   selectedClassId,

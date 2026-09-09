@@ -9,10 +9,20 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
-export default async function AdminTimetablePage({ searchParams }: { searchParams: Promise<{ class?: string }> }) {
+/**
+ * The teacher-side twin of /admin/timetable — same shared queries/actions/
+ * components, same "pick a class, add/remove periods for it" capability,
+ * not limited to classes this teacher is assigned to. Muhammad, chat,
+ * 2026-09-09: "give the teachers the exact same access for creating
+ * timetables that the admins have." Deliberately a separate route from
+ * /teacher/timetable (that page is this teacher's own read-only weekly
+ * schedule across every class they teach — a different question from "build
+ * a class's timetable" — so it's left untouched).
+ */
+export default async function TeacherTimetableBuilderPage({ searchParams }: { searchParams: Promise<{ class?: string }> }) {
   const { class: classParam } = await searchParams;
-  // admin/layout.tsx's requireRole("admin") guarantees a profile, so this
-  // is never actually null — see getActiveCenterForRequest's doc comment.
+  // teacher/layout.tsx's requireRole("teacher") guarantees a profile, so
+  // this is never actually null — see getActiveCenterForRequest's doc comment.
   const activeCenterId = (await getActiveCenterForRequest())!;
   const classes = await listClassesForSelect(activeCenterId);
   const selectedClassId = classParam ?? classes[0]?.id;

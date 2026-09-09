@@ -1,6 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 
-/** For the class-picker at the top of /admin/timetable — scoped to the active center so a multi-center admin can never build a schedule for the other center's class while viewing this one. */
+/**
+ * Shared by both /admin/timetable and /teacher/timetable-builder — Muhammad,
+ * chat, 2026-09-09: "give the teachers the exact same access for creating
+ * timetables that the admins have." Moved out of admin/timetable/queries.ts
+ * (unchanged otherwise) so neither role's page has to import from the
+ * other's route folder.
+ */
+
+/** For the class-picker at the top of the timetable builder — scoped to the active center so a multi-center account can never build a schedule for the other center's class while viewing this one. */
 export async function listClassesForSelect(activeCenterId: string) {
   const supabase = await createClient();
   const { data } = await supabase.from("classes").select("id, name, section").eq("center_id", activeCenterId).order("name");
