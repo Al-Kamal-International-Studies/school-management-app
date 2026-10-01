@@ -2,7 +2,7 @@
   "name": "Al Kamal International Studies",
   "short_name": "Al Kamal",
   "description": "Manage classes, attendance, grades, and communication for Al Kamal International Studies.",
-  "start_url": "/",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

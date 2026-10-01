@@ -17,10 +17,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login?error=account_deactivated");
   }
 
-  // Only ever fetched further/passed down when there's actually more than
-  // one center to switch between — a single-center account (the overwhelming
-  // majority) never triggers the extra query and never sees the switcher.
-  const accessibleCenters = await getAccessibleCenters(profile.id);
+  // These three are each read-only, independent of one another (none needs
+  // another's result), and every request pays for all three regardless of
+  // role — notifications and autism-access used to be awaited one after the
+  // other, stacking their full round-trip latency in serial for no reason.
+  // Running them together cuts that to the slowest of the three instead of
+  // the sum of all three. getAccessibleCenters is only ever fetched further/
+  // passed down when there's actually more than one center to switch
+  // between — a single-center account (the overwhelming majority) never
+  // triggers the extra query and never sees the switcher. It's also
+  // cache()'d (see that file's own doc comment) so the many admin
+  // pages/actions that call getActiveCenterForRequest() later in this same
+  // request reuse this exact result instead of re-querying it.
+  const [accessibleCenters, notifications, autismAccess] = await Promise.all([
+    getAccessibleCenters(profile.id),
+    listMyNotifications(profile.id),
+    hasAutismAccess(profile),
+  ]);
+
   const activeCenterId =
     accessibleCenters.length > 1
       ? await getActiveCenterId(
@@ -38,15 +52,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // real access check already allows. knownCenterFor() never throws and
   // falls back to AKIS for anything unrecognized.
   const centerCode = knownCenterFor(activeCenterId).short_code.toLowerCase();
-
-  // Fetched here (not inside Topbar/DashboardShell, which render inside a
-  // "use client" boundary and can't fetch on their own) and passed down as
-  // a prop, same shape as `accessibleCenters` above.
-  const notifications = await listMyNotifications(profile.id);
-
-  // Gates the Autism Section nav link for parents specifically — see
-  // hasAutismAccess's own doc comment. A no-op query for every other role.
-  const autismAccess = await hasAutismAccess(profile);
 
   return (
     <DashboardShell

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Center } from "@/lib/types/database.types";
 
@@ -9,8 +10,19 @@ import type { Center } from "@/lib/types/database.types";
  * profile has at least one row here (its home center, backfilled for every
  * pre-existing account by that migration); more than one means a
  * multi-center account — the only case the center-switcher UI renders for.
+ *
+ * Wrapped in React's `cache()` — the same request-scoped-dedup fix Part 6
+ * already applied to `getCurrentProfile()` (lib/auth.ts), for the identical
+ * reason: `(dashboard)/layout.tsx` calls this once on every authenticated
+ * page load, and `getActiveCenterForRequest()` — called again by 25+ admin
+ * pages/actions — called it a SECOND time on the same request, each call
+ * being two full sequential Supabase round trips (profile_center_access,
+ * then centers). That's 4 serial round trips spent re-deriving the exact
+ * same answer, on every single admin page, before that page's own data
+ * queries even started — found while investigating a real "the app is so
+ * slow" report. `cache()` collapses the two calls into one.
  */
-export async function getAccessibleCenters(profileId: string): Promise<Center[]> {
+export const getAccessibleCenters = cache(async (profileId: string): Promise<Center[]> => {
   const supabase = await createClient();
 
   const { data: grants } = await supabase.from("profile_center_access").select("center_id").eq("profile_id", profileId);
@@ -19,4 +31,4 @@ export async function getAccessibleCenters(profileId: string): Promise<Center[]>
 
   const { data: centers } = await supabase.from("centers").select("*").in("id", centerIds).order("name");
   return centers ?? [];
-}
+});

@@ -12,7 +12,14 @@
 // of localStorage client-side (see lib/offline/offlineCache.ts), never out
 // of this cache.
 
-const CACHE_NAME = "akis-static-v2";
+// v3: manifest.json's start_url changed ("/" -> "/login", see HANDOVER.md
+// Part 29) — manifest.json matches STATIC_CACHE_PATTERNS below and the fetch
+// handler serves a cached static asset forever once cached (cache-first,
+// never revalidated), so anyone who already has this service worker active
+// would otherwise keep being served the OLD manifest indefinitely. Bumping
+// the cache name is what actually invalidates that old entry (see the
+// `activate` handler below, which deletes every cache not named CACHE_NAME).
+const CACHE_NAME = "akis-static-v3";
 const STATIC_CACHE_PATTERNS = [/^\/icons\//, /^\/_next\/static\//, /^\/manifest\.json$/];
 const OFFLINE_URL = "/offline";
 
