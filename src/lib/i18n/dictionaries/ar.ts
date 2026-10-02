@@ -57,6 +57,7 @@ const ar: Dictionary = {
     welcome: "مرحبًا",
     viewAll: "عرض الكل",
     vsLastWeek: "مقارنة بالأسبوع الماضي",
+    skipToContent: "الانتقال إلى المحتوى",
   },
   welcome: {
     languageTitle: "اختر لغتك",
@@ -878,6 +879,17 @@ const ar: Dictionary = {
     oneMessageLeft: "رسالة واحدة متبقية في هذه المحادثة",
     messagesLeftSuffix: "رسائل متبقية في هذه المحادثة",
     disclaimer: "أسئلة عن التطبيق فقط — وليس لمعلومات شخصية أو حساسة.",
+  },
+  notFound: {
+    title: "الصفحة غير موجودة",
+    description: "الصفحة التي تبحث عنها غير موجودة أو ربما تم نقلها.",
+    backHome: "العودة إلى لوحة التحكم",
+  },
+  errorPage: {
+    title: "حدث خطأ ما",
+    description: "حدث خطأ غير متوقع. يمكنك إعادة المحاولة، أو العودة إلى لوحة التحكم.",
+    tryAgain: "إعادة المحاولة",
+    backHome: "العودة إلى لوحة التحكم",
   },
   tour: {
     next: "التالي",

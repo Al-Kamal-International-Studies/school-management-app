@@ -7,6 +7,7 @@ import { Topbar } from "@/components/nav/Topbar";
 import { PageTransition } from "@/components/nav/PageTransition";
 import { TourProvider } from "@/lib/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { Center, Notification, Profile } from "@/lib/types/database.types";
 import type { ReactNode } from "react";
 
@@ -40,6 +41,7 @@ export function DashboardShell({
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { dict } = useLocale();
 
   // Close the mobile drawer whenever the route changes. Adjusting state
   // during render (rather than in a useEffect) is the pattern React
@@ -61,6 +63,16 @@ export function DashboardShell({
           property inheritance follows the DOM tree, not the box tree, so
           `display: contents` doesn't block it. */}
       <div data-center={centerCode} className="contents">
+        {/* Visually hidden until focused — lets a keyboard user jump past the
+            full sidebar nav (14-20 items on every role) straight to the
+            page's actual content, instead of tabbing through it on every
+            single page load. */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-navy-900 focus:shadow-card focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 dark:focus:bg-navy-900 dark:focus:text-white dark:focus-visible:ring-gold-400"
+        >
+          {dict.common.skipToContent}
+        </a>
         <div className="flex min-h-screen bg-slate-50 dark:bg-navy-950">
           <Sidebar
             role={profile.role}
@@ -77,7 +89,7 @@ export function DashboardShell({
               notifications={notifications}
               onMenuClick={() => setMobileOpen(true)}
             />
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 focus:outline-none">
               <PageTransition>{children}</PageTransition>
             </main>
           </div>

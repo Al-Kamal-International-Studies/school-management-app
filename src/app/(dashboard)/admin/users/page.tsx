@@ -3,6 +3,7 @@ import { listUsers } from "./queries";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
+import { Select } from "@/components/ui/Field";
 import { ToggleActiveButton } from "./ToggleActiveButton";
 import { ExportCsvButton } from "@/components/ui/ExportCsvButton";
 import { FadeUp } from "@/components/motion/FadeUp";
@@ -62,17 +63,12 @@ export default async function UsersPage({
             </label>
             <input id="q" name="q" defaultValue={q} placeholder={dict.adminUsers.searchPlaceholder} className="input" />
           </div>
-          <div>
-            <label className="label" htmlFor="role">
-              {dict.common.role}
-            </label>
-            <select id="role" name="role" defaultValue={role ?? ""} className="input bg-white dark:bg-navy-900">
-              <option value="">{dict.common.all}</option>
-              <option value="teacher">{dict.common.roleTeacher}</option>
-              <option value="student">{dict.common.roleStudent}</option>
-              <option value="parent">{dict.common.roleParent}</option>
-            </select>
-          </div>
+          <Select label={dict.common.role} name="role" defaultValue={role ?? ""}>
+            <option value="">{dict.common.all}</option>
+            <option value="teacher">{dict.common.roleTeacher}</option>
+            <option value="student">{dict.common.roleStudent}</option>
+            <option value="parent">{dict.common.roleParent}</option>
+          </Select>
           <Button type="submit" variant="secondary">
             {dict.common.filter}
           </Button>

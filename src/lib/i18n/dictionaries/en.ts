@@ -58,6 +58,7 @@ const en = {
     welcome: "Welcome",
     viewAll: "View all",
     vsLastWeek: "vs. last week",
+    skipToContent: "Skip to content",
   },
   welcome: {
     languageTitle: "Choose your language",
@@ -881,6 +882,17 @@ const en = {
     oneMessageLeft: "1 message left in this conversation",
     messagesLeftSuffix: "messages left in this conversation",
     disclaimer: "App questions only — not for personal or sensitive information.",
+  },
+  notFound: {
+    title: "Page not found",
+    description: "The page you're looking for doesn't exist or may have moved.",
+    backHome: "Back to dashboard",
+  },
+  errorPage: {
+    title: "Something went wrong",
+    description: "An unexpected error occurred. You can try again, or head back to your dashboard.",
+    tryAgain: "Try again",
+    backHome: "Back to dashboard",
   },
   tour: {
     next: "Next",
