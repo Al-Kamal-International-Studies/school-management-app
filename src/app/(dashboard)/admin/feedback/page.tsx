@@ -1,3 +1,4 @@
+import { feedbackCategoryLabel, roleLabel } from "@/lib/i18n/labels";
 import { requireRole } from "@/lib/auth";
 import { listAllFeedback } from "./queries";
 import { StatusSelect } from "./StatusSelect";
@@ -52,11 +53,11 @@ export default async function AdminFeedbackPage() {
                   <Td>
                     <p className="font-medium text-slate-900 dark:text-white">{e.user?.full_name ?? dict.common.unknown}</p>
                     <p className="text-xs text-slate-400 dark:text-navy-500">
-                      {e.user?.role} · {e.user?.email}
+                      {e.user?.role ? roleLabel(dict, e.user.role) : ""} · {e.user?.email}
                     </p>
                   </Td>
                   <Td>
-                    <Badge tone={CATEGORY_TONE[e.category]}>{e.category}</Badge>
+                    <Badge tone={CATEGORY_TONE[e.category]}>{feedbackCategoryLabel(dict, e.category)}</Badge>
                   </Td>
                   <Td>
                     <p className="font-medium text-slate-900 dark:text-white">{e.subject}</p>

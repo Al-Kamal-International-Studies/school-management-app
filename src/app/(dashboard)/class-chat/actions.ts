@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notifyUsers } from "@/lib/notifications/notify";
 
@@ -16,7 +16,7 @@ const messageSchema = z.object({
 });
 
 export async function sendChannelMessageAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const parsed = messageSchema.safeParse(Object.fromEntries(formData.entries()));

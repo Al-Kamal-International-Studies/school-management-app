@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useTransition } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { Laptop, Trash2, ArrowRight, MapPin, ArrowLeft } from "lucide-react";
 import { removeDeviceAction, registerCurrentDeviceAction, signOutToLoginAction, type ActionState } from "./actions";
 import { Button } from "@/components/ui/Button";
@@ -107,9 +107,9 @@ export function DeviceManageList({ devices, currentDeviceId }: { devices: UserDe
         </ul>
       )}
 
-      <form action={formAction}>
+      <ActionForm action={formAction} state={state}>
         <ContinueButton disabled={atCap} />
-      </form>
+      </ActionForm>
 
       <div className="flex justify-center pt-1">
         <BackToLoginButton />

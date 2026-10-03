@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { requiredText } from "@/lib/validation";
 
 export interface ActionState {
   error?: string;
@@ -13,7 +14,7 @@ export interface ActionState {
 
 const remarkSchema = z.object({
   student_id: z.string().uuid(),
-  remark: z.string().min(1, "Remark is required."),
+  remark: requiredText("Remark is required.", 2000),
 });
 
 export async function addRemarkAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
@@ -34,7 +35,7 @@ export async function addRemarkAction(_prevState: ActionState, formData: FormDat
 const behaviourSchema = z.object({
   student_id: z.string().uuid(),
   category: z.enum(["positive", "negative"]),
-  description: z.string().min(1, "Description is required."),
+  description: requiredText("Description is required.", 2000),
 });
 
 export async function addBehaviourEntryAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {

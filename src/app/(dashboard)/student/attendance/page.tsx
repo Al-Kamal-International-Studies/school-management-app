@@ -1,3 +1,4 @@
+import { attendanceLabel } from "@/lib/i18n/labels";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
@@ -7,6 +8,7 @@ import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { CalendarCheck } from "lucide-react";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { attendanceRate, ATTENDANCE_WINDOW } from "@/lib/attendance/rate";
 import type { AttendanceStatus } from "@/lib/types/database.types";
 
 const STATUS_TONE: Record<AttendanceStatus, "green" | "red" | "amber" | "slate"> = {
@@ -25,11 +27,11 @@ export default async function StudentAttendancePage() {
     .select("*")
     .eq("student_id", me.id)
     .order("date", { ascending: false })
-    .limit(100);
+    .limit(ATTENDANCE_WINDOW);
 
   const all = records ?? [];
-  const presentCount = all.filter((r) => r.status === "present").length;
-  const rate = all.length ? Math.round((presentCount / all.length) * 1000) / 10 : null;
+  const count = (status: AttendanceStatus) => all.filter((r) => r.status === status).length;
+  const rate = attendanceRate(all);
 
   return (
     <div className="space-y-8">
@@ -38,15 +40,21 @@ export default async function StudentAttendancePage() {
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.attendance.history}</p>
       </FadeUp>
 
-      <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <FadeUpStagger className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <FadeUpItem>
           <StatCard label={dict.attendance.title} value={rate !== null ? `${rate}%` : "—"} icon={CalendarCheck} />
         </FadeUpItem>
         <FadeUpItem>
-          <StatCard label={dict.attendance.present} value={presentCount} />
+          <StatCard label={dict.attendance.present} value={count("present")} />
         </FadeUpItem>
         <FadeUpItem>
-          <StatCard label={dict.attendance.absent} value={all.filter((r) => r.status === "absent").length} />
+          <StatCard label={dict.attendance.late} value={count("late")} />
+        </FadeUpItem>
+        <FadeUpItem>
+          <StatCard label={dict.attendance.absent} value={count("absent")} />
+        </FadeUpItem>
+        <FadeUpItem>
+          <StatCard label={dict.attendance.excused} value={count("excused")} />
         </FadeUpItem>
       </FadeUpStagger>
 
@@ -66,7 +74,7 @@ export default async function StudentAttendancePage() {
                 <tr key={r.id}>
                   <Td className="font-medium text-slate-900 dark:text-white">{r.date}</Td>
                   <Td>
-                    <Badge tone={STATUS_TONE[r.status]}>{r.status}</Badge>
+                    <Badge tone={STATUS_TONE[r.status]}>{attendanceLabel(dict, r.status)}</Badge>
                   </Td>
                 </tr>
               ))}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { updateUserAction, type ActionState } from "../actions";
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -40,7 +40,7 @@ export function EditUserForm({
   const [state, formAction] = useActionState(updateUserAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-5">
+    <ActionForm action={formAction} state={state} className="space-y-5">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       <input type="hidden" name="id" value={profile.id} />
       <input type="hidden" name="role" value={profile.role} />
@@ -62,6 +62,10 @@ export function EditUserForm({
           </p>
           <Select label={dict.adminUsers.class} name="class_id" defaultValue={student?.class_id ?? ""}>
             <option value="">{dict.adminUsers.unassigned}</option>
+            {/* Never let the <select> lose the student's current class just because it isn't in the offered list. */}
+            {student?.class_id && !classes.some((c) => c.id === student.class_id) && (
+              <option value={student.class_id}>{dict.adminUsers.class}</option>
+            )}
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name} - {c.section}
@@ -85,6 +89,10 @@ export function EditUserForm({
           <label className="label" htmlFor="child_ids">
             {dict.adminUsers.children}
           </label>
+          {/* Which children this form actually offered — the action only un-links among these. */}
+          {allStudents.map((s) => (
+            <input key={s.id} type="hidden" name="offered_child_ids" value={s.id} />
+          ))}
           <select
             id="child_ids"
             name="child_ids"
@@ -103,6 +111,6 @@ export function EditUserForm({
       )}
 
       <SubmitButton dict={dict} />
-    </form>
+    </ActionForm>
   );
 }

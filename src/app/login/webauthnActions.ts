@@ -14,6 +14,7 @@ import {
   WEBAUTHN_LOGIN_EMAIL_COOKIE,
   WEBAUTHN_LOGIN_VERIFIED_COOKIE,
 } from "@/lib/webauthn/config";
+import { issueVerifiedMarker } from "@/lib/webauthn/verifiedMarker";
 
 export interface WebauthnLoginState {
   error?: string;
@@ -186,7 +187,10 @@ export async function verifyWebauthnLoginAction(response: AuthenticationResponse
   // (see createAuthClient's doc comment) — this cookie has to outlive at
   // least as long as the session it's vouching for, on every subsequent
   // request, not just this one.
-  cookieStore.set(WEBAUTHN_LOGIN_VERIFIED_COOKIE, "1", {
+  // A signed, user-bound, expiring token — NOT a constant, which anyone could
+  // set by hand to skip 2FA (see lib/webauthn/verifiedMarker.ts).
+  const markerTtlSeconds = remember ? 400 * 24 * 60 * 60 : 7 * 24 * 60 * 60;
+  cookieStore.set(WEBAUTHN_LOGIN_VERIFIED_COOKIE, issueVerifiedMarker(profile.id, markerTtlSeconds), {
     path: "/",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

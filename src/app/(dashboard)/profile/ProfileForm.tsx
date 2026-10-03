@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { Check } from "lucide-react";
 import { updateOwnProfileAction, type ActionState } from "./actions";
 import { Input } from "@/components/ui/Field";
@@ -25,7 +25,7 @@ export function ProfileForm({ profile, dict }: { profile: Profile; dict: Diction
   const [state, formAction] = useActionState(updateOwnProfileAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-5">
+    <ActionForm action={formAction} state={state} className="space-y-5">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && (
         <Alert tone="success">
@@ -73,6 +73,6 @@ export function ProfileForm({ profile, dict }: { profile: Profile; dict: Diction
       )}
 
       <SubmitButton dict={dict} />
-    </form>
+    </ActionForm>
   );
 }

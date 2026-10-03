@@ -1,3 +1,4 @@
+import { schoolToday } from "@/lib/dates";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/Card";
@@ -20,7 +21,7 @@ export default async function CalendarPage() {
   const { data: events } = await supabase
     .from("events")
     .select("*")
-    .gte("event_date", new Date().toISOString().slice(0, 10))
+    .gte("event_date", schoolToday())
     .order("event_date", { ascending: true });
 
   return (

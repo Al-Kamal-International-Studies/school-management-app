@@ -1,13 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { computeOverallScore, summarizeByMonth } from "@/lib/progress/calculate";
-
-/** Monday (ISO week start) of the week containing `date`, as "YYYY-MM-DD". */
-function weekStartOf(date: string): string {
-  const d = new Date(`${date}T00:00:00`);
-  const diffToMonday = (d.getDay() + 6) % 7; // Sun(0)->6, Mon(1)->0, ... Sat(6)->5
-  d.setDate(d.getDate() - diffToMonday);
-  return d.toISOString().slice(0, 10);
-}
+import { schoolToday, weekStartOf } from "@/lib/dates";
+import { attendanceRate, ATTENDANCE_WINDOW } from "@/lib/attendance/rate";
 
 export async function listMyChildren(parentId: string) {
   const supabase = await createClient();
@@ -45,16 +39,17 @@ export async function getChildOverview(studentId: string) {
 
   const { data: student } = await supabase.from("students").select("class_id").eq("id", studentId).single();
   const classId = student?.class_id ?? null;
+  const today = schoolToday();
 
   const [{ data: progressEntries }, { data: attendance }, { data: assignments }, { data: exams }, { data: grades }, { data: remarks }, { data: behaviour }, { data: leaveRequests }] =
     await Promise.all([
       supabase.from("monthly_progress_entries").select("*").eq("student_id", studentId).order("month", { ascending: false }).limit(12),
-      supabase.from("attendance_records").select("*").eq("student_id", studentId).order("date", { ascending: false }).limit(30),
+      supabase.from("attendance_records").select("*").eq("student_id", studentId).order("date", { ascending: false }).limit(ATTENDANCE_WINDOW),
       classId
-        ? supabase.from("assignments").select("*").eq("class_id", classId).order("due_date", { ascending: true }).limit(10)
+        ? supabase.from("assignments").select("*").eq("class_id", classId).gte("due_date", today).order("due_date", { ascending: true }).limit(10)
         : Promise.resolve({ data: [] }),
       classId
-        ? supabase.from("exams").select("*").eq("class_id", classId).order("exam_date", { ascending: true }).limit(10)
+        ? supabase.from("exams").select("*").eq("class_id", classId).gte("exam_date", today).order("exam_date", { ascending: true }).limit(10)
         : Promise.resolve({ data: [] }),
       supabase.from("grades").select("*").eq("student_id", studentId).order("created_at", { ascending: false }).limit(20),
       supabase.from("teacher_remarks").select("*").eq("student_id", studentId).order("created_at", { ascending: false }).limit(5),
@@ -75,21 +70,23 @@ export async function getChildOverview(studentId: string) {
   const scoreDelta = monthlySummary.length > 1 ? monthlySummary[0]!.averageScore - monthlySummary[1]!.averageScore : null;
   const scoreTrend = monthlySummary.slice(0, 6).map((m) => m.averageScore).reverse();
 
-  // Weekly attendance rate, bucketed from the same 30 most-recent records
+  // Weekly attendance rate, bucketed from the same most-recent records
   // already fetched above — no extra query. Chronological (oldest week
   // first) so the sparkline and the "this week vs last" delta read the
   // same direction as everywhere else in the app.
-  const weekBuckets = new Map<string, { present: number; total: number }>();
+  const weekBuckets = new Map<string, { status: string }[]>();
   for (const r of attendance ?? []) {
     const key = weekStartOf(r.date);
-    const bucket = weekBuckets.get(key) ?? { present: 0, total: 0 };
-    bucket.total += 1;
-    if (r.status === "present") bucket.present += 1;
-    weekBuckets.set(key, bucket);
+    const list = weekBuckets.get(key) ?? [];
+    list.push(r);
+    weekBuckets.set(key, list);
   }
   const weeklyAttendance = [...weekBuckets.entries()]
     .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-    .map(([week, b]) => ({ week, rate: Math.round((b.present / b.total) * 1000) / 10 }));
+    .flatMap(([week, list]) => {
+      const rate = attendanceRate(list);
+      return rate === null ? [] : [{ week, rate }];
+    });
   const attendanceTrend = weeklyAttendance.slice(-6).map((w) => w.rate);
   const attendanceDelta =
     weeklyAttendance.length > 1

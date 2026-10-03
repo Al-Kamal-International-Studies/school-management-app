@@ -36,7 +36,8 @@ export async function requestPasswordResetAction(
   _prevState: ForgotPasswordState,
   formData: FormData
 ): Promise<ForgotPasswordState> {
-  const email = String(formData.get("email") ?? "").trim();
+  // Stored emails are lower-case; mobile keyboards often capitalise the first letter.
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
 
   if (!email) {
     return { error: "Enter your email address." };

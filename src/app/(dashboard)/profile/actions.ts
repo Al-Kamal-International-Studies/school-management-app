@@ -2,9 +2,10 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isTrustedAvatarUrl } from "@/lib/security/avatarUrl";
 import type { Profile } from "@/lib/types/database.types";
 
 export interface ActionState {
@@ -31,7 +32,7 @@ const updateSchema = z.object({
  * distinguish which columns changed, only who's changing them.
  */
 export async function updateOwnProfileAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const parsed = updateSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -78,11 +79,11 @@ const avatarSchema = z.object({
  * image bytes through a server action).
  */
 export async function setAvatarUrlAction(avatarUrl: string): Promise<ActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const parsed = avatarSchema.safeParse({ avatar_url: avatarUrl });
-  if (!parsed.success) return { error: "Invalid image URL." };
+  if (!parsed.success || !isTrustedAvatarUrl(parsed.data.avatar_url)) return { error: "Invalid image URL." };
 
   const supabase = await createClient();
   const { error } = await supabase.from("profiles").update({ avatar_url: parsed.data.avatar_url }).eq("id", me.id);

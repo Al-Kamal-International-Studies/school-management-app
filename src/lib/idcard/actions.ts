@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canEditIdCardPhoto } from "./authorizeIdCardAccess";
 
@@ -33,7 +33,7 @@ const MAX_SIZE_BYTES = 4 * 1024 * 1024; // 4MB, matches IdCardPhotoUpload.tsx's 
  * your own profile" RLS policy either).
  */
 export async function uploadStudentPhotoAction(studentId: string, formData: FormData): Promise<{ error?: string }> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const allowed = await canEditIdCardPhoto(me, studentId);

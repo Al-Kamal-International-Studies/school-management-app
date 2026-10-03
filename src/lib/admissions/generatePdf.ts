@@ -3,6 +3,7 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type PDFImage, type Color } from "pdf-lib";
+import { makeFontSafe } from "@/lib/pdf/safeFont";
 import type { Admission } from "@/lib/types/database.types";
 
 export type AdmissionRecord = Admission;
@@ -577,9 +578,9 @@ export async function generateAdmissionPdf(admission: AdmissionRecord, center: A
   doc.setTitle(`${SCHOOL_NAME[center]} — Registration Form — ${fullName(admission)}`);
   doc.setAuthor(SCHOOL_NAME[center]);
 
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const serifBold = await doc.embedFont(StandardFonts.TimesRomanBold);
+  const font = makeFontSafe(await doc.embedFont(StandardFonts.Helvetica));
+  const bold = makeFontSafe(await doc.embedFont(StandardFonts.HelveticaBold));
+  const serifBold = makeFontSafe(await doc.embedFont(StandardFonts.TimesRomanBold));
 
   // AKIS's header band is dark navy (PALETTE.akis.primary900 above) — the
   // navy-line crest is invisible against it, so the white-line variant is

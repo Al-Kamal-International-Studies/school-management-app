@@ -3,6 +3,7 @@ import "server-only";
 import type { NextRequest } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { buildIdCardPdf, idCardFilenameBase } from "@/lib/idcard/buildIdCardPdf";
+import { attachmentDisposition } from "@/lib/http/contentDisposition";
 import { rasterizeIdCardPng } from "@/lib/idcard/rasterizeIdCard";
 
 /**
@@ -28,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ stu
   return new Response(new Uint8Array(pngBytes), {
     headers: {
       "Content-Type": "image/png",
-      "Content-Disposition": `attachment; filename="${idCardFilenameBase(result.data)}.png"`,
+      "Content-Disposition": attachmentDisposition(`${idCardFilenameBase(result.data)}.png`),
       "Cache-Control": "private, no-store",
     },
   });

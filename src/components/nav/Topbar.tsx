@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/Badge";
 import { CenterSwitcher } from "@/components/nav/CenterSwitcher";
 import { NotificationBell } from "@/components/nav/NotificationBell";
 import { SignOutForm } from "@/components/nav/SignOutForm";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { displayTitle } from "@/lib/i18n/labels";
 import type { Center, Notification, Profile } from "@/lib/types/database.types";
 
 const ROLE_TONE = {
@@ -27,13 +29,15 @@ export function Topbar({
   notifications: Notification[];
   onMenuClick: () => void;
 }) {
+  const { dict } = useLocale();
+  const roleText = displayTitle(dict, profile);
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 backdrop-blur-sm dark:border-navy-800 dark:bg-navy-950/80 sm:px-6">
       <button
         type="button"
         onClick={onMenuClick}
         className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-navy-300 dark:hover:bg-white/10 dark:hover:text-white lg:hidden"
-        aria-label="Open menu"
+        aria-label={dict.common.openMenu}
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -42,8 +46,8 @@ export function Topbar({
         <CenterSwitcher centers={centers} activeCenterId={activeCenterId} />
         <NotificationBell notifications={notifications} />
         <Badge tone={ROLE_TONE[profile.role]}>
-          <span className="hidden sm:inline">{profile.title || profile.role}</span>
-          <span className="sm:hidden">{(profile.title || profile.role)[0]?.toUpperCase()}</span>
+          <span className="hidden sm:inline">{roleText}</span>
+          <span className="sm:hidden">{Array.from(roleText)[0]?.toUpperCase()}</span>
         </Badge>
         <Link
           href="/profile"
@@ -59,7 +63,7 @@ export function Topbar({
           </div>
           <span className="hidden text-sm font-medium text-slate-700 dark:text-navy-100 sm:inline">{profile.full_name}</span>
         </Link>
-        <SignOutForm label="Sign out" />
+        <SignOutForm label={dict.common.signOut} />
       </div>
     </header>
   );

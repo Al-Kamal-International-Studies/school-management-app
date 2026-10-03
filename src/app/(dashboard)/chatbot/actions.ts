@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getFaqAnswer, type ChatRole } from "@/lib/chatbot/faq";
 import { getGreeting } from "@/lib/chatbot/personas";
@@ -23,7 +23,7 @@ function isChatRole(role: string): role is ChatRole {
 
 /** Starts a brand-new conversation with the given persona and jumps to it. */
 export async function startConversationAction(formData: FormData) {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me || !isChatRole(me.role)) {
     redirect("/login");
   }
@@ -56,7 +56,7 @@ const sendMessageSchema = z.object({
 });
 
 export async function sendMessageAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const parsed = sendMessageSchema.safeParse(Object.fromEntries(formData.entries()));

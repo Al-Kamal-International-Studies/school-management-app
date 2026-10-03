@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { postAutismCommentAction, type ActionState } from "../../actions";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
@@ -59,11 +59,11 @@ export function CommentThread({ videoId, myId, canComment, comments }: { videoId
                   </div>
                 )}
                 <div
-                  className={`rounded-2xl px-4 py-2.5 text-sm ${
+                  className={`break-words [overflow-wrap:anywhere] rounded-2xl px-4 py-2.5 text-sm ${
                     mine ? "bg-navy-800 text-white dark:bg-navy-600" : "bg-slate-100 text-slate-800 dark:bg-navy-800 dark:text-navy-100"
                   }`}
                 >
-                  <span className="whitespace-pre-wrap">{c.content}</span>
+                  <span className="whitespace-pre-wrap" dir="auto">{c.content}</span>
                 </div>
               </div>
             </div>
@@ -75,11 +75,11 @@ export function CommentThread({ videoId, myId, canComment, comments }: { videoId
       {canComment && (
         <>
           {state.error && <Alert tone="error">{state.error}</Alert>}
-          <form ref={formRef} action={formAction} className="mt-3 flex gap-2">
+          <ActionForm ref={formRef} action={formAction} state={state} className="mt-3 flex gap-2">
             <input type="hidden" name="video_id" value={videoId} />
             <input name="content" placeholder={dict.autismSection.addCommentPlaceholder} required className="input flex-1" autoComplete="off" />
             <SendButton />
-          </form>
+          </ActionForm>
         </>
       )}
       {!canComment && <p className="mt-3 text-center text-xs text-slate-400 dark:text-navy-500">{dict.autismSection.adminViewOnly}</p>}

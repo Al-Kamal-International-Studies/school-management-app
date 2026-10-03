@@ -1,3 +1,4 @@
+import { documentCategoryLabel } from "@/lib/i18n/labels";
 import { requireRole } from "@/lib/auth";
 import { listAllDocuments, listStudentsForSelect } from "./queries";
 import { UploadForm } from "./UploadForm";
@@ -41,7 +42,7 @@ export default async function AdminDocumentsPage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold text-navy-900 dark:text-white">{d.title}</p>
-                  <Badge tone="navy">{d.category}</Badge>
+                  <Badge tone="navy">{documentCategoryLabel(dict, d.category)}</Badge>
                   {d.studentName && <Badge tone="gold">{d.studentName}</Badge>}
                 </div>
                 <p className="mt-1.5 text-xs text-slate-400 dark:text-navy-500">{new Date(d.created_at).toLocaleDateString()}</p>

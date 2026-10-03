@@ -52,6 +52,21 @@ const cspHeader = `
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Server Actions are capped at 1 MB by default (docs: serverActions.bodySizeLimit),
+  // which made every file upload above 1 MB — a normal PDF on /admin/documents, an
+  // ID-card photo, an admission attachment — fail with "Body exceeded 1 MB limit"
+  // and a full-page error (audit finding AO-19, HANDOVER Part 33). 4 MB is the
+  // most Vercel will accept for a Function request body (~4.5 MB), so this is the
+  // practical ceiling for anything posted through a Server Action; larger files
+  // (e.g. autism videos) must go straight to Storage instead.
+  // (The key lives under `experimental` in this Next version — a top-level
+  // `serverActions` is rejected with "Unrecognized key". 4.4 MB leaves room for the
+  // multipart overhead above a 4 MB file.)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "4.4mb",
+    },
+  },
   async headers() {
     return [
       {

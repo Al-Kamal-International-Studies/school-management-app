@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createClassAction, updateClassAction, type ActionState } from "./actions";
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -33,7 +33,7 @@ export function ClassForm({
   const { dict } = useLocale();
 
   return (
-    <form action={formAction} className="space-y-5">
+    <ActionForm action={formAction} state={state} resetOnSuccess={!classRow} className="space-y-5">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {classRow && <input type="hidden" name="id" value={classRow.id} />}
 
@@ -58,6 +58,6 @@ export function ClassForm({
       </Select>
 
       <SubmitButton label={classRow ? dict.common.saveChanges : dict.adminClasses.createClass} />
-    </form>
+    </ActionForm>
   );
 }

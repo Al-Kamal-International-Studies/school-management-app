@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { startConversationAction } from "./actions";
 import { Button } from "@/components/ui/Button";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { roleLabel } from "@/lib/i18n/labels";
 
 export function NewConversationForm({ people }: { people: { id: string; full_name: string; role: string }[] }) {
   const [pending, startTransition] = useTransition();
@@ -22,7 +23,7 @@ export function NewConversationForm({ people }: { people: { id: string; full_nam
       <select name="other_id" defaultValue={people[0]?.id} className="input w-auto bg-white dark:bg-navy-900">
         {people.map((p) => (
           <option key={p.id} value={p.id}>
-            {p.full_name} ({p.role})
+            {p.full_name} ({roleLabel(dict, p.role)})
           </option>
         ))}
       </select>

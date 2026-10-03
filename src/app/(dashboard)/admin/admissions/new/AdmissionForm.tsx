@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createAdmissionAction, updateAdmissionAction, type ActionState } from "../actions";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -45,6 +45,8 @@ export function AdmissionForm({
   dict,
   classes,
   admission,
+  allowedCenters = ["AKIS", "AKET"],
+  defaultCenter,
 }: {
   dict: Dictionary;
   classes: Pick<ClassRow, "id" | "name" | "section" | "center_id">[];
@@ -52,11 +54,15 @@ export function AdmissionForm({
    * — pre-fills every field with the admission's currently-saved data and
    * submits to updateAdmissionAction instead of createAdmissionAction. */
   admission?: Admission;
+  /** Centers this admin may admit into (default: both). */
+  allowedCenters?: ("AKIS" | "AKET")[];
+  /** Pre-selected center for a NEW admission (default: AKIS). */
+  defaultCenter?: "AKIS" | "AKET";
 }) {
   const editing = admission !== undefined;
   const boundUpdateAction = editing ? updateAdmissionAction.bind(null, admission.id) : null;
   const [state, formAction] = useActionState(boundUpdateAction ?? createAdmissionAction, initialState);
-  const [center, setCenter] = useState<"AKIS" | "AKET">(admission?.center_id === AKET_CENTER_ID ? "AKET" : "AKIS");
+  const [center, setCenter] = useState<"AKIS" | "AKET">(admission ? (admission.center_id === AKET_CENTER_ID ? "AKET" : "AKIS") : (defaultCenter ?? "AKIS"));
   const [isAutistic, setIsAutistic] = useState(admission?.is_autistic ?? false);
   // The full class list (both centers) is fetched once server-side and
   // filtered here by the locally-toggled `center` — same shape as this
@@ -65,7 +71,7 @@ export function AdmissionForm({
   const classesForCenter = classes.filter((c) => c.center_id === (center === "AKIS" ? AKIS_CENTER_ID : AKET_CENTER_ID));
 
   return (
-    <form action={formAction} className="space-y-6">
+    <ActionForm action={formAction} state={state} className="space-y-6">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {editing && <Alert tone="info">{dict.admissions.editScopeNote}</Alert>}
 
@@ -84,8 +90,8 @@ export function AdmissionForm({
           if (next === "AKIS") setIsAutistic(false);
         }}
       >
-        <option value="AKIS">{dict.admissions.centerAkis}</option>
-        <option value="AKET">{dict.admissions.centerAket}</option>
+        {allowedCenters.includes("AKIS") && <option value="AKIS">{dict.admissions.centerAkis}</option>}
+        {allowedCenters.includes("AKET") && <option value="AKET">{dict.admissions.centerAket}</option>}
       </Select>
 
       <SectionCard title={dict.admissions.sectionStudent}>
@@ -247,6 +253,6 @@ export function AdmissionForm({
       )}
 
       <SubmitButton dict={dict} editing={editing} />
-    </form>
+    </ActionForm>
   );
 }

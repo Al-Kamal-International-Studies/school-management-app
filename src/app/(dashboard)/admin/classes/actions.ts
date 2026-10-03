@@ -13,9 +13,13 @@ export interface ActionState {
 }
 
 const classSchema = z.object({
-  name: z.string().min(1, "Class name is required."),
-  section: z.string().min(1, "Section is required."),
-  academic_year: z.string().min(4, "Academic year is required."),
+  name: z.string().trim().min(1, "Class name is required."),
+  section: z.string().trim().min(1, "Section is required."),
+  // "2026" or "2026-2027" — printed on ID cards, so free text isn't acceptable.
+  academic_year: z
+    .string()
+    .trim()
+    .regex(/^\d{4}(-\d{4})?$/, "Academic year must look like 2026 or 2026-2027."),
   homeroom_teacher_id: z.string().optional(),
 });
 
@@ -72,7 +76,9 @@ export async function updateClassAction(_prevState: ActionState, formData: FormD
     })
     .eq("id", id);
 
-  if (error) return { error: error.message };
+  if (error) {
+    return { error: error.code === "23505" ? "A class with this name, section, and year already exists." : error.message };
+  }
 
   await logAuditEvent(me.id, "update_class", "classes", id, { name: parsed.data.name, section: parsed.data.section });
 

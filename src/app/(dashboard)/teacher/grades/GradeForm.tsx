@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { recordGradeAction, type ActionState } from "./actions";
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -33,7 +33,7 @@ export function GradeForm({ targets }: { targets: Awaited<ReturnType<typeof list
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && <Alert tone="success">{dict.common.save} ✓</Alert>}
 
@@ -57,6 +57,6 @@ export function GradeForm({ targets }: { targets: Awaited<ReturnType<typeof list
       </div>
 
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

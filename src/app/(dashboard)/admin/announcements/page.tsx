@@ -1,3 +1,4 @@
+import { audienceLabel } from "@/lib/i18n/labels";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AnnouncementForm } from "./AnnouncementForm";
@@ -59,7 +60,7 @@ export default async function AdminAnnouncementsPage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold text-navy-900 dark:text-white">{a.title}</p>
-                  <Badge tone={AUDIENCE_TONE[a.audience]}>{a.audience}</Badge>
+                  <Badge tone={AUDIENCE_TONE[a.audience]}>{audienceLabel(dict, a.audience)}</Badge>
                 </div>
                 <p className="mt-1 text-sm text-slate-600 dark:text-navy-200">{a.body}</p>
                 <p className="mt-1.5 text-xs text-slate-400 dark:text-navy-500">

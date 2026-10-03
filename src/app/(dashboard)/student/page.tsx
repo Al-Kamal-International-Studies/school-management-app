@@ -1,3 +1,4 @@
+import { behaviourLabel } from "@/lib/i18n/labels";
 import Link from "next/link";
 import { MessageSquareText, Megaphone, CalendarClock, ClipboardCheck, Sparkles, Award } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
@@ -9,6 +10,7 @@ import {
   listMyBehaviourEntries,
   listMyRecentGrades,
   listUpcomingItems,
+  listMyAttendance,
 } from "./queries";
 import { listVisibleAnnouncements } from "@/lib/queries/announcements";
 import { Card } from "@/components/ui/Card";
@@ -16,7 +18,9 @@ import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Sparkline, TrendDelta } from "@/components/ui/Sparkline";
-import { formatTime, jsDayToDbDay, cn } from "@/lib/utils";
+import { formatTime, cn } from "@/lib/utils";
+import { schoolWeekdayDb } from "@/lib/dates";
+import { attendanceRate, monthlyAttendanceRates, ATTENDANCE_WINDOW } from "@/lib/attendance/rate";
 import { formatMonth, summarizeByMonth } from "@/lib/progress/calculate";
 import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
@@ -40,7 +44,7 @@ export default async function StudentDashboardPage() {
   const profile = await getCurrentProfile();
   const dict = await getDictionary(await getLocale());
   const { student, classRow } = await getMyClassInfo(profile!.id);
-  const [schedule, progressEntries, announcements, remarks, behaviourEntries, recentGrades, upcomingItems] = await Promise.all([
+  const [schedule, progressEntries, announcements, remarks, behaviourEntries, recentGrades, upcomingItems, attendanceRecords] = await Promise.all([
     getMySchedule(student?.class_id ?? null),
     listMyProgressEntries(profile!.id),
     listVisibleAnnouncements(5),
@@ -48,9 +52,10 @@ export default async function StudentDashboardPage() {
     listMyBehaviourEntries(profile!.id),
     listMyRecentGrades(profile!.id),
     listUpcomingItems(student?.class_id ?? null),
+    listMyAttendance(profile!.id),
   ]);
 
-  const todayDbDay = jsDayToDbDay(new Date().getDay());
+  const todayDbDay = schoolWeekdayDb();
   const todaysClasses = schedule.filter((e) => e.day_of_week === todayDbDay);
 
   const monthly = summarizeByMonth(progressEntries);
@@ -61,9 +66,14 @@ export default async function StudentDashboardPage() {
   // Chronological (oldest first) for the sparklines; the delta compares the
   // latest month to the one before it.
   const scoreTrend = monthly.slice(0, 6).map((m) => m.averageScore).reverse();
-  const attendanceTrend = monthly.slice(0, 6).map((m) => m.averageAttendance).reverse();
+  // Attendance comes from the real attendance records — the same numbers (and the
+  // same late/excused policy) as the Attendance page — not from the teacher-typed
+  // monthly progress figure, which used to contradict it (audit finding SP-06).
+  const attendanceMonths = monthlyAttendanceRates(attendanceRecords);
+  const attendanceNow = attendanceRate(attendanceRecords.slice(0, ATTENDANCE_WINDOW));
+  const attendanceTrend = attendanceMonths.slice(0, 6).map((m) => m.rate).reverse();
   const scoreDelta = monthly.length > 1 ? monthly[0]!.averageScore - monthly[1]!.averageScore : null;
-  const attendanceDelta = monthly.length > 1 ? monthly[0]!.averageAttendance - monthly[1]!.averageAttendance : null;
+  const attendanceDelta = attendanceMonths.length > 1 ? attendanceMonths[0]!.rate - attendanceMonths[1]!.rate : null;
 
   return (
     <div className="space-y-10">
@@ -79,7 +89,7 @@ export default async function StudentDashboardPage() {
             `${dict.studentDashboard.enrollmentHash}${student?.enrollment_number ?? ""}`,
           ].join(" · "),
           overallScore: latest ? latest.averageScore : null,
-          attendanceRate: latest ? latest.averageAttendance : null,
+          attendanceRate: attendanceNow,
           announcements: announcements.map((a) => ({ title: a.title, date: new Date(a.created_at).toLocaleDateString() })),
         }}
       />
@@ -127,14 +137,14 @@ export default async function StudentDashboardPage() {
           <Card>
             <div className="mb-4 flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.attendanceSummary}</h2>
-              {monthly.length > 1 && <TrendDelta value={attendanceDelta} goodDirection="up" />}
+              {attendanceMonths.length > 1 && <TrendDelta value={attendanceDelta} goodDirection="up" />}
             </div>
-            {latest ? (
+            {attendanceNow !== null ? (
               <div>
                 <p className="font-display text-3xl font-semibold text-navy-900 dark:text-white">
-                  {latest.averageAttendance.toFixed(1)}%
+                  {attendanceNow.toFixed(1)}%
                 </p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-navy-400">{formatMonth(latest.month)}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-navy-400">{formatMonth(attendanceMonths[0]!.month)}</p>
                 {attendanceTrend.length > 1 && (
                   <div className="mt-3">
                     <Sparkline points={attendanceTrend} height={28} />
@@ -290,7 +300,7 @@ export default async function StudentDashboardPage() {
             ) : (
               behaviourEntries.map((b) => (
                 <Card key={b.id} className="text-sm">
-                  <Badge tone={b.category === "positive" ? "green" : "red"}>{b.category}</Badge>
+                  <Badge tone={b.category === "positive" ? "green" : "red"}>{behaviourLabel(dict, b.category)}</Badge>
                   <p className="mt-1.5 text-slate-600 dark:text-navy-200">{b.description}</p>
                   <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{new Date(b.created_at).toLocaleDateString()}</p>
                 </Card>
@@ -349,11 +359,11 @@ export default async function StudentDashboardPage() {
                 <Link href="/student/timetable" className={ROW_LINK_CLASS}>
                   <Card className={ROW_CARD_CLASS}>
                     <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
-                      {formatTime(e.start_time)} – {formatTime(e.end_time)}
+                      <bdi dir="ltr">{formatTime(e.start_time)} – {formatTime(e.end_time)}</bdi>
                     </p>
                     <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.teacherName}</p>
-                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
+                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} <bdi>{e.room}</bdi></p>}
                   </Card>
                 </Link>
               </FadeUpItem>

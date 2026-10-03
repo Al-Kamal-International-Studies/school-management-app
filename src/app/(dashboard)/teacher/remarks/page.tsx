@@ -1,3 +1,4 @@
+import { behaviourLabel } from "@/lib/i18n/labels";
 import { requireRole } from "@/lib/auth";
 import { listMyStudents, listMyRemarks, listMyBehaviourEntries } from "./queries";
 import { RemarkForm, BehaviourForm } from "./RemarkForm";
@@ -63,7 +64,7 @@ export default async function TeacherRemarksPage() {
               <Card key={b.id} className="text-sm">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-navy-900 dark:text-white">{b.studentName}</p>
-                  <Badge tone={b.category === "positive" ? "green" : "red"}>{b.category}</Badge>
+                  <Badge tone={b.category === "positive" ? "green" : "red"}>{behaviourLabel(dict, b.category)}</Badge>
                 </div>
                 <p className="mt-1 text-slate-600 dark:text-navy-200">{b.description}</p>
                 <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{new Date(b.created_at).toLocaleDateString()}</p>

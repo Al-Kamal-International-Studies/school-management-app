@@ -42,6 +42,15 @@ export async function checkRateLimit(
   return { limited: (count ?? 0) >= opts.maxAttempts };
 }
 
+/** Forgets every recorded attempt in a bucket (e.g. when an admin re-activates a locked-out account). */
+export async function clearRateLimit(bucket: string): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin.from("rate_limit_events").delete().eq("bucket", bucket);
+  if (error) {
+    console.error(`clearRateLimit(${bucket}) failed:`, error.message);
+  }
+}
+
 export async function recordRateLimitAttempt(bucket: string): Promise<void> {
   const admin = createAdminClient();
   const { error } = await admin.from("rate_limit_events").insert({ bucket });

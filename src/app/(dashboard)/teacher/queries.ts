@@ -1,3 +1,4 @@
+import { schoolToday } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 
 export async function listMyClasses(teacherId: string) {
@@ -128,7 +129,7 @@ export interface TeacherOverviewStats {
  */
 export async function getOverviewStats(teacherId: string): Promise<TeacherOverviewStats> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = schoolToday();
 
   const [{ count: upcomingExamCount }, { count: pendingGradingCount }] = await Promise.all([
     supabase.from("exams").select("*", { count: "exact", head: true }).eq("teacher_id", teacherId).gte("exam_date", today),

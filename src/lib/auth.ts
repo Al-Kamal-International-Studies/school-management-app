@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getDeviceIdCookie, isDeviceApproved } from "@/lib/auth/deviceCookie";
 import { WEBAUTHN_LOGIN_VERIFIED_COOKIE } from "@/lib/webauthn/config";
+import { isValidVerifiedMarker } from "@/lib/webauthn/verifiedMarker";
 import type { Profile, UserRole } from "@/lib/types/database.types";
 
 /**
@@ -74,6 +75,23 @@ export async function requireRole(...roles: UserRole[]): Promise<Profile> {
     redirect(dashboardPathForRole(profile.role));
   }
 
+  await enforceSecurityGates(profile);
+
+  await requirePasskeyPromptResolved(profile);
+
+  return profile;
+}
+
+/**
+ * The account-security gates every signed-in request must clear, whatever its
+ * role: forced first-login password change, registered-device check (the
+ * 3-device cap), and — for admins — MFA. Shared by requireRole() (pages) and
+ * requireSession() (role-agnostic pages and Server Actions) so none of them can
+ * be skipped by reaching a shared route or calling a Server Action directly
+ * (the 2026-10-02 audit found /profile, /messages, /class-chat and ~12 shared
+ * actions were checking sign-in only — HANDOVER Part 33).
+ */
+async function enforceSecurityGates(profile: Profile): Promise<void> {
   // An admin who already has a real MFA factor enrolled must clear that
   // challenge (reach aal2) before force-password-change is even attempted —
   // Supabase's own Auth API rejects auth.updateUser({password}) at aal1
@@ -97,10 +115,30 @@ export async function requireRole(...roles: UserRole[]): Promise<Profile> {
   await requireDeviceApproved(profile.id);
 
   if (profile.role === "admin") {
-    await requireAdminMfaVerified();
+    await requireAdminMfaVerified(profile.id);
+  }
+}
+
+/**
+ * Like requireRole() for a page or Server Action that any signed-in role may
+ * use (profile, messages, class chat, settings actions, notifications…):
+ * redirects the signed-out / deactivated, and applies every security gate
+ * above. It deliberately skips the one-time passkey NUDGE (not a security
+ * requirement) so a background Server Action can never bounce a user to
+ * /setup-passkey mid-request.
+ */
+export async function requireSession(): Promise<Profile> {
+  const profile = await getCurrentProfile();
+
+  if (!profile) {
+    redirect("/login");
   }
 
-  await requirePasskeyPromptResolved(profile);
+  if (!profile.is_active) {
+    redirect("/login?error=account_deactivated");
+  }
+
+  await enforceSecurityGates(profile);
 
   return profile;
 }
@@ -147,9 +185,11 @@ async function requireDeviceApproved(userId: string): Promise<void> {
  * Every other layer (RLS, requireRole's own role/is_active checks) still
  * fully applies regardless.
  */
-export async function requireAdminMfaVerified(): Promise<void> {
+export async function requireAdminMfaVerified(userId: string): Promise<void> {
+  // The marker is a signed, user-bound, expiring token (see
+  // lib/webauthn/verifiedMarker.ts) — a hand-set cookie value no longer works.
   const cookieStore = await cookies();
-  if (cookieStore.get(WEBAUTHN_LOGIN_VERIFIED_COOKIE)?.value === "1") return;
+  if (isValidVerifiedMarker(cookieStore.get(WEBAUTHN_LOGIN_VERIFIED_COOKIE)?.value, userId)) return;
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();

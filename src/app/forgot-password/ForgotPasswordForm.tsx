@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import Link from "next/link";
 import { ArrowLeft, Mail, Send, CheckCircle2 } from "lucide-react";
 import { requestPasswordResetAction, type ForgotPasswordState } from "./actions";
@@ -40,7 +40,7 @@ export function ForgotPasswordForm() {
           </span>
         </Alert>
       ) : (
-        <form action={formAction} className="space-y-4">
+        <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-4">
           {state.error && <Alert tone="error">{state.error}</Alert>}
           <div>
             <label htmlFor="email" className="label">
@@ -52,7 +52,7 @@ export function ForgotPasswordForm() {
             </div>
           </div>
           <SubmitButton label={dict.forgotPassword.sendRequest} pendingLabel={dict.forgotPassword.sending} />
-        </form>
+        </ActionForm>
       )}
 
       <Link

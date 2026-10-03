@@ -1,3 +1,4 @@
+import { attendanceLabel } from "@/lib/i18n/labels";
 import { requireRole } from "@/lib/auth";
 import { listMyAttendanceClasses, listStudentsInClass, getAttendanceForClassDate, listMyAttendanceHistory } from "./queries";
 import { AttendanceForm } from "./AttendanceForm";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { schoolToday } from "@/lib/dates";
 import type { AttendanceStatus } from "@/lib/types/database.types";
 
 const STATUS_TONE: Record<AttendanceStatus, "green" | "red" | "amber" | "slate"> = {
@@ -15,10 +17,6 @@ const STATUS_TONE: Record<AttendanceStatus, "green" | "red" | "amber" | "slate">
   late: "amber",
   excused: "slate",
 };
-
-function todayValue() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export default async function TeacherAttendancePage({
   searchParams,
@@ -30,8 +28,10 @@ export default async function TeacherAttendancePage({
   const { class: classParam, date: dateParam } = await searchParams;
 
   const classes = await listMyAttendanceClasses(me.id);
-  const classId = classParam || classes[0]?.id;
-  const date = dateParam || todayValue();
+  // `?class=` is user-controlled: only a class this teacher actually teaches may be
+  // shown (an arbitrary id used to render another class's roster).
+  const classId = classes.find((c) => c.id === classParam)?.id ?? classes[0]?.id;
+  const date = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : schoolToday();
 
   const [students, existingRecords, history] = await Promise.all([
     classId ? listStudentsInClass(classId) : Promise.resolve([]),
@@ -97,7 +97,7 @@ export default async function TeacherAttendancePage({
                   <Td className="font-medium text-slate-900 dark:text-white">{r.studentName}</Td>
                   <Td>{r.date}</Td>
                   <Td>
-                    <Badge tone={STATUS_TONE[r.status]}>{r.status}</Badge>
+                    <Badge tone={STATUS_TONE[r.status]}>{attendanceLabel(dict, r.status)}</Badge>
                   </Td>
                 </tr>
               ))}

@@ -5,30 +5,39 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { numberInRange } from "@/lib/validation";
+import { schoolToday } from "@/lib/dates";
 
 export interface ActionState {
   error?: string;
   success?: boolean;
 }
 
-const percent = z.coerce.number().min(0, "Must be 0-100.").max(100, "Must be 0-100.");
+const percent = numberInRange("Enter a number from 0 to 100.", { min: 0, max: 100 });
 
 const entrySchema = z.object({
   student_id: z.string().uuid(),
   subject_id: z.string().uuid(),
   class_id: z.string().uuid(),
+  // "YYYY-MM" (what <input type="month"> sends) or "YYYY-MM-01"; browsers without a
+  // month picker send free text, so it is validated, and a progress report can't
+  // be filed for a future month (it used to become the student's "current" score)
+  // or an absurdly old one.
   month: z
     .string()
-    .min(1, "Month is required.")
-    .transform((v) => (/^\d{4}-\d{2}$/.test(v) ? `${v}-01` : v)),
+    .trim()
+    .regex(/^\d{4}-\d{2}(-01)?$/, "Choose a month (for example 2026-09).")
+    .transform((v) => (v.length === 7 ? `${v}-01` : v))
+    .refine((v) => v <= `${schoolToday().slice(0, 7)}-01`, "A progress report can't be filed for a future month.")
+    .refine((v) => v >= "2020-01-01", "That month is too far in the past."),
   attendance_percentage: percent,
   homework_completion: percent,
   class_participation: percent,
   behaviour_conduct: percent,
   assessment_performance: percent,
   subject_understanding: percent,
-  teacher_comments: z.string().optional(),
-  improvement_priority_areas: z.string().optional(),
+  teacher_comments: z.string().trim().max(3000, "Keep comments under 3000 characters.").optional(),
+  improvement_priority_areas: z.string().trim().max(3000, "Keep this under 3000 characters.").optional(),
 });
 
 /**

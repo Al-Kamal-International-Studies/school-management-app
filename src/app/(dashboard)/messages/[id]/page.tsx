@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { getConversation } from "../queries";
 import { MessageThread } from "./MessageThread";
 import { Card } from "@/components/ui/Card";
@@ -8,7 +8,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 
 export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return null;
   const dict = await getDictionary(await getLocale());
 

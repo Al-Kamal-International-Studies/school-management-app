@@ -43,7 +43,8 @@ export async function uploadDocumentAction(_prevState: ActionState, formData: Fo
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload." };
-  if (file.size > 10 * 1024 * 1024) return { error: "File must be under 10MB." };
+  // 4 MB is the most a Server Action request can carry on Vercel (see next.config.mjs).
+  if (file.size > 4 * 1024 * 1024) return { error: "File must be under 4MB." };
   if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) return { error: "Use a PDF, Word document, JPG, or PNG file." };
 
   const parsed = metaSchema.safeParse(Object.fromEntries(formData.entries()));

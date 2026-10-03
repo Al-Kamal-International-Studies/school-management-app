@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { numberInRange, requiredText } from "@/lib/validation";
 import { notifyUsers } from "@/lib/notifications/notify";
 
 export interface ActionState {
@@ -15,8 +16,8 @@ export interface ActionState {
 const assignmentSchema = z.object({
   class_id: z.string().uuid(),
   subject_id: z.string().uuid(),
-  title: z.string().min(1, "Title is required."),
-  description: z.string().optional(),
+  title: requiredText("Title is required.", 200),
+  description: z.string().trim().max(5000, "Keep the description under 5000 characters.").optional(),
   due_date: z.string().min(1, "Due date is required."),
 });
 
@@ -63,8 +64,9 @@ export async function createAssignmentAction(_prevState: ActionState, formData: 
 const gradeSchema = z.object({
   assignment_id: z.string().uuid(),
   student_id: z.string().uuid(),
-  grade: z.coerce.number().min(0).max(100),
-  feedback: z.string().optional(),
+  // A blank grade must NOT become a real 0 that marks the work "graded".
+  grade: numberInRange("Enter a grade between 0 and 100.", { min: 0, max: 100 }),
+  feedback: z.string().trim().max(2000, "Keep the feedback under 2000 characters.").optional(),
 });
 
 export async function gradeSubmissionAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {

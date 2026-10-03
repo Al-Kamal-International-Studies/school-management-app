@@ -1,6 +1,6 @@
 "use server";
 
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -14,7 +14,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * see.
  */
 export async function getAutismVideoUrlAction(videoId: string): Promise<{ url?: string; error?: string }> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const supabase = await createClient();

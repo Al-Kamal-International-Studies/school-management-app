@@ -1,4 +1,7 @@
 import { requireRole } from "@/lib/auth";
+import { getAccessibleCenters } from "@/lib/centers/getAccessibleCenters";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
+import { AKET_CENTER_ID, AKIS_CENTER_ID } from "@/lib/types/database.types";
 import { AdmissionForm } from "./AdmissionForm";
 import { listClassesForAdmissionSelect } from "../queries";
 import { FadeUp } from "@/components/motion/FadeUp";
@@ -17,9 +20,17 @@ import { getLocale } from "@/lib/i18n/getLocale";
 export const maxDuration = 60;
 
 export default async function NewAdmissionPage() {
-  await requireRole("admin");
+  const me = await requireRole("admin");
   const dict = await getDictionary(await getLocale());
   const classes = await listClassesForAdmissionSelect();
+  // Only the centers this admin can actually reach (an AKIS-only admin used to be
+  // offered AKET too), defaulting to the center they're currently working in.
+  const accessible = await getAccessibleCenters(me.id);
+  const allowedCenters = ([AKIS_CENTER_ID, AKET_CENTER_ID] as const)
+    .filter((id) => accessible.some((c) => c.id === id))
+    .map((id) => (id === AKIS_CENTER_ID ? "AKIS" : "AKET") as "AKIS" | "AKET");
+  const activeCenterId = await getActiveCenterForRequest();
+  const defaultCenter = activeCenterId === AKET_CENTER_ID && allowedCenters.includes("AKET") ? "AKET" : allowedCenters[0] ?? "AKIS";
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -28,7 +39,7 @@ export default async function NewAdmissionPage() {
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.admissions.newSubtitle}</p>
       </FadeUp>
       <FadeUp delay={0.05} className="card p-6">
-        <AdmissionForm dict={dict} classes={classes} />
+        <AdmissionForm dict={dict} classes={classes} allowedCenters={allowedCenters} defaultCenter={defaultCenter} />
       </FadeUp>
     </div>
   );

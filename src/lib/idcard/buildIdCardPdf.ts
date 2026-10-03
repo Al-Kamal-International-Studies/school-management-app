@@ -4,6 +4,11 @@ import type { Profile } from "@/lib/types/database.types";
 import { canViewIdCard } from "./authorizeIdCardAccess";
 import { getIdCardData, type IdCardData } from "./getIdCardData";
 import { generateIdCardPdf, type IdCardPhoto } from "./generateIdCard";
+import { isTrustedAvatarUrl } from "@/lib/security/avatarUrl";
+
+// The avatars bucket itself caps uploads at 4 MB (0020_storage_upload_limits.sql);
+// anything bigger than this can't be a legitimate avatar.
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 export type IdCardBuildResult = { ok: true; data: IdCardData; pdfBytes: Uint8Array } | { ok: false; status: 404 };
 
@@ -28,12 +33,17 @@ export async function buildIdCardPdf(me: Profile, studentId: string): Promise<Id
   // all all fall back to the initials placeholder generateIdCardPdf draws
   // itself — never a failed download over a missing/incompatible photo.
   let photo: IdCardPhoto | null = null;
-  if (data.avatarUrl) {
+  // avatar_url is a user-writable column, so it is only dereferenced when it
+  // points at THIS project's public avatars bucket (SSRF guard — HANDOVER
+  // Part 33): no arbitrary hosts, no redirects, bounded time and size.
+  if (isTrustedAvatarUrl(data.avatarUrl)) {
     try {
-      const res = await fetch(data.avatarUrl, { cache: "no-store" });
-      if (res.ok) {
+      const res = await fetch(data.avatarUrl, { cache: "no-store", redirect: "error", signal: AbortSignal.timeout(8000) });
+      const declaredLength = Number(res.headers.get("content-length") ?? 0);
+      if (res.ok && declaredLength <= MAX_AVATAR_BYTES) {
         const contentType = res.headers.get("content-type") ?? "";
         const bytes = new Uint8Array(await res.arrayBuffer());
+        if (bytes.byteLength > MAX_AVATAR_BYTES) throw new Error("avatar too large");
         if (contentType.includes("png")) photo = { bytes, format: "png" };
         else if (contentType.includes("jpeg") || contentType.includes("jpg")) photo = { bytes, format: "jpg" };
       }

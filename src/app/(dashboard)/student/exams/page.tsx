@@ -1,3 +1,4 @@
+import { examTypeLabel } from "@/lib/i18n/labels";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
@@ -32,7 +33,7 @@ export default async function StudentExamsPage() {
           <Table>
             <Thead>
               <tr>
-                <Th>{dict.assignments.title}</Th>
+                <Th>{dict.assignments.titleLabel}</Th>
                 <Th>{dict.progress.subject}</Th>
                 <Th>{dict.exams.type}</Th>
                 <Th>{dict.exams.examDate}</Th>
@@ -45,7 +46,7 @@ export default async function StudentExamsPage() {
                   <Td className="font-medium text-slate-900 dark:text-white">{e.title}</Td>
                   <Td>{subjectMap.get(e.subject_id) ?? dict.common.unknown}</Td>
                   <Td>
-                    <Badge tone={e.exam_type === "quiz" ? "gold" : "navy"}>{e.exam_type}</Badge>
+                    <Badge tone={e.exam_type === "quiz" ? "gold" : "navy"}>{examTypeLabel(dict, e.exam_type)}</Badge>
                   </Td>
                   <Td>{e.exam_date}</Td>
                   <Td>{e.room ?? "—"}</Td>

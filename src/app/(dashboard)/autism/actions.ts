@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { requireRole, getCurrentProfile } from "@/lib/auth";
+import { requireRole, requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAuditEvent } from "@/lib/audit/log";
@@ -15,46 +15,92 @@ export interface ActionState {
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 const MAX_VIDEO_BYTES = 150 * 1024 * 1024; // 150MB — keep in sync with 0039_lower_autism_video_size_limit.sql's file_size_limit, the real enforcement layer.
 
-const uploadMetaSchema = z.object({
+const VIDEO_PATH_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(mp4|mov|webm)$/;
+
+const prepareUploadSchema = z.object({
   student_id: z.string().uuid(),
+  file_type: z.string(),
+  file_size: z.number().int().positive(),
+  file_name: z.string().max(300),
+});
+
+const finalizeUploadSchema = z.object({
+  student_id: z.string().uuid(),
+  path: z.string().regex(VIDEO_PATH_RE),
   title: z.string().trim().max(200).optional(),
 });
 
-/**
- * Uploads a daily video for an assigned student. `is_autism_teacher_of`
- * (via a plain table query, not the RLS-bypassing admin client) is checked
- * BEFORE the admin client is ever touched — that's the real gate here,
- * since createAdminClient() bypasses table RLS entirely and the Storage
- * bucket's own type/size limits (0034_autism_videos_storage_limits.sql)
- * don't know or care which student a file is "for".
- */
-export async function uploadAutismVideoAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const me = await requireRole("teacher");
-
-  const parsed = uploadMetaSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
-
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose a video to upload." };
-  if (file.size > MAX_VIDEO_BYTES) return { error: "Video must be under 150MB." };
-  if (!ALLOWED_VIDEO_TYPES.includes(file.type)) return { error: "Use an MP4, MOV, or WebM video." };
-
+/** True when the signed-in teacher is the one assigned to this student (checked through the teacher's own RLS-scoped client). */
+async function isAssignedTeacher(teacherId: string, studentId: string): Promise<boolean> {
   const supabase = await createClient();
-  const { data: assignment } = await supabase
+  const { data } = await supabase
     .from("autism_assignments")
     .select("id")
-    .eq("teacher_id", me.id)
-    .eq("student_id", parsed.data.student_id)
+    .eq("teacher_id", teacherId)
+    .eq("student_id", studentId)
     .maybeSingle();
-  if (!assignment) return { error: "You are not assigned to this student." };
+  return !!data;
+}
+
+/**
+ * Step 1 of a video upload: validates the teacher, the student and the file's
+ * declared type/size, and hands the browser a one-time signed upload URL so the
+ * video goes STRAIGHT to Supabase Storage. It can't be posted through a Server
+ * Action: those requests are capped (1 MB by default, ~4.5 MB on Vercel), so no
+ * real video ever uploaded — found in the 2026-10-02 audit (HANDOVER Part 33).
+ * The Storage bucket's own type/size limits (0034/0039) remain the real,
+ * unbypassable enforcement.
+ */
+export async function prepareAutismVideoUploadAction(input: {
+  student_id: string;
+  file_type: string;
+  file_size: number;
+  file_name: string;
+}): Promise<{ error?: string; path?: string; token?: string }> {
+  const me = await requireRole("teacher");
+  const parsed = prepareUploadSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid upload request." };
+
+  if (parsed.data.file_size > MAX_VIDEO_BYTES) return { error: "Video must be under 150MB." };
+  if (!ALLOWED_VIDEO_TYPES.includes(parsed.data.file_type)) return { error: "Use an MP4, MOV, or WebM video." };
+  if (!(await isAssignedTeacher(me.id, parsed.data.student_id))) return { error: "You are not assigned to this student." };
+
+  const ext = parsed.data.file_type === "video/webm" ? "webm" : parsed.data.file_type === "video/quicktime" ? "mov" : "mp4";
+  const path = `${crypto.randomUUID()}.${ext}`;
+  const { data, error } = await createAdminClient().storage.from("autism-videos").createSignedUploadUrl(path);
+  if (error || !data) return { error: "Could not start the upload. Please try again." };
+  return { path, token: data.token };
+}
+
+/**
+ * Step 2: after the browser has uploaded the file, records it (title, who
+ * uploaded it, size/type as REPORTED BY STORAGE, not by the browser), notifies
+ * the parents and refreshes the lists. Re-checks everything — this action is
+ * callable directly, so nothing from step 1 is trusted.
+ */
+export async function finalizeAutismVideoUploadAction(input: {
+  student_id: string;
+  path: string;
+  title?: string;
+}): Promise<ActionState> {
+  const me = await requireRole("teacher");
+  const parsed = finalizeUploadSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid upload request." };
+  if (!(await isAssignedTeacher(me.id, parsed.data.student_id))) return { error: "You are not assigned to this student." };
 
   const admin = createAdminClient();
-  const ext = file.name.split(".").pop() ?? "mp4";
-  const path = `${crypto.randomUUID()}.${ext}`;
-  const buffer = await file.arrayBuffer();
+  const { path } = parsed.data;
 
-  const { error: uploadError } = await admin.storage.from("autism-videos").upload(path, buffer, { contentType: file.type });
-  if (uploadError) return { error: uploadError.message };
+  // The object must really be in the bucket; its size and MIME come from Storage itself.
+  const { data: found } = await admin.storage.from("autism-videos").list("", { search: path, limit: 5 });
+  const object = (found ?? []).find((o) => o.name === path);
+  if (!object) return { error: "The video upload didn't complete. Please try again." };
+  const size = Number((object.metadata as { size?: number } | null)?.size ?? 0);
+  const mime = String((object.metadata as { mimetype?: string } | null)?.mimetype ?? "");
+  if (!size || size > MAX_VIDEO_BYTES || !ALLOWED_VIDEO_TYPES.includes(mime)) {
+    await admin.storage.from("autism-videos").remove([path]);
+    return { error: "That file isn't an allowed video. Use an MP4, MOV, or WebM under 150MB." };
+  }
 
   const { data: inserted, error: insertError } = await admin
     .from("autism_videos")
@@ -63,8 +109,8 @@ export async function uploadAutismVideoAction(_prevState: ActionState, formData:
       uploaded_by: me.id,
       title: parsed.data.title || null,
       file_path: path,
-      mime_type: file.type,
-      file_size: file.size,
+      mime_type: mime,
+      file_size: size,
     })
     .select("id")
     .single();
@@ -80,8 +126,7 @@ export async function uploadAutismVideoAction(_prevState: ActionState, formData:
 
   // parent_students' own RLS only lets a caller read their own link row —
   // a teacher's session can't select another user's row, so the already-
-  // in-scope admin client (used above for the upload itself) is reused
-  // here too, only to resolve who to notify.
+  // in-scope admin client is reused here, only to resolve who to notify.
   const { data: parentLinks } = await admin.from("parent_students").select("parent_id").eq("student_id", parsed.data.student_id);
   const parentIds = [...new Set((parentLinks ?? []).map((l) => l.parent_id))];
   if (parentIds.length) {
@@ -112,7 +157,7 @@ const commentSchema = z.object({
  * by can_comment_on_autism_video()'s RLS policy as the real backstop.
  */
 export async function postAutismCommentAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const parsed = commentSchema.safeParse(Object.fromEntries(formData.entries()));

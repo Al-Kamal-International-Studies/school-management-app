@@ -1,3 +1,4 @@
+import { schoolToday, addDays } from "@/lib/dates";
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
@@ -120,10 +121,8 @@ export async function getAttendanceTrend(activeCenterId: string): Promise<Attend
     return { thisWeekRate: null, delta: null, sparkline: [] };
   }
 
-  const today = new Date();
-  const start = new Date(today);
-  start.setDate(start.getDate() - 13); // 14-day window: this week + the week before
-  const startStr = start.toISOString().slice(0, 10);
+  const todayStr = schoolToday();
+  const startStr = addDays(todayStr, -13); // 14-day window: this week + the week before
 
   const { data } = await supabase
     .from("attendance_records")
@@ -135,16 +134,17 @@ export async function getAttendanceTrend(activeCenterId: string): Promise<Attend
   const byDate = new Map<string, { present: number; total: number }>();
   for (const r of rows) {
     const bucket = byDate.get(r.date) ?? { present: 0, total: 0 };
+    // Same policy as every other screen (lib/attendance/rate.ts): late counts as
+    // attended, excused days don't count for or against.
+    if (r.status === "excused") continue;
     bucket.total += 1;
-    if (r.status === "present") bucket.present += 1;
+    if (r.status === "present" || r.status === "late") bucket.present += 1;
     byDate.set(r.date, bucket);
   }
 
   const days: string[] = [];
   for (let i = 13; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
+    days.push(addDays(todayStr, -i));
   }
 
   const dailyRates = days.map((d) => {
@@ -214,7 +214,7 @@ export async function listUpcomingEvents(activeCenterId: string, limit = 5) {
     .from("events")
     .select("*")
     .eq("center_id", activeCenterId)
-    .gte("event_date", new Date().toISOString().slice(0, 10))
+    .gte("event_date", schoolToday())
     .order("event_date", { ascending: true })
     .limit(limit);
   return data ?? [];

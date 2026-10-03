@@ -1,5 +1,6 @@
 import { IdCard, BookOpen, School } from "lucide-react";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
+import { displayTitle } from "@/lib/i18n/labels";
 import { getOwnAccountDetails } from "./queries";
 import { AvatarUpload } from "./AvatarUpload";
 import { ProfileForm } from "./ProfileForm";
@@ -10,7 +11,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 
 export default async function ProfilePage() {
-  const profile = await getCurrentProfile();
+  const profile = await requireSession();
   if (!profile) return null;
 
   const dict = await getDictionary(await getLocale());
@@ -32,7 +33,7 @@ export default async function ProfilePage() {
               <p className="mt-0.5 text-sm text-slate-500 dark:text-navy-400">{profile.email}</p>
               <div className="mt-2">
                 <Badge tone={profile.role === "admin" ? "navy" : profile.role === "teacher" ? "green" : "gold"}>
-                  {profile.title || profile.role}
+                  {displayTitle(dict, profile)}
                 </Badge>
               </div>
             </div>

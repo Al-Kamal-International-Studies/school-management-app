@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { dashboardPathForRole } from "@/lib/auth";
 import { getDeviceIdCookie, setDeviceCookie, labelFromUserAgent, locationFromHeaders, MAX_DEVICES } from "@/lib/auth/deviceCookie";
 import { recordRateLimitAttempt } from "@/lib/security/rateLimit";
+import { safeNext } from "@/lib/auth/safeNext";
 import { getLoginCenterId, hasExplicitLoginCenterSelection } from "@/lib/centers/loginCenterCookie";
 import { ACTIVE_CENTER_COOKIE } from "@/lib/centers/constants";
 import type { Profile } from "@/lib/types/database.types";
@@ -195,5 +196,5 @@ export async function completeLogin(
     redirect("/devices/manage");
   }
 
-  redirect(next || dashboardPathForRole(profile.role));
+  redirect(safeNext(next) ?? dashboardPathForRole(profile.role));
 }

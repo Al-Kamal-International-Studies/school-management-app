@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { Check } from "lucide-react";
 import { submitFeedbackAction, type ActionState } from "./actions";
 import { Input, Textarea, Select } from "@/components/ui/Field";
@@ -31,7 +31,7 @@ export function FeedbackForm() {
   }, [state.success]);
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-5">
+    <ActionForm ref={formRef} action={formAction} state={state} className="space-y-5">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && (
         <Alert tone="success">
@@ -53,6 +53,6 @@ export function FeedbackForm() {
       <Textarea label={dict.feedback.message} name="message" rows={5} required />
 
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

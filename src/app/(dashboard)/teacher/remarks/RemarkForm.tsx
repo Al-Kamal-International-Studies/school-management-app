@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { addRemarkAction, addBehaviourEntryAction, type ActionState } from "./actions";
 import { Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -27,7 +27,7 @@ export function RemarkForm({ students }: { students: { id: string; full_name: st
   if (students.length === 0) return <Alert tone="info">No students assigned yet.</Alert>;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && <Alert tone="success">{dict.common.save} ✓</Alert>}
       <Select label={dict.progress.student} name="student_id" defaultValue={students[0]?.id}>
@@ -39,7 +39,7 @@ export function RemarkForm({ students }: { students: { id: string; full_name: st
       </Select>
       <Textarea label={dict.remarks.newRemark} name="remark" required />
       <SubmitButton label={dict.common.submit} />
-    </form>
+    </ActionForm>
   );
 }
 
@@ -50,7 +50,7 @@ export function BehaviourForm({ students }: { students: { id: string; full_name:
   if (students.length === 0) return <Alert tone="info">No students assigned yet.</Alert>;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && <Alert tone="success">{dict.common.save} ✓</Alert>}
       <Select label={dict.progress.student} name="student_id" defaultValue={students[0]?.id}>
@@ -66,6 +66,6 @@ export function BehaviourForm({ students }: { students: { id: string; full_name:
       </Select>
       <Textarea label={dict.behaviour.description} name="description" required />
       <SubmitButton label={dict.common.submit} />
-    </form>
+    </ActionForm>
   );
 }

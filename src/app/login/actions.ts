@@ -70,7 +70,7 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     const { data: target } = await admin
       .from("profiles")
       .select("id, failed_login_attempts, is_active")
-      .eq("email", email)
+      .eq("email", email.toLowerCase())
       .is("archived_at", null)
       .maybeSingle();
 

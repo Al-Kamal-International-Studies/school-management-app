@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createEventAction, type ActionState } from "./actions";
 import { Input, Textarea, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -30,7 +30,7 @@ export function EventForm() {
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-4">
+    <ActionForm ref={formRef} action={formAction} state={state} className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       <Input label={dict.announcements.heading} name="title" required />
       <Textarea label={dict.announcements.body} name="description" />
@@ -49,6 +49,6 @@ export function EventForm() {
         </Select>
       </div>
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

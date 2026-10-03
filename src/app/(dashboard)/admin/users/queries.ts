@@ -15,19 +15,30 @@ export interface UserRow extends Profile {
  * to just the active one. A no-op filter for every single-center admin
  * (their activeCenterId always equals their own profile.center_id).
  */
-export async function listUsers(opts: { role?: "teacher" | "student" | "parent"; q?: string }, activeCenterId: string): Promise<UserRow[]> {
+const LISTABLE_ROLES = ["teacher", "student", "parent"] as const;
+
+export async function listUsers(opts: { role?: string; q?: string }, activeCenterId: string): Promise<UserRow[]> {
   const supabase = await createClient();
+
+  // `role` comes straight from the URL (?role=…) — whitelist it at runtime, the
+  // TypeScript union alone doesn't stop ?role=admin from listing every admin.
+  const role = LISTABLE_ROLES.find((r) => r === opts.role);
 
   let query = supabase
     .from("profiles")
     .select("*")
-    .in("role", opts.role ? [opts.role] : ["teacher", "student", "parent"])
+    .in("role", role ? [role] : [...LISTABLE_ROLES])
     .eq("center_id", activeCenterId)
     .is("archived_at", null)
     .order("full_name");
 
-  if (opts.q) {
-    query = query.or(`full_name.ilike.%${opts.q}%,email.ilike.%${opts.q}%`);
+  // Trim, then drop the characters that break PostgREST's or() grammar
+  // (commas, parentheses, quotes, backslashes) and escape LIKE wildcards — a
+  // search like "Smith, John" or one with a trailing space used to silently
+  // return "No users found".
+  const q = opts.q?.trim().replace(/[,()"'\\]/g, " ").replace(/[%_]/g, (c) => "\\" + c).replace(/\s+/g, " ").trim();
+  if (q) {
+    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
   }
 
   const { data: profiles, error } = await query;
@@ -112,6 +123,7 @@ export async function listStudentsForParentLink(activeCenterId: string) {
     .select("id, full_name")
     .eq("role", "student")
     .eq("center_id", activeCenterId)
+    .is("archived_at", null)
     .order("full_name");
   if (!profiles || profiles.length === 0) return [];
 

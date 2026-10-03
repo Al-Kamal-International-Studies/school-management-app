@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createSubjectAction, type ActionState } from "./actions";
 import { Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -33,7 +33,7 @@ export function SubjectForm() {
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+    <ActionForm ref={formRef} action={formAction} state={state} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
       {state.error && (
         <div className="basis-full">
           <Alert tone="error">{state.error}</Alert>
@@ -46,6 +46,6 @@ export function SubjectForm() {
         <Input label={dict.adminSubjects.code} name="code" placeholder="MATH" required />
       </div>
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

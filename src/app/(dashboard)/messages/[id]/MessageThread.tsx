@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { sendDmMessageAction, type ActionState } from "../actions";
 import { Alert } from "@/components/ui/Alert";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -42,13 +42,13 @@ export function MessageThread({ conversationId, myId, messages }: { conversation
           return (
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
+                className={`max-w-[75%] whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl px-4 py-2.5 text-sm ${
                   mine
                     ? "bg-navy-800 text-white dark:bg-navy-600"
                     : "bg-slate-100 text-slate-800 dark:bg-navy-800 dark:text-navy-100"
                 }`}
               >
-                {m.content}
+                <bdi dir="auto">{m.content}</bdi>
               </div>
             </div>
           );
@@ -57,11 +57,11 @@ export function MessageThread({ conversationId, myId, messages }: { conversation
       </div>
 
       {state.error && <Alert tone="error">{state.error}</Alert>}
-      <form ref={formRef} action={formAction} className="mt-3 flex gap-2">
+      <ActionForm ref={formRef} action={formAction} state={state} className="mt-3 flex gap-2">
         <input type="hidden" name="conversation_id" value={conversationId} />
         <input name="content" placeholder={dict.messages.typeMessage} required className="input flex-1" autoComplete="off" />
         <SendButton />
-      </form>
+      </ActionForm>
     </div>
   );
 }

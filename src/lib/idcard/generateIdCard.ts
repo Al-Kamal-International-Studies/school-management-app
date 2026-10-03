@@ -3,6 +3,7 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
+import { makeFontSafe } from "@/lib/pdf/safeFont";
 import { PALETTE, wrapText } from "@/lib/admissions/generatePdf";
 import { knownCenterFor } from "@/lib/centers/knownCenters";
 import { AKIS_CENTER_ID, AKET_CENTER_ID } from "@/lib/types/database.types";
@@ -75,9 +76,9 @@ export async function generateIdCardPdf(data: IdCardData, photo: IdCardPhoto | n
   doc.setTitle(`${data.fullName} — Student ID — ${data.enrollmentNumber}`);
 
   const page = doc.addPage([CARD_WIDTH, CARD_HEIGHT]);
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const serifBold = await doc.embedFont(StandardFonts.TimesRomanBold);
+  const font = makeFontSafe(await doc.embedFont(StandardFonts.Helvetica));
+  const bold = makeFontSafe(await doc.embedFont(StandardFonts.HelveticaBold));
+  const serifBold = makeFontSafe(await doc.embedFont(StandardFonts.TimesRomanBold));
 
   const palette = PALETTE[data.center];
   const centerLabel = data.center === "akis" ? "AKIS" : "AKET";
@@ -202,7 +203,7 @@ export async function generateIdCardPdf(data: IdCardData, photo: IdCardPhoto | n
   let y = CONTENT_TOP - 16;
 
   // The name is the one field genuinely long enough in real data to wrap
-  // (e.g. "Khushi Abdul Rahim Gopang Abdul Rahim Gopang" — a real student
+  // (e.g. "Firstname Middlename Familyname Middlename Familyname" — a real student
   // in this school) — a *fixed* height reservation for it, as this used
   // to have, silently overflowed into "GRADE / CLASS" whenever a name
   // wrapped to 3 lines instead of the assumed 2. Fixed by shrinking the

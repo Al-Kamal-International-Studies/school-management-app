@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { Check } from "lucide-react";
 import { changeOwnPasswordAction, type ActionState } from "@/app/(dashboard)/settings/actions";
 import { PasswordField } from "@/components/ui/PasswordField";
@@ -25,7 +25,7 @@ export function ChangePasswordForm({ minLength = 12 }: { minLength?: number }) {
   const { dict } = useLocale();
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && (
         <Alert tone="success">
@@ -61,6 +61,6 @@ export function ChangePasswordForm({ minLength = 12 }: { minLength?: number }) {
         hideLabel={dict.login.hidePassword}
       />
       <SubmitButton label={dict.common.save} pendingLabel={dict.common.saving} />
-    </form>
+    </ActionForm>
   );
 }

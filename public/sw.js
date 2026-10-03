@@ -19,12 +19,20 @@
 // would otherwise keep being served the OLD manifest indefinitely. Bumping
 // the cache name is what actually invalidates that old entry (see the
 // `activate` handler below, which deletes every cache not named CACHE_NAME).
-const CACHE_NAME = "akis-static-v3";
+const CACHE_NAME = "akis-static-v4";
 const STATIC_CACHE_PATTERNS = [/^\/icons\//, /^\/_next\/static\//, /^\/manifest\.json$/];
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.add(OFFLINE_URL)));
+  // Only cache a REAL 200 for the offline page — never a redirect to some other
+  // page (a redirected response can't be used to answer a navigation). Bumping
+  // CACHE_NAME above also makes already-installed workers drop any bad entry.
+  event.waitUntil(
+    fetch(OFFLINE_URL, { redirect: "error", cache: "reload" }).then(async (res) => {
+      if (!res.ok) throw new Error("offline page not cacheable");
+      await (await caches.open(CACHE_NAME)).put(OFFLINE_URL, res);
+    })
+  );
   self.skipWaiting();
 });
 

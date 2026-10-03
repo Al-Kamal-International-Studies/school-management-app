@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createExamAction, type ActionState } from "./actions";
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -33,7 +33,7 @@ export function ExamForm({ options }: { options: Awaited<ReturnType<typeof listM
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && <Alert tone="success">{dict.common.save} ✓</Alert>}
 
@@ -53,7 +53,7 @@ export function ExamForm({ options }: { options: Awaited<ReturnType<typeof listM
         ))}
       </Select>
 
-      <Input label={dict.assignments.title} name="title" required />
+      <Input label={dict.assignments.titleLabel} name="title" required />
       <Select label={dict.exams.type} name="exam_type" defaultValue="exam">
         <option value="exam">{dict.exams.exam}</option>
         <option value="quiz">{dict.exams.quiz}</option>
@@ -65,6 +65,6 @@ export function ExamForm({ options }: { options: Awaited<ReturnType<typeof listM
       </div>
 
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

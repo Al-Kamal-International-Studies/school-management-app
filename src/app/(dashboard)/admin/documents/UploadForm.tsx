@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { uploadDocumentAction, type ActionState } from "./actions";
 import { Input, Select } from "@/components/ui/Field";
 import { FileUpload } from "@/components/ui/FileUpload";
@@ -31,7 +31,7 @@ export function UploadForm({ students }: { students: { id: string; full_name: st
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-4">
+    <ActionForm ref={formRef} action={formAction} state={state} className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       <Input label={dict.announcements.heading} name="title" required />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -65,6 +65,6 @@ export function UploadForm({ students }: { students: { id: string; full_name: st
         removeLabel={dict.documents.removeFile}
       />
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

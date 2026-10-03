@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import Link from "next/link";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import { loginAction, type LoginState } from "./actions";
@@ -41,7 +41,7 @@ export function LoginForm({
 
   return (
     <div className="space-y-4">
-      <form action={formAction} className="space-y-4">
+      <ActionForm action={formAction} state={state} className="space-y-4">
         {next && <input type="hidden" name="next" value={next} />}
         {deactivated && <Alert tone="error">{dict.login.deactivated}</Alert>}
         {state.error && <Alert tone="error">{state.error}</Alert>}
@@ -91,7 +91,7 @@ export function LoginForm({
         </div>
 
         <SubmitButton dict={dict} />
-      </form>
+      </ActionForm>
 
       <BiometricSignInButton emailRef={emailRef} rememberRef={rememberRef} next={next} />
     </div>

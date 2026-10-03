@@ -1,5 +1,6 @@
+import { roleLabel } from "@/lib/i18n/labels";
 import Link from "next/link";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listMyConversations, listContactablePeople } from "./queries";
 import { NewConversationForm } from "./NewConversationForm";
 import { Card } from "@/components/ui/Card";
@@ -11,7 +12,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 
 export default async function MessagesPage() {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   const dict = await getDictionary(await getLocale());
   if (!me) return null;
 
@@ -48,7 +49,7 @@ export default async function MessagesPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-navy-900 dark:text-white">{c.other?.full_name ?? dict.common.unknown}</p>
                 </div>
-                {c.other?.role && <Badge tone="slate">{c.other.role}</Badge>}
+                {c.other?.role && <Badge tone="slate">{roleLabel(dict, c.other.role)}</Badge>}
               </Card>
             </Link>
           ))

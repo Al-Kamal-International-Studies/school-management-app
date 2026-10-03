@@ -1,3 +1,4 @@
+import { examTypeLabel, behaviourLabel } from "@/lib/i18n/labels";
 import Link from "next/link";
 import { Megaphone } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
@@ -16,6 +17,7 @@ import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { formatMonth } from "@/lib/progress/calculate";
 import { initials } from "@/lib/utils";
+import { attendanceRate as computeAttendanceRate } from "@/lib/attendance/rate";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
@@ -63,8 +65,7 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
   // autism_videos row, so `latestAutism` is null and this whole block is
   // skipped, same as the sidebar/tour center-gating elsewhere in this Part.
   const autismVideoUrl = latestAutism ? (await getAutismVideoUrlAction(latestAutism.video.id)).url : undefined;
-  const presentCount = overview.attendance.filter((a) => a.status === "present").length;
-  const attendanceRate = overview.attendance.length ? Math.round((presentCount / overview.attendance.length) * 1000) / 10 : null;
+  const attendanceRate = computeAttendanceRate(overview.attendance);
 
   return (
     <div className="space-y-8">
@@ -236,7 +237,7 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
             <Card key={e.id} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-navy-900 dark:text-white">{e.title}</p>
-                <Badge tone={e.exam_type === "quiz" ? "gold" : "navy"}>{e.exam_type}</Badge>
+                <Badge tone={e.exam_type === "quiz" ? "gold" : "navy"}>{examTypeLabel(dict, e.exam_type)}</Badge>
               </div>
               <span className="text-xs text-slate-400 dark:text-navy-500">{e.exam_date}</span>
             </Card>
@@ -277,7 +278,7 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
             <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.behaviour.title}</h2>
             {overview.behaviour.map((b) => (
               <Card key={b.id} className="text-sm">
-                <Badge tone={b.category === "positive" ? "green" : "red"}>{b.category}</Badge>
+                <Badge tone={b.category === "positive" ? "green" : "red"}>{behaviourLabel(dict, b.category)}</Badge>
                 <p className="mt-1.5 text-slate-600 dark:text-navy-200">{b.description}</p>
               </Card>
             ))}

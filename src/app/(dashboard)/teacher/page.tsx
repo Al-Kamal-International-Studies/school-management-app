@@ -6,7 +6,8 @@ import { listVisibleAnnouncements } from "@/lib/queries/announcements";
 import { Card, StatCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
-import { formatTime, jsDayToDbDay } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
+import { schoolWeekdayDb } from "@/lib/dates";
 import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
 import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -29,7 +30,7 @@ export default async function TeacherDashboardPage() {
     getOverviewStats(profile!.id),
   ]);
 
-  const todayDbDay = jsDayToDbDay(new Date().getDay());
+  const todayDbDay = schoolWeekdayDb();
   const todaysClasses = schedule.filter((e) => e.day_of_week === todayDbDay);
 
   // `classes` has one row per (class, subject) assignment, so the same
@@ -109,11 +110,11 @@ export default async function TeacherDashboardPage() {
                 <Link href={`/teacher/attendance?class=${e.class_id}`} className={ROW_LINK_CLASS}>
                   <Card className={ROW_CARD_CLASS}>
                     <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
-                      {formatTime(e.start_time)} – {formatTime(e.end_time)}
+                      <bdi dir="ltr">{formatTime(e.start_time)} – {formatTime(e.end_time)}</bdi>
                     </p>
                     <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.className}</p>
-                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
+                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} <bdi>{e.room}</bdi></p>}
                   </Card>
                 </Link>
               </FadeUpItem>

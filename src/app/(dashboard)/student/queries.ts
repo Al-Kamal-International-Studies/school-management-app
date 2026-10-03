@@ -1,3 +1,4 @@
+import { schoolToday } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 
 export async function getMyClassInfo(studentId: string) {
@@ -104,6 +105,18 @@ export async function listMyRecentGrades(studentId: string, limit = 5) {
   return all.map((g) => ({ ...g, subjectName: subjectMap.get(g.subject_id) ?? "Unknown" }));
 }
 
+/** The student's own most recent attendance records (newest first) — the single source every attendance figure is computed from. */
+export async function listMyAttendance(studentId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("attendance_records")
+    .select("date, status")
+    .eq("student_id", studentId)
+    .order("date", { ascending: false })
+    .limit(200);
+  return data ?? [];
+}
+
 export interface UpcomingItem {
   id: string;
   kind: "assignment" | "exam" | "quiz";
@@ -121,7 +134,7 @@ export interface UpcomingItem {
 export async function listUpcomingItems(classId: string | null, limit = 6): Promise<UpcomingItem[]> {
   if (!classId) return [];
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = schoolToday();
 
   const [{ data: assignments }, { data: exams }] = await Promise.all([
     supabase

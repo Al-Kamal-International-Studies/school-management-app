@@ -45,12 +45,12 @@ export function WeeklyScheduleGrid({ entries, dict }: { entries: ScheduleEntry[]
                 {dayEntries.map((e) => (
                   <li key={e.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-navy-700 dark:bg-navy-800/60">
                     <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
-                      {formatTime(e.start_time)} – {formatTime(e.end_time)}
+                      <bdi dir="ltr">{formatTime(e.start_time)} – {formatTime(e.end_time)}</bdi>
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">{e.subjectName}</p>
                     {e.className && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.className}</p>}
                     {e.teacherName && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.teacherName}</p>}
-                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} {e.room}</p>}
+                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} <bdi>{e.room}</bdi></p>}
                     {e.actions}
                   </li>
                 ))}

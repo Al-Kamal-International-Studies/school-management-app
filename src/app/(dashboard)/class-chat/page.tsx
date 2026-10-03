@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listMyChannels } from "./queries";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -9,7 +9,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 
 export default async function ClassChatPage() {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   const dict = await getDictionary(await getLocale());
   if (!me) return null;
 

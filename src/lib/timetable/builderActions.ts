@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 
 export interface ActionState {
   error?: string;
@@ -38,6 +39,43 @@ export async function createTimetableEntryAction(_prevState: ActionState, formDa
   }
 
   const supabase = await createClient();
+
+  // The class must exist in an accessible center AND the one currently being
+  // worked in — `?class=<id>` is user-controlled, and a class id from the other
+  // center used to be accepted (RLS only checks the role, see 0042).
+  const activeCenterId = (await getActiveCenterForRequest())!;
+  const { data: klass } = await supabase.from("classes").select("center_id").eq("id", parsed.data.class_id).maybeSingle();
+  if (!klass || klass.center_id !== activeCenterId) return { error: "Class not found." };
+
+  // The subject/teacher pair must really be assigned to this class — the form's
+  // hidden fields are client-controlled, and a tampered pair used to put a
+  // teacher on a timetable for a class they never teach.
+  const { data: assignment } = await supabase
+    .from("class_subject_teachers")
+    .select("id")
+    .eq("class_id", parsed.data.class_id)
+    .eq("subject_id", parsed.data.subject_id)
+    .eq("teacher_id", parsed.data.teacher_id)
+    .maybeSingle();
+  if (!assignment) return { error: "That subject and teacher aren't assigned to this class." };
+
+  // No overlapping periods: not for this class, and not for this teacher in any class.
+  const { data: sameDay } = await supabase
+    .from("timetable_entries")
+    .select("class_id, teacher_id, start_time, end_time")
+    .eq("day_of_week", parsed.data.day_of_week)
+    .or(`class_id.eq.${parsed.data.class_id},teacher_id.eq.${parsed.data.teacher_id}`);
+  const hhmm = (t: string) => t.slice(0, 5);
+  const clash = (sameDay ?? []).find((e) => hhmm(e.start_time) < parsed.data.end_time && hhmm(e.end_time) > parsed.data.start_time);
+  if (clash) {
+    return {
+      error:
+        clash.class_id === parsed.data.class_id
+          ? `This class already has a period from ${hhmm(clash.start_time)} to ${hhmm(clash.end_time)} that overlaps.`
+          : `This teacher is already teaching another class from ${hhmm(clash.start_time)} to ${hhmm(clash.end_time)}.`,
+    };
+  }
+
   const { data: created, error } = await supabase
     .from("timetable_entries")
     .insert({

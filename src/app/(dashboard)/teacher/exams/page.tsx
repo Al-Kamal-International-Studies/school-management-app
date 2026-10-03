@@ -1,3 +1,4 @@
+import { examTypeLabel } from "@/lib/i18n/labels";
 import { requireRole } from "@/lib/auth";
 import { listMyExams, listMyClassSubjectOptions } from "./queries";
 import { ExamForm } from "./ExamForm";
@@ -33,7 +34,7 @@ export default async function TeacherExamsPage() {
           <Table>
             <Thead>
               <tr>
-                <Th>{dict.assignments.title}</Th>
+                <Th>{dict.assignments.titleLabel}</Th>
                 <Th>{dict.progress.class}</Th>
                 <Th>{dict.progress.subject}</Th>
                 <Th>{dict.exams.type}</Th>
@@ -47,7 +48,7 @@ export default async function TeacherExamsPage() {
                   <Td>{e.className}</Td>
                   <Td>{e.subjectName}</Td>
                   <Td>
-                    <Badge tone={e.exam_type === "quiz" ? "gold" : "navy"}>{e.exam_type}</Badge>
+                    <Badge tone={e.exam_type === "quiz" ? "gold" : "navy"}>{examTypeLabel(dict, e.exam_type)}</Badge>
                   </Td>
                   <Td>{e.exam_date}</Td>
                 </tr>

@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { generateRegistrationOptions, verifyRegistrationResponse } from "@simplewebauthn/server";
 import type { RegistrationResponseJSON } from "@simplewebauthn/server";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
 import { getRpID, getOrigin, RP_NAME, WEBAUTHN_CHALLENGE_COOKIE } from "@/lib/webauthn/config";
@@ -21,7 +21,7 @@ export interface WebauthnActionState {
  * registered so the same authenticator can't be added twice.
  */
 export async function generateWebauthnRegistrationOptionsAction(): Promise<WebauthnActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const supabase = await createClient();
@@ -61,7 +61,7 @@ export async function generateWebauthnRegistrationOptionsAction(): Promise<Webau
  * credential. `response` arrives pre-serialized from the client (it's
  * already JSON — @simplewebauthn/browser's startRegistration() output). */
 export async function verifyWebauthnRegistrationAction(response: RegistrationResponseJSON, label: string): Promise<WebauthnActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const cookieStore = await cookies();
@@ -107,7 +107,7 @@ export async function verifyWebauthnRegistrationAction(response: RegistrationRes
 }
 
 export async function removeWebauthnCredentialAction(id: string) {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return;
   const supabase = await createClient();
   await supabase.from("webauthn_credentials").delete().eq("id", id);

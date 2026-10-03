@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { submitProgressEntryAction, type ActionState } from "./actions";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -39,7 +39,7 @@ export function NewProgressEntryForm({ targets }: { targets: ProgressTarget[] })
   }
 
   return (
-    <form action={formAction} className="space-y-5">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-5">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && <Alert tone="success">{dict.progress.entrySubmitted}</Alert>}
 
@@ -91,6 +91,6 @@ export function NewProgressEntryForm({ targets }: { targets: ProgressTarget[] })
       <Textarea label={dict.progress.improvementAreas} name="improvement_priority_areas" />
 
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

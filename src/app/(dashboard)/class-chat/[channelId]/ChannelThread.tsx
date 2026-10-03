@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { sendChannelMessageAction, type ActionState } from "../actions";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
@@ -92,11 +92,11 @@ export function ChannelThread({
                   </div>
                 )}
                 <div
-                  className={`rounded-2xl px-4 py-2.5 text-sm ${
+                  className={`break-words [overflow-wrap:anywhere] rounded-2xl px-4 py-2.5 text-sm ${
                     mine ? "bg-navy-800 text-white dark:bg-navy-600" : "bg-slate-100 text-slate-800 dark:bg-navy-800 dark:text-navy-100"
                   }`}
                 >
-                  <Linkified text={m.content} />
+                  <span dir="auto"><Linkified text={m.content} /></span>
                 </div>
               </div>
             </div>
@@ -106,7 +106,7 @@ export function ChannelThread({
       </div>
 
       {state.error && <Alert tone="error">{state.error}</Alert>}
-      <form ref={formRef} action={formAction} className="mt-3 flex gap-2">
+      <ActionForm ref={formRef} action={formAction} state={state} className="mt-3 flex gap-2">
         <input type="hidden" name="channel_id" value={channelId} />
         <input
           name="content"
@@ -116,7 +116,7 @@ export function ChannelThread({
           autoComplete="off"
         />
         <SendButton />
-      </form>
+      </ActionForm>
     </div>
   );
 }

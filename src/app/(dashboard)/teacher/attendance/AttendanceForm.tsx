@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { markAttendanceAction, type ActionState } from "./actions";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
@@ -42,7 +42,7 @@ export function AttendanceForm({
   ];
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && <Alert tone="success">{dict.common.save} ✓</Alert>}
       <input type="hidden" name="class_id" value={classId} />
@@ -71,6 +71,6 @@ export function AttendanceForm({
       </div>
 
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

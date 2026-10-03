@@ -209,6 +209,27 @@ export function Sidebar({
     (item) => (!item.centerRestricted || item.centerRestricted === activeCenterId) && (!item.autismGated || hasAutismAccess)
   );
   const { startTour } = useTour();
+
+  const activeCenterName = knownCenterFor(activeCenterId).name;
+  useEffect(() => {
+    // Longest matching href wins, so /admin/users/[id] reads as "Users", not "Overview".
+    const active = [...items]
+      .sort((a, b) => b.href.length - a.href.length)
+      .find((item) => (item.href === `/${role}` ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)));
+    const desired = active ? `${dict.nav[active.labelKey]} · ${activeCenterName}` : activeCenterName;
+    const apply = () => {
+      if (document.title !== desired) document.title = desired;
+    };
+    apply();
+    // Next re-writes the <title> element from the root metadata after hydration and
+    // after each client navigation (it only knows one static title), which would undo
+    // this — and may swap in a NEW <title> element on navigation — so watch the whole
+    // <head> and put the page-specific title back.
+    const observer = new MutationObserver(apply);
+    observer.observe(document.head, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- items is derived from role/center/autism access, all listed
+  }, [pathname, role, activeCenterId, hasAutismAccess, dict, activeCenterName]);
   // Which center's branding to show — the account's actual active center
   // (resolved by (dashboard)/layout.tsx from profile.center_id or, for a
   // multi-center account, the active_center_id cookie), not a hardcoded
@@ -406,7 +427,7 @@ export function Sidebar({
               type="button"
               onClick={onClose}
               className="rounded-lg p-1.5 text-navy-200 hover:bg-white/10 hover:text-white lg:hidden"
-              aria-label="Close menu"
+              aria-label={dict.common.closeMenu}
             >
               <X className="h-5 w-5" />
             </button>

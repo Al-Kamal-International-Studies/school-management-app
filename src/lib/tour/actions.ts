@@ -1,6 +1,6 @@
 "use server";
 
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CURRENT_TOUR_VERSION } from "@/lib/tour/steps";
 
@@ -23,7 +23,7 @@ import { CURRENT_TOUR_VERSION } from "@/lib/tour/steps";
  * consequence.
  */
 export async function markTourSeenAction(): Promise<void> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return;
 
   const supabase = await createClient();

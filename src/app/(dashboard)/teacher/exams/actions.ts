@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { requiredText } from "@/lib/validation";
 import { notifyUsers } from "@/lib/notifications/notify";
 
 export interface ActionState {
@@ -15,7 +16,7 @@ export interface ActionState {
 const examSchema = z.object({
   class_id: z.string().uuid(),
   subject_id: z.string().uuid(),
-  title: z.string().min(1, "Title is required."),
+  title: requiredText("Title is required.", 200),
   exam_type: z.enum(["exam", "quiz"]),
   exam_date: z.string().min(1, "Date is required."),
   start_time: z.string().optional(),

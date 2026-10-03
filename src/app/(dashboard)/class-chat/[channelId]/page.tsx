@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { getChannel } from "../queries";
 import { ChannelThread } from "./ChannelThread";
 import { Card } from "@/components/ui/Card";
@@ -9,7 +9,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 
 export default async function ClassChatChannelPage({ params }: { params: Promise<{ channelId: string }> }) {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return null;
   const dict = await getDictionary(await getLocale());
 

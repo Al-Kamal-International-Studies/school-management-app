@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 /** Marks one notification read — called when the bell dropdown's entry is
@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
  * `user_id = auth.uid()`, so a foreign notification id just silently
  * updates zero rows rather than needing a manual ownership check here. */
 export async function markNotificationReadAction(id: string): Promise<void> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return;
 
   const supabase = await createClient();
@@ -20,7 +20,7 @@ export async function markNotificationReadAction(id: string): Promise<void> {
 
 /** "Mark all as read" — the bell dropdown's header action. */
 export async function markAllNotificationsReadAction(): Promise<void> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return;
 
   const supabase = await createClient();

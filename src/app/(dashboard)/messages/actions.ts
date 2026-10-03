@@ -3,8 +3,9 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications/notify";
 
 export interface ActionState {
@@ -18,7 +19,7 @@ export interface ActionState {
  * so the same pair never produces two conversation rows.
  */
 export async function startConversationAction(otherUserId: string) {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) redirect("/login");
 
   const sorted = [me!.id, otherUserId].sort();
@@ -51,7 +52,7 @@ const messageSchema = z.object({
 });
 
 export async function sendDmMessageAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const parsed = messageSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -73,7 +74,10 @@ export async function sendDmMessageAction(_prevState: ActionState, formData: For
     .insert({ conversation_id: parsed.data.conversation_id, sender_id: me.id, content: parsed.data.content });
   if (error) return { error: error.message };
 
-  await supabase.from("dm_conversations").update({ updated_at: new Date().toISOString() }).eq("id", parsed.data.conversation_id);
+  // dm_conversations has no UPDATE policy for users (RLS silently matched 0 rows, so the
+  // conversation list never re-ordered by recent activity). The caller was verified as a
+  // participant above, so bumping updated_at through the service role is safe.
+  await createAdminClient().from("dm_conversations").update({ updated_at: new Date().toISOString() }).eq("id", parsed.data.conversation_id);
 
   const recipientId = conversation.participant_a === me.id ? conversation.participant_b : conversation.participant_a;
   await notifyUser(recipientId, {

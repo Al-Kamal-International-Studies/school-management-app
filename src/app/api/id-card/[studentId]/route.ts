@@ -3,6 +3,7 @@ import "server-only";
 import type { NextRequest } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { buildIdCardPdf, idCardFilenameBase } from "@/lib/idcard/buildIdCardPdf";
+import { attachmentDisposition } from "@/lib/http/contentDisposition";
 
 /**
  * Serves a freshly-generated ID card PDF as a real download — the first
@@ -34,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ stu
   return new Response(new Uint8Array(result.pdfBytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${idCardFilenameBase(result.data)}.pdf"`,
+      "Content-Disposition": attachmentDisposition(`${idCardFilenameBase(result.data)}.pdf`),
       "Cache-Control": "private, no-store",
     },
   });

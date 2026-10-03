@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { schoolToday } from "@/lib/dates";
 import type { AttendanceStatus } from "@/lib/types/database.types";
 
 export interface ActionState {
@@ -27,6 +28,8 @@ export async function markAttendanceAction(_prevState: ActionState, formData: Fo
   if (typeof classId !== "string" || !classId || typeof date !== "string" || !date) {
     return { error: "Missing class or date." };
   }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) return { error: "Enter a valid date." };
+  if (date > schoolToday()) return { error: "Attendance can't be marked for a future date." };
 
   const rows: { student_id: string; class_id: string; date: string; status: AttendanceStatus; marked_by: string }[] = [];
   for (const [key, value] of formData.entries()) {
@@ -44,7 +47,13 @@ export async function markAttendanceAction(_prevState: ActionState, formData: Fo
 
   const supabase = await createClient();
   const { error } = await supabase.from("attendance_records").upsert(rows, { onConflict: "student_id,date" });
-  if (error) return { error: error.message };
+  if (error) {
+    return {
+      error: /row-level security/i.test(error.message)
+        ? "You can only mark attendance for classes you teach."
+        : error.message,
+    };
+  }
 
   // One entry per bulk-mark action, not one per student row — this can
   // cover an entire class roster in a single submit, and a log entry per

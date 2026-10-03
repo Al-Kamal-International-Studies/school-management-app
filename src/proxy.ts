@@ -25,7 +25,12 @@ const PUBLIC_PATHS = ["/login", "/forgot-password", "/welcome"];
 // worth closing, found while investigating a "still cut off after the fix"
 // report — see HANDOVER.md for the write-up.) Exact-path entries, matching
 // the two real static files this app actually serves at these routes.
-const PUBLIC_STATIC_FILES = ["/sw.js", "/manifest.json"];
+// "/offline" is the service worker's offline fallback page. The worker installs on a
+// visitor's very first (pre-login, pre-language-cookie) page view and caches this
+// URL — if the proxy answered it with a redirect to /welcome/language or /login, the
+// worker cached THAT redirect instead of the page, so the offline fallback never
+// worked (audit finding CR-21, HANDOVER Part 33).
+const PUBLIC_STATIC_FILES = ["/sw.js", "/manifest.json", "/offline"];
 
 function isPublicPath(pathname: string) {
   if (PUBLIC_STATIC_FILES.includes(pathname)) return true;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createTimetableEntryAction, type ActionState } from "@/lib/timetable/builderActions";
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -33,7 +33,7 @@ export function NewEntryForm({
   const { dict } = useLocale();
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       <input type="hidden" name="class_id" value={classId} />
 
@@ -76,6 +76,6 @@ export function NewEntryForm({
       <Input label={dict.adminTimetable.roomOptional} name="room" />
 
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

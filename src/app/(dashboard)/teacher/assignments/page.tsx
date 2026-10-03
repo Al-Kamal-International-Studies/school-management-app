@@ -33,7 +33,7 @@ export default async function TeacherAssignmentsPage() {
           <Table>
             <Thead>
               <tr>
-                <Th>{dict.assignments.title}</Th>
+                <Th>{dict.assignments.titleLabel}</Th>
                 <Th>{dict.progress.class}</Th>
                 <Th>{dict.progress.subject}</Th>
                 <Th>{dict.assignments.dueDate}</Th>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createAutismAssignmentAction, type ActionState } from "./actions";
 import { Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -31,7 +31,7 @@ export function AssignForm({
   const { dict } = useLocale();
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
       <div className="w-full sm:w-56">
         <Select label={dict.autismSection.teacher} name="teacher_id" required defaultValue="">
           <option value="" disabled>
@@ -62,6 +62,6 @@ export function AssignForm({
           <Alert tone="error">{state.error}</Alert>
         </div>
       )}
-    </form>
+    </ActionForm>
   );
 }

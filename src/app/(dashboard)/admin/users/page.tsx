@@ -14,7 +14,7 @@ import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForReque
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: "teacher" | "student" | "parent" }>;
+  searchParams: Promise<{ q?: string; role?: string }>;
 }) {
   const { q, role } = await searchParams;
   // admin/layout.tsx's requireRole("admin") guarantees a profile, so this

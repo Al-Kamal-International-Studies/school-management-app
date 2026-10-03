@@ -3,7 +3,7 @@
  *
  * Format (Muhammad's explicit request, chat, 2026-09-08):
  * `<Full Student Name>_<Student ID>_<Academic Year>.pdf`, e.g.
- * `Talal A M Awad_AKIS-2026-0001_2025-2026.pdf`.
+ * `Jane A B Doe_AKIS-2026-0001_2025-2026.pdf`.
  *
  * The student ID already starts with the center code (AKIS-/AKET-, see
  * generateEnrollmentNumber in (dashboard)/admin/admissions/actions.ts), so

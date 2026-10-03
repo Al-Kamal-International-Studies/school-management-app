@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createAssignmentAction, type ActionState } from "./actions";
 import { Input, Textarea, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -33,7 +33,7 @@ export function AssignmentForm({ options }: { options: Awaited<ReturnType<typeof
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && <Alert tone="success">{dict.common.save} ✓</Alert>}
 
@@ -53,11 +53,11 @@ export function AssignmentForm({ options }: { options: Awaited<ReturnType<typeof
         ))}
       </Select>
 
-      <Input label={dict.assignments.title} name="title" required />
+      <Input label={dict.assignments.titleLabel} name="title" required />
       <Textarea label={dict.assignments.description} name="description" />
       <Input label={dict.assignments.dueDate} name="due_date" type="date" required />
 
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

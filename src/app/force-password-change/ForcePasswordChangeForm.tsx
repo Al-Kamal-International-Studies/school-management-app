@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { completeForcedPasswordChangeAction, type ActionState } from "./actions";
@@ -33,7 +33,7 @@ export function ForcePasswordChangeForm({ minLength }: { minLength: number }) {
   }, [state.success, router]);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       <PasswordField
         label={dict.settings.newPassword}
@@ -54,6 +54,6 @@ export function ForcePasswordChangeForm({ minLength }: { minLength: number }) {
         hideLabel={dict.login.hidePassword}
       />
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

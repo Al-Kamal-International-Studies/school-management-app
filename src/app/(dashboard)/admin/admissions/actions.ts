@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { getAccessibleCenters } from "@/lib/centers/getAccessibleCenters";
 import { logAuditEvent } from "@/lib/audit/log";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
 import { generatePassword } from "@/lib/security/generatePassword";
@@ -82,6 +84,24 @@ function readCheckbox(formData: FormData, name: string): boolean {
   return formData.get(name) === "on";
 }
 
+/**
+ * Center scoping for admissions (audit finding AD-2, HANDOVER Part 33): the
+ * mutating actions below use the service-role client, which bypasses RLS, so
+ * "may this admin touch this center / this admission?" is checked explicitly.
+ * An AKIS-only admin used to be able to create AKET admissions (and AKET
+ * accounts) and open / retry / delete any center's admissions by id.
+ */
+async function canUseCenter(profileId: string, centerId: string): Promise<boolean> {
+  return (await getAccessibleCenters(profileId)).some((c) => c.id === centerId);
+}
+
+/** Read through the caller's OWN RLS-scoped client — admissions RLS is center-scoped (migration 0043). */
+async function canAccessAdmission(admissionId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("admissions").select("id").eq("id", admissionId).maybeSingle();
+  return !!data;
+}
+
 export async function createAdmissionAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const me = await requireRole("admin");
 
@@ -121,6 +141,7 @@ export async function createAdmissionAction(_prevState: ActionState, formData: F
 
   const admin = createAdminClient();
   const centerId = data.center === "AKIS" ? AKIS_CENTER_ID : AKET_CENTER_ID;
+  if (!(await canUseCenter(me.id, centerId))) return { error: "You don't have access to that center." };
 
   // Step 2 of the spec: the raw submission is saved FIRST, durably, before
   // any PDF generation / account creation / email is even attempted — see
@@ -215,6 +236,7 @@ export async function createAdmissionAction(_prevState: ActionState, formData: F
  */
 export async function retryAdmissionProcessingAction(admissionId: string): Promise<{ error?: string }> {
   const me = await requireRole("admin");
+  if (!(await canAccessAdmission(admissionId))) return { error: "Admission not found." };
 
   const admin = createAdminClient();
   const { data: admission } = await admin.from("admissions").select("id, status").eq("id", admissionId).single();
@@ -277,11 +299,13 @@ export async function updateAdmissionAction(admissionId: string, _prevState: Act
     return { error: "The Autism Section is only available for AKET admissions." };
   }
 
+  if (!(await canAccessAdmission(admissionId))) return { error: "Admission not found." };
   const admin = createAdminClient();
   const { data: existing } = await admin.from("admissions").select("id").eq("id", admissionId).single();
   if (!existing) return { error: "Admission not found." };
 
   const centerId = data.center === "AKIS" ? AKIS_CENTER_ID : AKET_CENTER_ID;
+  if (!(await canUseCenter(me.id, centerId))) return { error: "You don't have access to that center." };
 
   const { error: updateError } = await admin
     .from("admissions")
@@ -374,6 +398,7 @@ export async function deleteAdmissionAction(admissionId: string): Promise<{ erro
   const bucket = `delete_admission:${me.id}`;
   const { limited } = await checkRateLimit(bucket, { maxAttempts: 20, windowSeconds: 60 * 60 });
   if (limited) return { error: "Too many admissions deleted recently. Wait a while before deleting more." };
+  if (!(await canAccessAdmission(admissionId))) return { error: "Admission not found." };
 
   const admin = createAdminClient();
   const { data: admission } = await admin
@@ -516,7 +541,9 @@ async function findExistingParentForFamily(
   admin: ReturnType<typeof createAdminClient>,
   contactEmail: string
 ): Promise<{ parentId: string; parentName: string } | null> {
-  const { data: siblingStudents } = await admin.from("students").select("id").eq("guardian_email", contactEmail);
+  // Case-insensitive: "Parent@Mail.com" and "parent@mail.com" are the same family (AD-4).
+  const likeSafe = contactEmail.replace(/[\\%_]/g, (c) => "\\" + c);
+  const { data: siblingStudents } = await admin.from("students").select("id").ilike("guardian_email", likeSafe);
   const siblingIds = (siblingStudents ?? []).map((s) => s.id);
   if (siblingIds.length === 0) return null;
 
@@ -620,6 +647,9 @@ function welcomeEmailBody(opts: {
   parentPassword: string | null;
 }) {
   const schoolName = opts.center === "akis" ? "Al Kamal International Studies" : "Al Kamal Education Technology";
+  // Names/emails are admin-typed free text and go into an HTML email: escape them
+  // (audit finding AD-7). The plain-text body below needs no escaping.
+  const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const parentSection = opts.parentPassword
     ? `Parent account (yours)
   Email: ${opts.parentLoginEmail}
@@ -650,22 +680,22 @@ ${schoolName}`;
 
   const parentSectionHtml = opts.parentPassword
     ? `<strong>Parent account (yours)</strong><br/>
-        Email: ${opts.parentLoginEmail}<br/>
-        Temporary password: <code>${opts.parentPassword}</code>`
-    : `<strong>Parent account (yours — now also linked to ${opts.studentName})</strong><br/>
+        Email: ${esc(opts.parentLoginEmail)}<br/>
+        Temporary password: <code>${esc(opts.parentPassword)}</code>`
+    : `<strong>Parent account (yours — now also linked to ${esc(opts.studentName)})</strong><br/>
         Your existing password still works, but your login email has changed to:<br/>
-        <code>${opts.parentLoginEmail}</code><br/>
+        <code>${esc(opts.parentLoginEmail)}</code><br/>
         <span style="color:#5a5f6e;font-size:13px;">(it now covers every child of yours registered with us)</span>`;
 
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a2e;max-width:560px;margin:0 auto;">
   <h2 style="color:#0b1b3d;margin-bottom:4px;">Welcome to ${schoolName}!</h2>
-  <p>We're delighted to confirm <strong>${opts.studentName}</strong>'s registration.</p>
+  <p>We're delighted to confirm <strong>${esc(opts.studentName)}</strong>'s registration.</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;">
     <tr>
       <td style="padding:12px;border:1px solid #d9dce3;border-radius:6px;">
         <strong>Student account</strong><br/>
-        Email: ${opts.studentEmail}<br/>
-        Temporary password: <code>${opts.studentPassword}</code>
+        Email: ${esc(opts.studentEmail)}<br/>
+        Temporary password: <code>${esc(opts.studentPassword)}</code>
       </td>
     </tr>
     <tr><td style="height:10px;"></td></tr>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createUserAction, type ActionState } from "../actions";
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -33,7 +33,7 @@ export function NewUserForm({
   const [role, setRole] = useState<"teacher" | "student" | "parent">("student");
 
   return (
-    <form action={formAction} className="space-y-5">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-5">
       {state.error && <Alert tone="error">{state.error}</Alert>}
 
       <Select label={dict.common.role} name="role" value={role} onChange={(e) => setRole(e.target.value as "teacher" | "student" | "parent")}>
@@ -104,6 +104,6 @@ export function NewUserForm({
       )}
 
       <SubmitButton dict={dict} />
-    </form>
+    </ActionForm>
   );
 }

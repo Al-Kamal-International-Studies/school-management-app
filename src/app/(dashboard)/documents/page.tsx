@@ -1,3 +1,4 @@
+import { documentCategoryLabel } from "@/lib/i18n/labels";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DownloadButton } from "@/components/documents/DownloadButton";
@@ -31,7 +32,7 @@ export default async function DocumentsPage() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold text-navy-900 dark:text-white">{d.title}</p>
-                  <Badge tone="navy">{d.category}</Badge>
+                  <Badge tone="navy">{documentCategoryLabel(dict, d.category)}</Badge>
                 </div>
                 <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{new Date(d.created_at).toLocaleDateString()}</p>
               </div>

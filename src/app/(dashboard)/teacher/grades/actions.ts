@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { numberInRange, requiredText } from "@/lib/validation";
 
 export interface ActionState {
   error?: string;
@@ -15,10 +16,10 @@ const gradeSchema = z.object({
   student_id: z.string().uuid(),
   subject_id: z.string().uuid(),
   class_id: z.string().uuid(),
-  assessment_name: z.string().min(1, "Assessment name is required."),
-  marks_obtained: z.coerce.number().min(0),
-  marks_total: z.coerce.number().gt(0),
-  term: z.string().min(1),
+  assessment_name: requiredText("Assessment name is required.", 200),
+  marks_obtained: numberInRange("Enter the marks obtained (0 or more).", { min: 0, max: 9999 }),
+  marks_total: numberInRange("Enter the total marks (greater than 0).", { gt: 0, max: 9999 }),
+  term: requiredText("Term is required.", 100),
 });
 
 export async function recordGradeAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {

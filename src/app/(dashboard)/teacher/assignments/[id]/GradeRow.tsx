@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { gradeSubmissionAction, type ActionState } from "../actions";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -47,7 +47,7 @@ export function GradeRow({
       <div className="flex items-center gap-2">
         <Badge tone={statusTone}>{statusLabel}</Badge>
       </div>
-      <form action={formAction} className="flex flex-wrap items-center gap-2">
+      <ActionForm action={formAction} state={state} className="flex flex-wrap items-center gap-2">
         {state.error && <span className="text-xs text-red-600">{state.error}</span>}
         <input type="hidden" name="assignment_id" value={assignmentId} />
         <input type="hidden" name="student_id" value={studentId} />
@@ -69,7 +69,7 @@ export function GradeRow({
           className="input w-40 py-1.5 text-sm"
         />
         <SaveButton />
-      </form>
+      </ActionForm>
     </div>
   );
 }

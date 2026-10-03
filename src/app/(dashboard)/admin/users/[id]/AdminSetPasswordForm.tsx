@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { Check, Wand2 } from "lucide-react";
 import { adminSetUserPasswordAction, type ActionState } from "../actions";
 import { PasswordField } from "@/components/ui/PasswordField";
@@ -38,7 +38,7 @@ export function AdminSetPasswordForm({ userId, minLength }: { userId: string; mi
   const { dict } = useLocale();
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ActionForm action={formAction} state={state} resetOnSuccess className="space-y-4">
       <input type="hidden" name="id" value={userId} />
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.success && (
@@ -68,6 +68,6 @@ export function AdminSetPasswordForm({ userId, minLength }: { userId: string; mi
         </Button>
       </div>
       <SubmitButton />
-    </form>
+    </ActionForm>
   );
 }

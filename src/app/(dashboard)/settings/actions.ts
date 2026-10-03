@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { passwordZodSchema, MIN_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH_ADMIN } from "@/lib/security/password";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
@@ -32,7 +32,7 @@ export interface ActionState {
  * brute-force the current password indefinitely.
  */
 export async function changeOwnPasswordAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const minLength = me.role === "admin" ? MIN_PASSWORD_LENGTH_ADMIN : MIN_PASSWORD_LENGTH;
@@ -84,7 +84,7 @@ export async function changeOwnPasswordAction(_prevState: ActionState, formData:
 
 /** Signs out every session for this account except the current one. */
 export async function signOutOtherSessionsAction(): Promise<ActionState> {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const supabase = await createClient();
@@ -102,7 +102,7 @@ const subscriptionSchema = z.object({
 
 /** Registers this browser for Web Push (free/VAPID — see src/lib/push/send.ts). */
 export async function subscribeToPushAction(subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const parsed = subscriptionSchema.safeParse({
@@ -122,7 +122,7 @@ export async function subscribeToPushAction(subscription: { endpoint: string; ke
 }
 
 export async function unsubscribeFromPushAction(endpoint: string) {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return;
   const supabase = await createClient();
   await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint).eq("user_id", me.id);
@@ -142,7 +142,7 @@ const nativeTokenSchema = z.object({
  * regular browser visitor, who never has a token to send here at all.
  */
 export async function registerNativePushTokenAction(input: { platform: "ios" | "android"; token: string }) {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return { error: "You must be signed in." };
 
   const parsed = nativeTokenSchema.safeParse(input);
@@ -167,7 +167,7 @@ export async function registerNativePushTokenAction(input: { platform: "ios" | "
  * over from a previous install/re-registration.
  */
 export async function unregisterAllNativePushTokensAction(platform: "ios" | "android") {
-  const me = await getCurrentProfile();
+  const me = await requireSession();
   if (!me) return;
   const supabase = await createClient();
   await supabase.from("native_push_tokens").delete().eq("platform", platform).eq("user_id", me.id);
