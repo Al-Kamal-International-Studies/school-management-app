@@ -15,7 +15,7 @@ export function DeleteEntryButton({ id }: { id: string }) {
       onClick={() => {
         if (confirm(dict.adminTimetable.confirmRemovePeriod)) startTransition(() => deleteTimetableEntryAction(id));
       }}
-      className="mt-1 text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+      className="text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
     >
       {dict.adminTimetable.removePeriod}
     </button>

@@ -4,6 +4,7 @@
 // authenticated + request.jwt.claim.sub). Used to verify new migrations
 // BEFORE anyone runs them against production.
 import { PGlite } from "@electric-sql/pglite";
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -41,8 +42,11 @@ alter default privileges in schema public grant execute on functions to anon, au
 `;
 
 export async function makeDb({ upTo = 999, extraDir } = {}) {
-  const db = new PGlite();
+  // btree_gist: 0044 (timetable exclusion constraints). Supabase keeps
+  // extensions in their own schema, mirrored here.
+  const db = new PGlite({ extensions: { btree_gist } });
   await db.exec(SHIM);
+  await db.exec("create schema if not exists extensions;");
   const files = readdirSync(MIG).filter((f) => /^\d{4}_.*\.sql$/.test(f)).sort();
   const log = [];
   for (const f of files) {

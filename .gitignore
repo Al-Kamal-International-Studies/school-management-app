@@ -37,3 +37,6 @@ scripts/output/
 
 # full-app audit report + raw agent findings (contain vulnerability details — never commit to the public repo)
 /audit-report/
+
+# Account lists exported for the school office (contain student/parent details)
+AKIS Accounts - *

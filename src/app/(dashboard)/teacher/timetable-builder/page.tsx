@@ -1,6 +1,7 @@
 import { listClassesForSelect, getClassSchedule } from "@/lib/timetable/builderQueries";
 import { NewEntryForm } from "@/components/timetable/builder/NewEntryForm";
 import { DeleteEntryButton } from "@/components/timetable/builder/DeleteEntryButton";
+import Link from "next/link";
 import { ClassSelect } from "@/components/timetable/builder/ClassSelect";
 import { WeeklyScheduleGrid, type ScheduleEntry } from "@/components/timetable/WeeklyScheduleGrid";
 import { EmptyState } from "@/components/ui/Table";
@@ -19,8 +20,8 @@ import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForReque
  * schedule across every class they teach — a different question from "build
  * a class's timetable" — so it's left untouched).
  */
-export default async function TeacherTimetableBuilderPage({ searchParams }: { searchParams: Promise<{ class?: string }> }) {
-  const { class: classParam } = await searchParams;
+export default async function TeacherTimetableBuilderPage({ searchParams }: { searchParams: Promise<{ class?: string; edit?: string }> }) {
+  const { class: classParam, edit: editParam } = await searchParams;
   // teacher/layout.tsx's requireRole("teacher") guarantees a profile, so
   // this is never actually null — see getActiveCenterForRequest's doc comment.
   const activeCenterId = (await getActiveCenterForRequest())!;
@@ -28,6 +29,8 @@ export default async function TeacherTimetableBuilderPage({ searchParams }: { se
   const selectedClassId = classParam ?? classes[0]?.id;
   const schedule = selectedClassId ? await getClassSchedule(selectedClassId) : null;
   const dict = await getDictionary(await getLocale());
+  // ?edit=<period id> puts the side form into edit mode for that period (HANDOVER Part 41).
+  const editing = schedule?.entries.find((e) => e.id === editParam);
 
   const entries: ScheduleEntry[] =
     schedule?.entries.map((e) => ({
@@ -38,7 +41,14 @@ export default async function TeacherTimetableBuilderPage({ searchParams }: { se
       subjectName: e.subjectName,
       teacherName: e.teacherName,
       room: e.room,
-      actions: <DeleteEntryButton id={e.id} />,
+      actions: (
+        <div className="mt-1 flex items-center gap-3">
+          <Link href={`/teacher/timetable-builder?class=${selectedClassId}&edit=${e.id}`} className="text-xs font-medium text-navy-700 hover:underline dark:text-navy-200">
+            {dict.adminTimetable.editPeriod}
+          </Link>
+          <DeleteEntryButton id={e.id} />
+        </div>
+      ),
     })) ?? [];
 
   return (
@@ -57,13 +67,19 @@ export default async function TeacherTimetableBuilderPage({ searchParams }: { se
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
           <FadeUp delay={0.12} className="card h-fit p-6">
-            <h2 className="mb-4 section-title">{dict.adminTimetable.addPeriod}</h2>
+            <h2 className="mb-4 section-title">{editing ? dict.adminTimetable.editingPeriod : dict.adminTimetable.addPeriod}</h2>
             {schedule && schedule.assignableSubjects.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-navy-400">
                 {dict.adminTimetable.assignTeacherFirst}
               </p>
             ) : (
-              <NewEntryForm classId={selectedClassId} assignableSubjects={schedule?.assignableSubjects ?? []} />
+              <NewEntryForm
+                key={editing?.id ?? "new"}
+                classId={selectedClassId}
+                assignableSubjects={schedule?.assignableSubjects ?? []}
+                editing={editing}
+                basePath="/teacher/timetable-builder"
+              />
             )}
           </FadeUp>
           <FadeUp delay={0.18}>

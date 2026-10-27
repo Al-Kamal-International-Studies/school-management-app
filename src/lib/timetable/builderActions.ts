@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAuditEvent } from "@/lib/audit/log";
@@ -12,6 +13,8 @@ export interface ActionState {
 }
 
 const entrySchema = z.object({
+  id: z.string().guid().optional().or(z.literal("").transform(() => undefined)),
+  return_to: z.enum(["/admin/timetable", "/teacher/timetable-builder"]).optional(),
   class_id: z.string().guid(),
   subject_id: z.string().guid(),
   teacher_id: z.string().guid(),
@@ -21,6 +24,13 @@ const entrySchema = z.object({
   room: z.string().optional(),
 });
 
+/** Postgres exclusion-constraint names from 0044_timetable_no_overlaps.sql. */
+function overlapMessage(message: string): string | null {
+  if (message.includes("timetable_no_class_overlap")) return "This class already has a period at that time. Pick a free time slot.";
+  if (message.includes("timetable_no_teacher_overlap")) return "This teacher is already teaching another class at that time. Pick a free time slot.";
+  return null;
+}
+
 /**
  * Shared by both /admin/timetable and /teacher/timetable-builder — Muhammad,
  * chat, 2026-09-09: "give the teachers the exact same access for creating
@@ -28,8 +38,14 @@ const entrySchema = z.object({
  * admin-only); 0042_teacher_timetable_write.sql is the matching RLS
  * widening behind this app-level gate, same relationship every other
  * admin-write action in this app already has to its own RLS policy.
+ *
+ * Creates a period, or edits one when the form carries its `id` (HANDOVER
+ * Part 41: "give them the access to create (make changes)"). Overlaps are
+ * checked here for a friendly message AND enforced by the database
+ * (0044_timetable_no_overlaps.sql), which also catches two people saving at
+ * the same moment.
  */
-export async function createTimetableEntryAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function saveTimetableEntryAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const me = await requireRole("admin", "teacher");
   const parsed = entrySchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
@@ -62,11 +78,13 @@ export async function createTimetableEntryAction(_prevState: ActionState, formDa
   // No overlapping periods: not for this class, and not for this teacher in any class.
   const { data: sameDay } = await supabase
     .from("timetable_entries")
-    .select("class_id, teacher_id, start_time, end_time")
+    .select("id, class_id, teacher_id, start_time, end_time")
     .eq("day_of_week", parsed.data.day_of_week)
     .or(`class_id.eq.${parsed.data.class_id},teacher_id.eq.${parsed.data.teacher_id}`);
   const hhmm = (t: string) => t.slice(0, 5);
-  const clash = (sameDay ?? []).find((e) => hhmm(e.start_time) < parsed.data.end_time && hhmm(e.end_time) > parsed.data.start_time);
+  const clash = (sameDay ?? []).find(
+    (e) => e.id !== parsed.data.id && hhmm(e.start_time) < parsed.data.end_time && hhmm(e.end_time) > parsed.data.start_time
+  );
   if (clash) {
     return {
       error:
@@ -76,29 +94,37 @@ export async function createTimetableEntryAction(_prevState: ActionState, formDa
     };
   }
 
-  const { data: created, error } = await supabase
-    .from("timetable_entries")
-    .insert({
-      class_id: parsed.data.class_id,
-      subject_id: parsed.data.subject_id,
-      teacher_id: parsed.data.teacher_id,
-      day_of_week: parsed.data.day_of_week,
-      start_time: parsed.data.start_time,
-      end_time: parsed.data.end_time,
-      room: parsed.data.room || null,
-    })
-    .select("id")
-    .single();
+  const row = {
+    class_id: parsed.data.class_id,
+    subject_id: parsed.data.subject_id,
+    teacher_id: parsed.data.teacher_id,
+    day_of_week: parsed.data.day_of_week,
+    start_time: parsed.data.start_time,
+    end_time: parsed.data.end_time,
+    room: parsed.data.room || null,
+  };
+  const { id: editingId, return_to: returnTo, ...details } = parsed.data;
 
-  if (error) return { error: error.message };
+  const { data: saved, error } = editingId
+    ? await supabase.from("timetable_entries").update(row).eq("id", editingId).eq("class_id", row.class_id).select("id").maybeSingle()
+    : await supabase.from("timetable_entries").insert(row).select("id").single();
 
-  await logAuditEvent(me.id, "create_timetable_entry", "timetable_entries", created.id, parsed.data);
+  if (error) return { error: overlapMessage(error.message) ?? error.message };
+  if (!saved) return { error: "That period no longer exists. Refresh the page and try again." };
 
+  await logAuditEvent(me.id, editingId ? "update_timetable_entry" : "create_timetable_entry", "timetable_entries", saved.id, details);
+
+  revalidateTimetables();
+  // Leave edit mode (drop ?edit=) once the change is saved.
+  if (editingId && returnTo) redirect(`${returnTo}?class=${row.class_id}`);
+  return {};
+}
+
+function revalidateTimetables() {
   revalidatePath("/admin/timetable");
   revalidatePath("/teacher/timetable");
   revalidatePath("/teacher/timetable-builder");
   revalidatePath("/student/timetable");
-  return {};
 }
 
 export async function deleteTimetableEntryAction(id: string) {
@@ -108,8 +134,5 @@ export async function deleteTimetableEntryAction(id: string) {
   if (error) throw new Error(error.message);
   await logAuditEvent(me.id, "delete_timetable_entry", "timetable_entries", id);
 
-  revalidatePath("/admin/timetable");
-  revalidatePath("/teacher/timetable");
-  revalidatePath("/teacher/timetable-builder");
-  revalidatePath("/student/timetable");
+  revalidateTimetables();
 }

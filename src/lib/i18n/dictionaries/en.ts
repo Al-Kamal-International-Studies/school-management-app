@@ -568,6 +568,8 @@ const en = {
     roomOptional: "Room (optional)",
     removePeriod: "Remove",
     confirmRemovePeriod: "Remove this period from the timetable?",
+    editPeriod: "Edit",
+    editingPeriod: "Edit period",
   },
   adminAuditLog: {
     title: "Audit Log",

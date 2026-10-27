@@ -567,6 +567,8 @@ const ar: Dictionary = {
     roomOptional: "القاعة (اختياري)",
     removePeriod: "إزالة",
     confirmRemovePeriod: "هل تريد إزالة هذه الحصة من الجدول؟",
+    editPeriod: "تعديل",
+    editingPeriod: "تعديل الحصة",
   },
   adminAuditLog: {
     title: "سجل التدقيق",
