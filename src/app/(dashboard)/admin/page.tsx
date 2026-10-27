@@ -10,19 +10,16 @@ import {
   ClipboardList,
   MessageSquare,
   KeyRound,
-  CalendarDays,
-  Activity,
   FileSignature,
 } from "lucide-react";
-import { Card, StatCard } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { StatCard } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
-import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Section, SectionLink, ListCard, ListRows, ListRowLink, ListEmpty, DateBlock } from "@/components/ui/List";
 import { getCurrentProfile } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
-import { cn } from "@/lib/utils";
+import { formatSchoolDate, formatSchoolDateTime } from "@/lib/dates";
 import { getActiveCenterForRequest } from "@/lib/centers/getActiveCenterForRequest";
 import { getOverviewCounts, getAttendanceTrend, listRecentActivity, listUpcomingEvents } from "./queries";
 import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
@@ -32,19 +29,9 @@ import type { EventType } from "@/lib/types/database.types";
 // across every place events appear in the app.
 const EVENT_TYPE_TONE: Record<EventType, "navy" | "gold" | "red"> = { event: "navy", holiday: "gold", deadline: "red" };
 
-// Shared focus/hover treatment for every dashboard row that's now a real
-// link — visible keyboard focus ring (matches the .btn convention in
-// globals.css) plus a hover affordance on the Card itself, so it reads as
-// clickable rather than just decorative. Neither /admin/events nor
-// /admin/audit-log has a per-item detail route (both are single flat list
-// pages, see queries.ts comments), so these rows link to the list page
-// itself rather than a route that doesn't exist.
-const ROW_LINK_CLASS =
-  "group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-gold-400 dark:focus-visible:ring-offset-navy-950";
-const ROW_CARD_CLASS = "card-hover transition-colors hover:border-navy-200 dark:hover:border-navy-600";
-
 export default async function AdminOverviewPage() {
-  const dict = await getDictionary(await getLocale());
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
 
   // admin/layout.tsx's requireRole("admin") already guarantees a logged-in
   // profile exists before this page ever renders, so the null case here
@@ -89,7 +76,7 @@ export default async function AdminOverviewPage() {
   ];
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7">
       {/* Real offline behavior for Apple's Guideline 4.2 review — see the
           identical setup + comment in (dashboard)/parent/page.tsx. No
           per-student "overall score" concept for an admin, so that tile is
@@ -108,171 +95,140 @@ export default async function AdminOverviewPage() {
           }}
         />
       )}
-      <FadeUp>
-        {profile && <WelcomeRobot name={profile.full_name} role="admin" dict={dict} as="p" className="mb-1" />}
-        <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminOverview.title}</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{dict.adminOverview.subtitle}</p>
-      </FadeUp>
+      <PageHeader
+        eyebrow={profile ? `${dict.common.welcome}, ${profile.full_name}` : undefined}
+        title={dict.adminOverview.title}
+        titleDataTour="page-title"
+        description={dict.adminOverview.subtitle}
+      />
 
-      <FadeUpStagger className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <FadeUpItem>
-          <StatCard label={dict.adminOverview.totalStudents} value={counts.studentCount} icon={GraduationCap} />
-        </FadeUpItem>
-        <FadeUpItem>
-          <StatCard label={dict.adminOverview.totalTeachers} value={counts.teacherCount} icon={Users} />
-        </FadeUpItem>
-        <FadeUpItem>
-          <StatCard label={dict.adminOverview.classes} value={counts.classCount} icon={School} />
-        </FadeUpItem>
-        <FadeUpItem>
-          <StatCard
-            label={dict.adminOverview.attendanceRate}
-            value={attendanceTrend.thisWeekRate !== null ? `${attendanceTrend.thisWeekRate}%` : "—"}
-            hint={dict.common.vsLastWeek}
-            icon={CalendarCheck}
-            delta={attendanceTrend.thisWeekRate !== null ? { value: attendanceTrend.delta, goodDirection: "up" } : undefined}
-            trend={attendanceTrend.sparkline}
-          />
-        </FadeUpItem>
-      </FadeUpStagger>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label={dict.adminOverview.totalStudents} value={counts.studentCount} icon={GraduationCap} />
+        <StatCard label={dict.adminOverview.totalTeachers} value={counts.teacherCount} icon={Users} />
+        <StatCard label={dict.adminOverview.classes} value={counts.classCount} icon={School} />
+        <StatCard
+          label={dict.adminOverview.attendanceRate}
+          value={attendanceTrend.thisWeekRate !== null ? `${attendanceTrend.thisWeekRate}%` : "—"}
+          hint={dict.common.vsLastWeek}
+          icon={CalendarCheck}
+          delta={attendanceTrend.thisWeekRate !== null ? { value: attendanceTrend.delta, goodDirection: "up" } : undefined}
+          trend={attendanceTrend.sparkline}
+        />
+      </div>
 
       {/* Muhammad, chat, 2026-09-09: "Quick actions section to be on the top
-          part with the Overview" — moved up from the bottom of the page to
-          sit directly under the stat cards, ahead of Needs Attention/events/
-          activity, instead of being the very last thing on the page. */}
-      <FadeUp delay={0.08}>
-        <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.adminOverview.quickActions}</h2>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/admin/users/new">
-            <Button>
-              <UserPlus className="h-4 w-4" />
-              {dict.adminOverview.addStudentOrTeacher}
-            </Button>
+          part with the Overview" — kept directly under the stat row, ahead
+          of everything else. One filled button (the most common task); the
+          rest are secondary so the row doesn't shout. */}
+      <Section id="admin-quick-actions" title={dict.adminOverview.quickActions}>
+        <div className="flex flex-wrap gap-2.5">
+          <Link href="/admin/users/new" className="btn-primary">
+            <UserPlus className="h-4 w-4" />
+            {dict.adminOverview.addStudentOrTeacher}
           </Link>
-          <Link href="/admin/admissions/new">
-            <Button variant="secondary">
-              <FileSignature className="h-4 w-4" />
-              {dict.adminOverview.newAdmission}
-            </Button>
+          <Link href="/admin/admissions/new" className="btn-secondary">
+            <FileSignature className="h-4 w-4" />
+            {dict.adminOverview.newAdmission}
           </Link>
-          <Link href="/admin/classes/new">
-            <Button variant="secondary">
-              <School className="h-4 w-4" />
-              {dict.adminOverview.createClass}
-            </Button>
+          <Link href="/admin/classes/new" className="btn-secondary">
+            <School className="h-4 w-4" />
+            {dict.adminOverview.createClass}
           </Link>
-          <Link href="/admin/subjects">
-            <Button variant="secondary">
-              <BookMarked className="h-4 w-4" />
-              {dict.adminOverview.manageSubjects}
-            </Button>
+          <Link href="/admin/subjects" className="btn-secondary">
+            <BookMarked className="h-4 w-4" />
+            {dict.adminOverview.manageSubjects}
           </Link>
-          <Link href="/admin/timetable">
-            <Button variant="secondary">
-              <CalendarClock className="h-4 w-4" />
-              {dict.adminOverview.buildTimetable}
-            </Button>
+          <Link href="/admin/timetable" className="btn-secondary">
+            <CalendarClock className="h-4 w-4" />
+            {dict.adminOverview.buildTimetable}
           </Link>
         </div>
-      </FadeUp>
+      </Section>
 
-      <FadeUp delay={0.14} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.adminOverview.needsAttention}</h2>
-        <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-3" staggerDelay={0.06}>
-          {needsAttentionTiles.map((tile) => (
-            <FadeUpItem key={tile.key}>
-              <Link href={tile.href} className={ROW_LINK_CLASS}>
-                <StatCard
-                  label={tile.label}
-                  value={tile.value}
-                  hint={tile.value > 0 ? dict.adminOverview.reviewNow : dict.adminOverview.nothingPending}
-                  icon={tile.icon}
-                />
-              </Link>
-            </FadeUpItem>
-          ))}
-        </FadeUpStagger>
-      </FadeUp>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+        <Section id="admin-attention" title={dict.adminOverview.needsAttention}>
+          <ListCard>
+            <ListRows>
+              {needsAttentionTiles.map((tile) => {
+                const Icon = tile.icon;
+                return (
+                  <ListRowLink
+                    key={tile.key}
+                    href={tile.href}
+                    leading={<Icon className="h-[18px] w-[18px] shrink-0 text-slate-400 dark:text-navy-400" strokeWidth={1.75} aria-hidden="true" />}
+                    title={tile.label}
+                    subtitle={tile.value > 0 ? dict.adminOverview.reviewNow : dict.adminOverview.nothingPending}
+                    trailing={
+                      tile.value > 0 ? (
+                        <Badge tone="amber">
+                          <span className="tabular">{tile.value}</span>
+                        </Badge>
+                      ) : (
+                        <span className="tabular shrink-0 text-sm text-slate-400 dark:text-navy-500">0</span>
+                      )
+                    }
+                  />
+                );
+              })}
+            </ListRows>
+          </ListCard>
+        </Section>
 
-      <FadeUp delay={0.2} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
-              <CalendarDays className="h-4 w-4" />
-              {dict.adminOverview.upcomingEvents}
-            </h2>
-            <Link href="/admin/events" className="text-xs font-medium text-navy-700 hover:underline dark:text-navy-300">
-              {dict.common.viewAll}
-            </Link>
-          </div>
-          {upcomingEvents.length === 0 ? (
-            <Card>
-              <p className="text-sm text-slate-500 dark:text-navy-400">{dict.adminOverview.noUpcomingEvents}</p>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {upcomingEvents.map((e) => (
-                // No dedicated per-event page exists (events are managed
-                // inline on /admin/events, see that page's own file) — this
-                // links to the list page itself rather than a route that
-                // doesn't exist.
-                <Link key={e.id} href="/admin/events" className={ROW_LINK_CLASS}>
-                  <Card className={cn("flex items-start gap-4", ROW_CARD_CLASS)}>
-                    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-navy-50 text-navy-900 dark:bg-navy-800 dark:text-white">
-                      <span className="text-base font-bold leading-none">{new Date(`${e.event_date}T00:00:00`).getDate()}</span>
-                      <span className="text-[9px] uppercase text-slate-500 dark:text-navy-400">
-                        {new Date(`${e.event_date}T00:00:00`).toLocaleDateString(undefined, { month: "short" })}
-                      </span>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-navy-900 dark:text-white">{e.title}</p>
-                      <div className="mt-1">
-                        <Badge tone={EVENT_TYPE_TONE[e.event_type]}>{e.event_type}</Badge>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+        <Section id="admin-events" title={dict.adminOverview.upcomingEvents} action={<SectionLink href="/admin/events">{dict.common.viewAll}</SectionLink>}>
+          <ListCard>
+            {upcomingEvents.length === 0 ? (
+              <ListEmpty>{dict.adminOverview.noUpcomingEvents}</ListEmpty>
+            ) : (
+              <ListRows>
+                {/* No dedicated per-event page exists (events are managed
+                    inline on /admin/events) — rows link to the list page
+                    itself rather than a route that doesn't exist. */}
+                {upcomingEvents.map((e) => (
+                  <ListRowLink
+                    key={e.id}
+                    href="/admin/events"
+                    leading={
+                      <DateBlock
+                        day={formatSchoolDate(e.event_date, locale, { day: "numeric" })}
+                        month={formatSchoolDate(e.event_date, locale, { month: "short" })}
+                      />
+                    }
+                    title={e.title}
+                    trailing={<Badge tone={EVENT_TYPE_TONE[e.event_type]}>{e.event_type}</Badge>}
+                  />
+                ))}
+              </ListRows>
+            )}
+          </ListCard>
+        </Section>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
-              <Activity className="h-4 w-4" />
-              {dict.adminOverview.recentActivity}
-            </h2>
-            <Link href="/admin/audit-log" className="text-xs font-medium text-navy-700 hover:underline dark:text-navy-300">
-              {dict.common.viewAll}
-            </Link>
-          </div>
-          {recentActivity.length === 0 ? (
-            <Card>
-              <p className="text-sm text-slate-500 dark:text-navy-400">{dict.adminOverview.noRecentActivity}</p>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {recentActivity.map((item) => (
-                // Same story as events above: the audit log has no
-                // per-entry detail route, just one flat table page.
-                <Link key={item.id} href="/admin/audit-log" className={ROW_LINK_CLASS}>
-                  <Card className={cn("flex items-start gap-3", ROW_CARD_CLASS)}>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-navy-50 text-navy-700 dark:bg-navy-800 dark:text-navy-200">
-                      <Activity className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-navy-900 dark:text-white">{item.actorName ?? dict.common.system}</p>
-                      <p className="mt-0.5 truncate font-mono text-xs text-slate-500 dark:text-navy-400">{item.action}</p>
-                      <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{new Date(item.createdAt).toLocaleString()}</p>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </FadeUp>
+        <Section id="admin-activity" title={dict.adminOverview.recentActivity} action={<SectionLink href="/admin/audit-log">{dict.common.viewAll}</SectionLink>}>
+          <ListCard>
+            {recentActivity.length === 0 ? (
+              <ListEmpty>{dict.adminOverview.noRecentActivity}</ListEmpty>
+            ) : (
+              <ListRows>
+                {/* Same story as events: the audit log has no per-entry
+                    detail route, just one flat table page. */}
+                {recentActivity.map((item) => (
+                  <ListRowLink
+                    key={item.id}
+                    href="/admin/audit-log"
+                    title={item.actorName ?? dict.common.system}
+                    subtitle={
+                      <>
+                        <span className="font-mono">{item.action}</span>
+                        <span aria-hidden="true"> · </span>
+                        <time dateTime={item.createdAt}>{formatSchoolDateTime(item.createdAt, locale)}</time>
+                      </>
+                    }
+                  />
+                ))}
+              </ListRows>
+            )}
+          </ListCard>
+        </Section>
+      </div>
     </div>
   );
 }

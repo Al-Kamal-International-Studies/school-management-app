@@ -21,7 +21,7 @@ export default async function ClassChatChannelPage({ params }: { params: Promise
     <div className="mx-auto max-w-2xl space-y-4">
       <FadeUp>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-xl font-semibold text-navy-900 dark:text-white">{detail.subjectName}</h1>
+          <h1 className="page-title-compact">{detail.subjectName}</h1>
           <Badge tone="slate">{detail.className}</Badge>
         </div>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.classChat.taughtBy.replace("{teacher}", detail.teacherName)}</p>

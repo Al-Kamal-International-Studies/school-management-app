@@ -15,7 +15,7 @@ export default async function AdminPasswordResetRequestsPage() {
   return (
     <div className="space-y-6">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminPasswordResetRequests.title}</h1>
+        <h1 className="page-title">{dict.adminPasswordResetRequests.title}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.adminPasswordResetRequests.subtitle}</p>
       </FadeUp>
 
@@ -39,7 +39,7 @@ export default async function AdminPasswordResetRequestsPage() {
                   <Td>
                     <div className="flex items-center gap-4">
                       {r.profileId && (
-                        <Link href={`/admin/users/${r.profileId}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
+                        <Link href={`/admin/users/${r.profileId}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-navy-200 dark:hover:text-white">
                           {dict.adminPasswordResetRequests.viewAccount}
                         </Link>
                       )}

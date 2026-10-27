@@ -33,9 +33,9 @@ export default async function NewAdmissionPage() {
   const defaultCenter = activeCenterId === AKET_CENTER_ID && allowedCenters.includes("AKET") ? "AKET" : allowedCenters[0] ?? "AKIS";
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.admissions.newTitle}</h1>
+        <h1 className="page-title">{dict.admissions.newTitle}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.admissions.newSubtitle}</p>
       </FadeUp>
       <FadeUp delay={0.05} className="card p-6">

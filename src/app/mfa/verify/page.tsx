@@ -33,7 +33,7 @@ export default async function MfaVerifyPage() {
   return (
     <AuthShell center={center}>
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">Verify it's you</h1>
+        <h1 className="page-title">Verify it's you</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">
           Enter the 6-digit code from your authenticator app.
         </p>

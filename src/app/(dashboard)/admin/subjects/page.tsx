@@ -20,9 +20,9 @@ export default async function SubjectsPage() {
   const dict = await getDictionary(await getLocale());
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminSubjects.title}</h1>
+        <h1 className="page-title">{dict.adminSubjects.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.adminSubjects.subtitle}</p>
       </FadeUp>
 

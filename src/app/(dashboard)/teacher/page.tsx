@@ -1,28 +1,21 @@
 import Link from "next/link";
-import { ClipboardList, Megaphone, School, Users, CalendarDays, ClipboardCheck } from "lucide-react";
+import { ClipboardList, School, Users, CalendarDays, ClipboardCheck, ChevronRight } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { listMyClasses, getMySchedule, getOverviewStats } from "./queries";
 import { listVisibleAnnouncements } from "@/lib/queries/announcements";
-import { Card, StatCard } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { StatCard } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Table, Thead, Tbody, Th, Td, EmptyState } from "@/components/ui/Table";
 import { formatTime } from "@/lib/utils";
-import { schoolWeekdayDb } from "@/lib/dates";
-import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
-import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
+import { schoolWeekdayDb, formatSchoolDate } from "@/lib/dates";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
 
-// Shared focus/hover treatment for dashboard rows that are now real links —
-// see the identical constant + comment in admin/page.tsx.
-const ROW_LINK_CLASS =
-  "group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-gold-400 dark:focus-visible:ring-offset-navy-950";
-const ROW_CARD_CLASS = "card-hover transition-colors hover:border-navy-200 dark:hover:border-navy-600";
-
 export default async function TeacherDashboardPage() {
   const profile = await getCurrentProfile();
-  const dict = await getDictionary(await getLocale());
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
   const [classes, schedule, announcements, stats] = await Promise.all([
     listMyClasses(profile!.id),
     getMySchedule(profile!.id),
@@ -43,7 +36,7 @@ export default async function TeacherDashboardPage() {
   const totalStudents = [...distinctClasses.values()].reduce((sum, n) => sum + n, 0);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7">
       {/* Real offline behavior for Apple's Guideline 4.2 review — see the
           identical setup + comment in (dashboard)/parent/page.tsx. Teachers
           have no single "overall score"/"attendance rate" of their own
@@ -61,98 +54,100 @@ export default async function TeacherDashboardPage() {
           announcements: announcements.map((a) => ({ title: a.title, date: new Date(a.created_at).toLocaleDateString() })),
         }}
       />
-      <FadeUp className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <WelcomeRobot name={profile!.full_name} role="teacher" dict={dict} dataTour="page-title" />
-          <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{dict.common.todaysScheduleAndClasses}</p>
-        </div>
-        <Link href="/teacher/progress" className="shrink-0">
-          <Button>
+      <PageHeader
+        eyebrow={formatSchoolDate(new Date(), locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+        title={`${dict.common.welcome}, ${profile!.full_name}`}
+        titleDataTour="page-title"
+        description={dict.common.todaysScheduleAndClasses}
+        action={
+          <Link href="/teacher/progress" className="btn-primary">
             <ClipboardList className="h-4 w-4" />
             {dict.teacherDashboard.submitProgress}
-          </Button>
-        </Link>
-      </FadeUp>
+          </Link>
+        }
+      />
 
-      <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" staggerDelay={0.06}>
-        <FadeUpItem>
-          <StatCard label={dict.nav.myClasses} value={distinctClasses.size} icon={School} />
-        </FadeUpItem>
-        <FadeUpItem>
-          <StatCard label={dict.adminClasses.students} value={totalStudents} icon={Users} />
-        </FadeUpItem>
-        <FadeUpItem>
-          <StatCard label={dict.teacherDashboard.upcomingExams} value={stats.upcomingExamCount} icon={CalendarDays} />
-        </FadeUpItem>
-        <FadeUpItem>
-          <StatCard
-            label={dict.teacherDashboard.pendingGrading}
-            value={stats.pendingGradingCount}
-            hint={stats.pendingGradingCount === 0 ? dict.teacherDashboard.allGraded : undefined}
-            icon={ClipboardCheck}
-          />
-        </FadeUpItem>
-      </FadeUpStagger>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label={dict.nav.myClasses} value={distinctClasses.size} icon={School} />
+        <StatCard label={dict.adminClasses.students} value={totalStudents} icon={Users} />
+        <StatCard label={dict.teacherDashboard.upcomingExams} value={stats.upcomingExamCount} icon={CalendarDays} />
+        <StatCard
+          label={dict.teacherDashboard.pendingGrading}
+          value={stats.pendingGradingCount}
+          hint={stats.pendingGradingCount === 0 ? dict.teacherDashboard.allGraded : undefined}
+          icon={ClipboardCheck}
+        />
+      </div>
 
-      <FadeUp delay={0.1} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.common.todaysSchedule}</h2>
-        {todaysClasses.length === 0 ? (
-          <Card>
-            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.common.noClassesToday}</p>
-          </Card>
-        ) : (
-          <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={0.06}>
-            {todaysClasses.map((e) => (
-              <FadeUpItem key={e.id}>
-                {/* Teachers have no per-class detail page, so this links to
-                    the one page where "this class, right now" is actually
-                    actionable: marking today's attendance for it. */}
-                <Link href={`/teacher/attendance?class=${e.class_id}`} className={ROW_LINK_CLASS}>
-                  <Card className={ROW_CARD_CLASS}>
-                    <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
-                      <bdi dir="ltr">{formatTime(e.start_time)} – {formatTime(e.end_time)}</bdi>
-                    </p>
-                    <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.className}</p>
-                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} <bdi>{e.room}</bdi></p>}
-                  </Card>
-                </Link>
-              </FadeUpItem>
-            ))}
-          </FadeUpStagger>
-        )}
-      </FadeUp>
-
-      <FadeUp delay={0.14} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.announcements.title}</h2>
-        {announcements.length === 0 ? (
-          <Card>
-            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.announcements.noAnnouncements}</p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {announcements.map((a) => (
-              <Card key={a.id} className="flex gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-50 text-gold-700 dark:bg-gold-500/15 dark:text-gold-300">
-                  <Megaphone className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-navy-900 dark:text-white">{a.title}</p>
-                  <p className="mt-0.5 text-sm text-slate-600 dark:text-navy-200">{a.body}</p>
-                </div>
-              </Card>
-            ))}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <section className="space-y-3 lg:col-span-2" aria-labelledby="todays-schedule">
+          <h2 id="todays-schedule" className="section-title">{dict.common.todaysSchedule}</h2>
+          <div className="card overflow-hidden">
+            {todaysClasses.length === 0 ? (
+              <p className="px-5 py-6 text-sm text-slate-500 dark:text-navy-400">{dict.common.noClassesToday}</p>
+            ) : (
+              <ul className="divide-y divide-slate-100 dark:divide-navy-800">
+                {todaysClasses.map((e) => (
+                  <li key={e.id}>
+                    {/* Teachers have no per-class detail page, so each row
+                        links to the one page where "this class, right now"
+                        is actually actionable: marking today's attendance. */}
+                    <Link
+                      href={`/teacher/attendance?class=${e.class_id}`}
+                      className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50 dark:hover:bg-white/[0.03] dark:focus-visible:bg-white/[0.03]"
+                    >
+                      <span className="tabular w-[8.75rem] shrink-0 whitespace-nowrap text-sm text-slate-500 dark:text-navy-400">
+                        <bdi dir="ltr">{formatTime(e.start_time)} – {formatTime(e.end_time)}</bdi>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-slate-900 dark:text-white">{e.subjectName}</span>
+                        <span className="block truncate text-xs text-slate-500 dark:text-navy-400">{e.className}</span>
+                      </span>
+                      {e.room && (
+                        <span className="shrink-0 text-xs text-slate-500 dark:text-navy-400">
+                          {dict.exams.room} <bdi>{e.room}</bdi>
+                        </span>
+                      )}
+                      <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 rtl:rotate-180 dark:text-navy-600" aria-hidden="true" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        )}
-      </FadeUp>
+        </section>
 
-      <FadeUp delay={0.16} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.nav.myClasses}</h2>
+        <section className="space-y-3" aria-labelledby="teacher-announcements">
+          <h2 id="teacher-announcements" className="section-title">{dict.announcements.title}</h2>
+          <div className="card overflow-hidden">
+            {announcements.length === 0 ? (
+              <p className="px-5 py-6 text-sm text-slate-500 dark:text-navy-400">{dict.announcements.noAnnouncements}</p>
+            ) : (
+              <ul className="divide-y divide-slate-100 dark:divide-navy-800">
+                {announcements.map((a) => (
+                  <li key={a.id} className="px-5 py-4">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{a.title}</p>
+                    <p className="mt-1 line-clamp-3 text-sm text-slate-600 dark:text-navy-300">{a.body}</p>
+                    <p className="mt-2 text-xs text-slate-400 dark:text-navy-500">
+                      <time dateTime={a.created_at}>{formatSchoolDate(a.created_at, locale)}</time>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <section className="space-y-3" aria-labelledby="teacher-classes">
+        <h2 id="teacher-classes" className="section-title">{dict.nav.myClasses}</h2>
         {classes.length === 0 ? (
-          <EmptyState
-            title={dict.teacherDashboard.noClassesAssignedYet}
-            description={dict.teacherDashboard.noClassesAssignedDescription}
-          />
+          <div className="card">
+            <EmptyState
+              title={dict.teacherDashboard.noClassesAssignedYet}
+              description={dict.teacherDashboard.noClassesAssignedDescription}
+            />
+          </div>
         ) : (
           <Table>
             <Thead>
@@ -176,7 +171,7 @@ export default async function TeacherDashboardPage() {
                     {c.class ? (
                       <Link
                         href={`/teacher/attendance?class=${c.class.id}`}
-                        className="outline-none before:absolute before:inset-0 before:rounded-none before:content-[''] focus-visible:before:ring-2 focus-visible:before:ring-inset focus-visible:before:ring-navy-400 dark:focus-visible:before:ring-gold-400"
+                        className="outline-none before:absolute before:inset-0 before:rounded-none before:content-[''] focus-visible:before:ring-2 focus-visible:before:ring-inset focus-visible:before:ring-navy-400 dark:focus-visible:before:ring-navy-300"
                       >
                         {`${c.class.name} - ${c.class.section}`}
                       </Link>
@@ -191,7 +186,7 @@ export default async function TeacherDashboardPage() {
             </Tbody>
           </Table>
         )}
-      </FadeUp>
+      </section>
     </div>
   );
 }

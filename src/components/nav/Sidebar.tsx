@@ -311,7 +311,13 @@ export function Sidebar({
             immediately) without shipping a full animation library for it.
             animate-fade-in is the same CSS keyframe already used
             app-wide — see FadeUp.tsx and tailwind.config.ts. */}
-        {active && <div className="absolute inset-0 animate-fade-in rounded-lg bg-white/10" />}
+        {/* Selected state = the one place gold appears in the chrome: a 2px
+            rule on the inline-start edge, over a faint lift of the row. */}
+        {active && (
+          <div className="absolute inset-0 animate-fade-in rounded-md bg-white/[0.07]">
+            <span className="absolute inset-y-2 start-0 w-0.5 rounded-full bg-gold-400" />
+          </div>
+        )}
         <Link
           href={item.href}
           onClick={onClose}
@@ -319,14 +325,13 @@ export function Sidebar({
           title={collapsed ? label : undefined}
           data-tour-nav={item.href}
           className={cn(
-            "relative flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors lg:py-2.5",
-            active ? "text-white" : "text-navy-200 hover:text-white",
+            "relative flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 lg:py-2",
+            active ? "text-white" : "text-white/65 hover:bg-white/[0.04] hover:text-white",
             collapsed && "lg:justify-center lg:px-0"
           )}
         >
-          <Icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-gold-400")} strokeWidth={2} />
-          <span className={cn(collapsed && "lg:hidden")}>{label}</span>
-          {active && <span className={cn("ms-auto h-1.5 w-1.5 rounded-full bg-gold-400", collapsed && "lg:hidden")} />}
+          <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+          <span className={cn("truncate", collapsed && "lg:hidden")}>{label}</span>
         </Link>
       </li>
     );
@@ -354,7 +359,7 @@ export function Sidebar({
 
       <nav
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex h-full w-72 shrink-0 flex-col overflow-hidden bg-navy-gradient transition-transform duration-300 ease-out rtl:left-auto rtl:right-0",
+          "fixed inset-y-0 left-0 z-40 flex h-full w-72 shrink-0 flex-col overflow-hidden border-e border-white/[0.06] bg-navy-gradient transition-transform duration-300 ease-out rtl:left-auto rtl:right-0",
           // Full-height regardless of content height, robust against the
           // parent flex row's ambiguous cross-size calculation (see
           // HANDOVER.md-style gotchas — `lg:static` + `h-full` was fragile).
@@ -368,7 +373,6 @@ export function Sidebar({
         )}
         style={{ transform: mobileOpen ? "translateX(0)" : isRtl ? "translateX(100%)" : "translateX(-100%)" }}
       >
-        <div className="bg-grid pointer-events-none absolute inset-0" />
         <div
           className={cn(
             "relative flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5",
@@ -416,7 +420,7 @@ export function Sidebar({
               aria-label={collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}
               title={collapsed ? dict.nav.expandSidebar : dict.nav.collapseSidebar}
               aria-pressed={collapsed}
-              className="hidden shrink-0 rounded-lg p-1 text-navy-200 transition-colors hover:bg-white/10 hover:text-white lg:inline-flex lg:items-center lg:justify-center"
+              className="hidden h-7 w-7 shrink-0 rounded-md text-white/60 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 lg:inline-flex lg:items-center lg:justify-center"
             >
               <ChevronLeft
                 className={cn("h-4 w-4 shrink-0 transition-transform duration-300", isRtl !== collapsed && "rotate-180")}
@@ -426,14 +430,14 @@ export function Sidebar({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-1.5 text-navy-200 hover:bg-white/10 hover:text-white lg:hidden"
+              className="-me-2 flex h-11 w-11 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
               aria-label={dict.common.closeMenu}
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
-        <ul ref={navListRef} className="nav-scrollbar relative flex-1 space-y-1 overflow-y-auto p-3">
+        <ul ref={navListRef} className="nav-scrollbar relative flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
           {items.map(renderItem)}
         </ul>
 
@@ -450,7 +454,7 @@ export function Sidebar({
             "active" highlight renderItem gives a real route, since there's
             no page it corresponds to. */}
         <div className="relative border-t border-white/10 p-3">
-          <ul className="space-y-1">
+          <ul className="space-y-0.5">
             <li>
               <button
                 type="button"
@@ -458,11 +462,11 @@ export function Sidebar({
                 aria-label={dict.nav.tutorial}
                 title={collapsed ? dict.nav.tutorial : undefined}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-navy-200 transition-colors hover:text-white lg:py-2.5",
+                  "flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-white/65 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 lg:py-2",
                   collapsed && "lg:justify-center lg:px-0"
                 )}
               >
-                <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+                <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
                 <span className={cn(collapsed && "lg:hidden")}>{dict.nav.tutorial}</span>
               </button>
             </li>

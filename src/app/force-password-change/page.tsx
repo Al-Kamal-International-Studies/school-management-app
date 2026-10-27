@@ -26,7 +26,7 @@ export default async function ForcePasswordChangePage() {
   return (
     <AuthShell center={center}>
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.forcePasswordChange.title}</h1>
+        <h1 className="page-title">{dict.forcePasswordChange.title}</h1>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-navy-400">{dict.forcePasswordChange.message}</p>
       </div>
       <ForcePasswordChangeForm minLength={minLength} />

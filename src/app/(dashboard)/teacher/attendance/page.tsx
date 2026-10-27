@@ -42,9 +42,9 @@ export default async function TeacherAttendancePage({
   const existing: Record<string, AttendanceStatus> = Object.fromEntries(existingRecords.map((r) => [r.student_id, r.status]));
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.attendance.title}</h1>
+        <h1 className="page-title">{dict.attendance.title}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.attendance.markAttendance}</p>
       </FadeUp>
 
@@ -79,7 +79,7 @@ export default async function TeacherAttendancePage({
       </FadeUp>
 
       <FadeUp delay={0.1} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.attendance.history}</h2>
+        <h2 className="section-title">{dict.attendance.history}</h2>
         {history.length === 0 ? (
           <EmptyState title={dict.attendance.noRecords} />
         ) : (

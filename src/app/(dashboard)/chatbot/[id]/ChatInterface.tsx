@@ -121,7 +121,7 @@ export function ChatInterface({
         </div>
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
           <motion.div
-            className={cn("h-full rounded-full", atLimit ? "bg-red-500" : "bg-gold-gradient")}
+            className={cn("h-full rounded-full", atLimit ? "bg-red-500" : "bg-navy-700 dark:bg-navy-300")}
             initial={false}
             animate={{ width: `${Math.min(100, (userMessageCount / CHATBOT_MESSAGE_LIMIT) * 100)}%` }}
             transition={{ duration: 0.3, ease: "easeOut" }}

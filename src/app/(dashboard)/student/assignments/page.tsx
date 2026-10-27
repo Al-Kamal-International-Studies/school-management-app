@@ -14,9 +14,9 @@ export default async function StudentAssignmentsPage() {
   const assignments = await listMyAssignments(me.id);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.assignments.mySubmissions}</h1>
+        <h1 className="page-title">{dict.assignments.mySubmissions}</h1>
       </FadeUp>
 
       <FadeUp delay={0.05}>

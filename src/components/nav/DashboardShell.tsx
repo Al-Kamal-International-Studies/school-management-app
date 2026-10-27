@@ -69,7 +69,7 @@ export function DashboardShell({
             single page load. */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-navy-900 focus:shadow-card focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 dark:focus:bg-navy-900 dark:focus:text-white dark:focus-visible:ring-gold-400"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-navy-900 focus:shadow-overlay focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 dark:focus:bg-navy-900 dark:focus:text-white dark:focus-visible:ring-navy-300"
         >
           {dict.common.skipToContent}
         </a>
@@ -89,8 +89,15 @@ export function DashboardShell({
               notifications={notifications}
               onMenuClick={() => setMobileOpen(true)}
             />
-            <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 focus:outline-none">
-              <PageTransition>{children}</PageTransition>
+            {/* One content column, capped at 1280px so tables and stat rows keep
+                sane proportions on wide monitors. 16px gutter on phones
+                (DESIGN.md), stepping up to 24/32px; the bottom padding is a
+                little larger than the top so long pages don’t end hard against
+                the viewport edge. */}
+            <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto px-4 pb-12 pt-6 focus:outline-none sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
+              <div className="mx-auto w-full max-w-7xl">
+                <PageTransition>{children}</PageTransition>
+              </div>
             </main>
           </div>
         </div>

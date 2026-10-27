@@ -19,26 +19,26 @@ export default async function TeacherRemarksPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10">
+    <div className="mx-auto max-w-3xl space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">
+        <h1 className="page-title">
           {dict.remarks.title} & {dict.behaviour.title}
         </h1>
       </FadeUp>
 
       <FadeUp delay={0.05} className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.remarks.newRemark}</h2>
+          <h2 className="mb-4 card-title">{dict.remarks.newRemark}</h2>
           <RemarkForm students={students} />
         </Card>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.behaviour.newEntry}</h2>
+          <h2 className="mb-4 card-title">{dict.behaviour.newEntry}</h2>
           <BehaviourForm students={students} />
         </Card>
       </FadeUp>
 
       <FadeUp delay={0.1} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.remarks.title}</h2>
+        <h2 className="section-title">{dict.remarks.title}</h2>
         {remarks.length === 0 ? (
           <EmptyState title={dict.remarks.noRemarks} />
         ) : (
@@ -55,7 +55,7 @@ export default async function TeacherRemarksPage() {
       </FadeUp>
 
       <FadeUp delay={0.14} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.behaviour.title}</h2>
+        <h2 className="section-title">{dict.behaviour.title}</h2>
         {behaviourEntries.length === 0 ? (
           <EmptyState title={dict.behaviour.noEntries} />
         ) : (

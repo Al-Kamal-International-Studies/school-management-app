@@ -26,14 +26,14 @@ export default async function AdminEventsPage() {
   const { data: events } = await supabase.from("events").select("*").eq("center_id", activeCenterId).order("event_date", { ascending: true });
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.calendar.title}</h1>
+        <h1 className="page-title">{dict.calendar.title}</h1>
       </FadeUp>
 
       <FadeUp delay={0.08}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.calendar.newEvent}</h2>
+          <h2 className="mb-4 card-title">{dict.calendar.newEvent}</h2>
           <EventForm />
         </Card>
       </FadeUp>

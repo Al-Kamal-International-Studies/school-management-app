@@ -17,7 +17,19 @@ export interface ScheduleEntry {
 // entry saved with day_of_week=7 will still render if present.
 const DAYS_TO_SHOW = [1, 2, 3, 4, 5, 6, 7];
 
-export function WeeklyScheduleGrid({ entries, dict }: { entries: ScheduleEntry[]; dict: Dictionary }) {
+export function WeeklyScheduleGrid({
+  entries,
+  dict,
+  layout = "full",
+}: {
+  entries: ScheduleEntry[];
+  dict: Dictionary;
+  /** "full": the grid owns the content width (six days across from 2xl, where each column clears its time ranges).
+   *  "beside-form": it shares the row with the 320px add-period form on the
+   *  builder pages, so it tops out at three days across to keep each day
+   *  column wide enough for its time ranges. */
+  layout?: "full" | "beside-form";
+}) {
   const dayNames = getDayNames(dict);
   const byDay = new Map<number, ScheduleEntry[]>();
   for (const entry of entries) {
@@ -32,19 +44,25 @@ export function WeeklyScheduleGrid({ entries, dict }: { entries: ScheduleEntry[]
   const daysWithData = DAYS_TO_SHOW.filter((d) => d !== 7 || byDay.has(7));
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div
+      className={
+        layout === "full"
+          ? "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
+          : "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+      }
+    >
       {daysWithData.map((day) => {
         const dayEntries = byDay.get(day) ?? [];
         return (
-          <div key={day} className="card p-5">
-            <h3 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dayNames[day]}</h3>
+          <div key={day} className="card p-4">
+            <h3 className="mb-3 border-b border-slate-100 pb-2.5 text-sm font-semibold text-slate-900 dark:border-navy-800 dark:text-white">{dayNames[day]}</h3>
             {dayEntries.length === 0 ? (
               <p className="text-xs text-slate-400 dark:text-navy-500">{dict.common.noClasses}</p>
             ) : (
-              <ul className="space-y-2.5">
+              <ul className="space-y-3">
                 {dayEntries.map((e) => (
-                  <li key={e.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-navy-700 dark:bg-navy-800/60">
-                    <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
+                  <li key={e.id} className="border-s-2 border-navy-600 py-0.5 ps-2.5 dark:border-navy-300">
+                    <p className="tabular whitespace-nowrap text-xs font-medium text-slate-500 dark:text-navy-400">
                       <bdi dir="ltr">{formatTime(e.start_time)} – {formatTime(e.end_time)}</bdi>
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">{e.subjectName}</p>

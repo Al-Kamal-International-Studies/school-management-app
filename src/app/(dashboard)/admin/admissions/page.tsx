@@ -28,10 +28,10 @@ export default async function AdmissionsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       <FadeUp className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">
+          <h1 data-tour="page-title" className="page-title">
             {dict.admissions.title}
           </h1>
           <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.admissions.subtitle}</p>
@@ -69,7 +69,7 @@ export default async function AdmissionsPage() {
                     <Badge tone={STATUS_TONE[a.status]}>{statusLabel[a.status]}</Badge>
                   </Td>
                   <Td>
-                    <Link href={`/admin/admissions/${a.id}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
+                    <Link href={`/admin/admissions/${a.id}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-navy-200 dark:hover:text-white">
                       {dict.admissions.viewDetails}
                     </Link>
                   </Td>
@@ -82,7 +82,7 @@ export default async function AdmissionsPage() {
 
       <FadeUp delay={0.1} className="space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.admissions.pendingEmails}</h2>
+          <h2 className="section-title">{dict.admissions.pendingEmails}</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.admissions.pendingEmailsDescription}</p>
         </div>
         <PendingEmailsPanel emails={pendingEmails} dict={dict} />

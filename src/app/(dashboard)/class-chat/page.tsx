@@ -18,7 +18,7 @@ export default async function ClassChatPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.classChat.title}</h1>
+        <h1 className="page-title">{dict.classChat.title}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.classChat.subtitle}</p>
       </FadeUp>
 
@@ -29,7 +29,7 @@ export default async function ClassChatPage() {
           channels.map((c) => (
             <Link key={c.id} href={`/class-chat/${c.id}`}>
               <Card className="flex items-center gap-3 card-hover">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-gradient text-xs font-semibold text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-800 text-xs font-semibold text-white">
                   {c.subjectName.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">

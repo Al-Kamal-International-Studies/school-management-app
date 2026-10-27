@@ -14,14 +14,14 @@ export default async function TeacherAssignmentsPage() {
   const [assignments, options] = await Promise.all([listMyAssignments(me.id), listMyClassSubjectOptions(me.id)]);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.assignments.title}</h1>
+        <h1 className="page-title">{dict.assignments.title}</h1>
       </FadeUp>
 
       <FadeUp delay={0.05}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.assignments.newAssignment}</h2>
+          <h2 className="mb-4 card-title">{dict.assignments.newAssignment}</h2>
           <AssignmentForm options={options} />
         </Card>
       </FadeUp>
@@ -43,7 +43,7 @@ export default async function TeacherAssignmentsPage() {
               {assignments.map((a) => (
                 <tr key={a.id}>
                   <Td className="font-medium text-slate-900 dark:text-white">
-                    <Link href={`/teacher/assignments/${a.id}`} className="hover:text-navy-600 dark:hover:text-gold-300">
+                    <Link href={`/teacher/assignments/${a.id}`} className="hover:text-navy-600 dark:hover:text-white">
                       {a.title}
                     </Link>
                   </Td>

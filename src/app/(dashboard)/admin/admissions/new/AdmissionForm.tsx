@@ -12,7 +12,7 @@ import type { Dictionary } from "@/lib/i18n/types";
 const initialState: ActionState = {};
 
 const CHECKBOX_CLASS =
-  "h-4 w-4 rounded border-slate-300 text-navy-700 focus:ring-navy-400 dark:border-navy-600 dark:bg-navy-900 dark:focus:ring-gold-400";
+  "h-4 w-4 rounded border-slate-300 text-navy-700 focus:ring-navy-400 dark:border-navy-600 dark:bg-navy-900 dark:focus:ring-navy-300";
 
 function SubmitButton({ dict, editing }: { dict: Dictionary; editing: boolean }) {
   const { pending } = useFormStatus();

@@ -17,9 +17,10 @@ export function SignOutForm({ label }: { label: string }) {
     <form action={signOutAction} onSubmit={() => clearAllOfflineCache()}>
       <button
         type="submit"
-        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-navy-300 dark:hover:bg-red-500/10 dark:hover:text-red-300"
+        aria-label={label}
+        className="flex h-9 items-center gap-2 rounded-md px-2.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:text-navy-300 dark:hover:bg-white/10 dark:hover:text-white"
       >
-        <LogOut className="h-4 w-4" />
+        <LogOut className="h-4 w-4" strokeWidth={1.75} />
         <span className="hidden sm:inline">{label}</span>
       </button>
     </form>

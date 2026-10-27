@@ -24,7 +24,7 @@ export default async function NotFound() {
         <SearchX className="h-8 w-8" strokeWidth={1.75} />
       </span>
       <div>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.notFound.title}</h1>
+        <h1 className="page-title">{dict.notFound.title}</h1>
         <p className="mt-2 max-w-sm text-sm text-slate-500 dark:text-navy-400">{dict.notFound.description}</p>
       </div>
       <Link href={backHref}>

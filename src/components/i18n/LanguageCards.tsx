@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { LOCALES, LOCALE_INFO } from "@/lib/i18n/locales";
 import { setLocaleCookie } from "@/lib/i18n/setLocaleCookie";
@@ -8,7 +7,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { cn } from "@/lib/utils";
 
 /**
- * Two large flag cards for choosing English / العربية. Used both on the
+ * Two language cards for choosing English / العربية. Used both on the
  * mandatory first-launch screen and again in Settings. Selecting a language
  * persists it (NEXT_LOCALE cookie) and does a full navigation to
  * `redirectTo` — a real page load, not client-side routing, is required so
@@ -19,39 +18,36 @@ export function LanguageCards({ redirectTo }: { redirectTo: string }) {
   const { locale } = useLocale();
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {LOCALES.map((code) => {
         const info = LOCALE_INFO[code];
         const active = locale === code;
         return (
-          <motion.button
+          <button
             key={code}
             type="button"
             onClick={() => {
               setLocaleCookie(code);
               window.location.href = redirectTo;
             }}
-            whileTap={{ scale: 0.98 }}
+            aria-pressed={active}
             className={cn(
-              "relative flex flex-col items-center gap-3 rounded-2xl border-2 bg-white/95 px-6 py-8 text-center shadow-card transition-colors dark:bg-navy-900/80",
+              "relative flex min-h-[7.5rem] flex-col items-center justify-center gap-1.5 rounded-xl border bg-white px-6 py-7 text-center transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-900 active:translate-y-px dark:bg-navy-900",
               active
-                ? "border-gold-400 ring-2 ring-gold-400/40"
-                : "border-transparent hover:border-navy-200 dark:hover:border-navy-600"
+                ? "border-navy-900 shadow-[inset_0_0_0_1px_rgb(var(--color-navy-900))] dark:border-navy-200 dark:shadow-[inset_0_0_0_1px_rgb(var(--color-navy-200))]"
+                : "border-slate-200 hover:border-slate-300 dark:border-navy-700 dark:hover:border-navy-500"
             )}
           >
             {active && (
-              <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-gold-gradient text-navy-900">
+              <span className="absolute end-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-navy-900 text-white dark:bg-navy-100 dark:text-navy-950">
                 <Check className="h-3 w-3" strokeWidth={3} />
               </span>
             )}
-            <span className="text-5xl leading-none" aria-hidden="true">
-              {info.flag}
-            </span>
-            <span className="font-display text-lg font-semibold text-navy-900 dark:text-white">{info.nativeLabel}</span>
+            <span className="font-display text-xl font-semibold text-navy-950 dark:text-white">{info.nativeLabel}</span>
             {info.nativeLabel !== info.label && (
               <span className="text-xs text-slate-500 dark:text-navy-300">{info.label}</span>
             )}
-          </motion.button>
+          </button>
         );
       })}
     </div>

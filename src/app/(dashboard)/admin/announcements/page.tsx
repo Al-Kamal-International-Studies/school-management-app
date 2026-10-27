@@ -36,9 +36,9 @@ export default async function AdminAnnouncementsPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.announcements.title}</h1>
+        <h1 className="page-title">{dict.announcements.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">
           {dict.announcements.subtitle}
         </p>
@@ -46,7 +46,7 @@ export default async function AdminAnnouncementsPage() {
 
       <FadeUp delay={0.08}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.announcements.newAnnouncement}</h2>
+          <h2 className="mb-4 card-title">{dict.announcements.newAnnouncement}</h2>
           <AnnouncementForm />
         </Card>
       </FadeUp>

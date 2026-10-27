@@ -23,34 +23,34 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.settings.title}</h1>
+        <h1 className="page-title">{dict.settings.title}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.settings.subtitle}</p>
       </FadeUp>
 
       <FadeUp delay={0.05}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.theme}</h2>
+          <h2 className="mb-4 card-title">{dict.settings.theme}</h2>
           <ThemeSwitch />
         </Card>
       </FadeUp>
 
       <FadeUp delay={0.1}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.language}</h2>
+          <h2 className="mb-4 card-title">{dict.settings.language}</h2>
           <LanguageCards redirectTo="/settings" />
         </Card>
       </FadeUp>
 
       <FadeUp delay={0.15}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.changePassword}</h2>
+          <h2 className="mb-4 card-title">{dict.settings.changePassword}</h2>
           <ChangePasswordForm minLength={me.role === "admin" ? 15 : 12} />
         </Card>
       </FadeUp>
 
       <FadeUp delay={0.155}>
         <Card>
-          <h2 className="mb-1 text-sm font-semibold text-navy-900 dark:text-white">{dict.biometrics.settingsTitle}</h2>
+          <h2 className="mb-1 card-title">{dict.biometrics.settingsTitle}</h2>
           <p className="mb-4 text-xs text-slate-500 dark:text-navy-400">{dict.biometrics.settingsDescription}</p>
           <BiometricSettingsCard />
         </Card>
@@ -59,11 +59,11 @@ export default async function SettingsPage() {
       <FadeUp delay={0.16}>
         <Card className="space-y-5">
           <div>
-            <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.devices.settingsTitle}</h2>
+            <h2 className="mb-4 card-title">{dict.devices.settingsTitle}</h2>
             <DeviceList />
           </div>
           <div className="border-t border-slate-100 pt-5 dark:border-navy-800">
-            <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.sessions}</h2>
+            <h2 className="mb-4 card-title">{dict.settings.sessions}</h2>
             <SignOutOtherSessionsButton />
           </div>
         </Card>
@@ -72,7 +72,7 @@ export default async function SettingsPage() {
       {me.role === "admin" && (
         <FadeUp delay={0.17}>
           <Card>
-            <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.twoFactorAuth}</h2>
+            <h2 className="mb-4 card-title">{dict.settings.twoFactorAuth}</h2>
             <MfaSettingsCard />
           </Card>
         </FadeUp>
@@ -80,14 +80,14 @@ export default async function SettingsPage() {
 
       <FadeUp delay={0.18}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.notifications}</h2>
+          <h2 className="mb-4 card-title">{dict.settings.notifications}</h2>
           <PushNotificationToggle />
         </Card>
       </FadeUp>
 
       <FadeUp delay={0.2}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.settings.contactUs}</h2>
+          <h2 className="mb-4 card-title">{dict.settings.contactUs}</h2>
           <dl className="space-y-3 text-sm">
             <div className="flex items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-navy-50 text-navy-700 dark:bg-navy-800 dark:text-navy-200">

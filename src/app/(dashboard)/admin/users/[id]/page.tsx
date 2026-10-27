@@ -39,10 +39,10 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-white">{detail.profile.full_name}</h1>
+          <h1 className="page-title">{detail.profile.full_name}</h1>
           <p className="text-sm text-slate-500 dark:text-navy-400">{detail.profile.email}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -72,7 +72,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
       {!isAdminAccount && (
         <div className="card space-y-4 p-6">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.adminUsers.setPassword}</h2>
+          <h2 className="section-title">{dict.adminUsers.setPassword}</h2>
           <AdminSetPasswordForm userId={detail.profile.id} minLength={MIN_PASSWORD_LENGTH} />
         </div>
       )}

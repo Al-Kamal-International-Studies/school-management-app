@@ -89,7 +89,7 @@ export function DeviceManageList({ devices, currentDeviceId }: { devices: UserDe
                   <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
                     {d.label ?? dict.common.unknown}
                     {d.device_id === currentDeviceId && (
-                      <span className="ms-2 text-xs font-normal text-gold-600 dark:text-gold-400">({dict.devices.thisDevice})</span>
+                      <span className="ms-2 text-xs font-normal text-slate-500 dark:text-navy-400">({dict.devices.thisDevice})</span>
                     )}
                   </p>
                   <p className="text-xs text-slate-400 dark:text-navy-500">

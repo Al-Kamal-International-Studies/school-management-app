@@ -28,7 +28,7 @@ export default async function AdminAutismVideoPage({ params }: { params: Promise
     <div className="mx-auto max-w-2xl space-y-4">
       <FadeUp>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-xl font-semibold text-navy-900 dark:text-white">{detail.video.title || dict.autismSection.latestVideo}</h1>
+          <h1 className="page-title-compact">{detail.video.title || dict.autismSection.latestVideo}</h1>
           <Badge tone="slate">{detail.student?.full_name ?? dict.common.unknown}</Badge>
         </div>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">
@@ -49,7 +49,7 @@ export default async function AdminAutismVideoPage({ params }: { params: Promise
 
       <FadeUp delay={0.08}>
         <Card>
-          <h2 className="mb-3 text-sm font-semibold text-navy-900 dark:text-white">{dict.autismSection.comments}</h2>
+          <h2 className="mb-3 card-title">{dict.autismSection.comments}</h2>
           <div className="space-y-3">
             {detail.comments.length === 0 && <p className="text-center text-sm text-slate-400 dark:text-navy-500">{dict.autismSection.noComments}</p>}
             {detail.comments.map((c) => (

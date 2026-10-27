@@ -26,7 +26,7 @@ export default async function LoginPage({
     <AuthShell center={center}>
       <CenterPicker selectedCenterId={center.id} />
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.login.title}</h1>
+        <h1 className="page-title">{dict.login.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-300">{dict.login.subtitle}</p>
       </div>
       <LoginForm next={next} deactivated={error === "account_deactivated"} dict={dict} />

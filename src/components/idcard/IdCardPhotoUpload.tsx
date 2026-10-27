@@ -104,7 +104,7 @@ export function IdCardPhotoUpload({
       <motion.button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="group relative h-24 w-24 overflow-hidden rounded-2xl bg-navy-gradient shadow-card ring-4 ring-white dark:ring-navy-900"
+        className="group relative h-24 w-24 overflow-hidden rounded-xl bg-navy-800 shadow-card ring-4 ring-white dark:ring-navy-900"
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
       >
@@ -122,7 +122,7 @@ export function IdCardPhotoUpload({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="mt-2 text-xs font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200"
+        className="mt-2 text-xs font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-navy-200 dark:hover:text-white"
       >
         {uploading ? dict.profilePage.uploading : dict.profilePage.changePhoto}
       </button>

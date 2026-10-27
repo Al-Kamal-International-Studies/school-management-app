@@ -32,21 +32,21 @@ export default async function TeacherProgressPage({
   const uniqueClasses = [...new Map(targets.map((t) => [t.classId, t.className])).entries()];
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.progress.title}</h1>
+        <h1 className="page-title">{dict.progress.title}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.progress.monthlyEntry}</p>
       </FadeUp>
 
       <FadeUp delay={0.05}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.progress.newEntry}</h2>
+          <h2 className="mb-4 card-title">{dict.progress.newEntry}</h2>
           <NewProgressEntryForm targets={targets} />
         </Card>
       </FadeUp>
 
       <FadeUp delay={0.1} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.pastEntries}</h2>
+        <h2 className="section-title">{dict.progress.pastEntries}</h2>
 
         <form method="get" className="flex flex-wrap gap-3">
           <select name="student" defaultValue={student ?? ""} className="input w-auto bg-white dark:bg-navy-900">

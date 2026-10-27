@@ -21,7 +21,7 @@ export default async function DocumentsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.documents.title}</h1>
+        <h1 className="page-title">{dict.documents.title}</h1>
       </FadeUp>
       <FadeUp delay={0.05} className="space-y-3">
         {!documents || documents.length === 0 ? (

@@ -17,9 +17,9 @@ export default async function ChatbotHomePage() {
   const dict = await getDictionary(locale);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10">
+    <div className="mx-auto max-w-3xl space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.chatbot.title}</h1>
+        <h1 className="page-title">{dict.chatbot.title}</h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">{dict.chatbot.subtitle}</p>
       </FadeUp>
 
@@ -32,7 +32,7 @@ export default async function ChatbotHomePage() {
                 <img src={persona.avatarSrc} alt={persona.name} className="h-full w-full object-cover" />
               </div>
               <h2 className="mt-4 font-display text-lg font-semibold text-navy-900 dark:text-white">{persona.name}</h2>
-              <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-navy-500">{dict.chatbot.personaRole}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-navy-400">{dict.chatbot.personaRole}</p>
               <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-navy-400">
                 {getGreeting(persona.id, me!.role as ChatRole, locale)}
               </p>
@@ -50,7 +50,7 @@ export default async function ChatbotHomePage() {
 
       {conversations.length > 0 && (
         <FadeUp delay={0.15} className="space-y-3">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.chatbot.recentConversations}</h2>
+          <h2 className="section-title">{dict.chatbot.recentConversations}</h2>
           <div className="space-y-2">
             {conversations.slice(0, 5).map((c) => (
               <Link

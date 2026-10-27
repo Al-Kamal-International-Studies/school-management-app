@@ -75,10 +75,10 @@ export function CenterSwitcher({ centers, activeCenterId }: { centers: Center[];
         aria-expanded={open}
         aria-label={dict.centerSwitcher.switchCenter}
         className={cn(
-          "flex items-center gap-1.5 rounded-full border py-1 ps-1 pe-2.5 shadow-soft transition-all duration-200 sm:pe-3",
+          "flex h-9 items-center gap-2 rounded-md border ps-1 pe-2.5 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500",
           open
-            ? "border-gold-400 bg-white shadow-card ring-2 ring-gold-400/25 dark:bg-navy-800"
-            : "border-slate-200/70 bg-white/70 hover:-translate-y-0.5 hover:border-navy-200 hover:shadow-card dark:border-navy-700 dark:bg-navy-900/50 dark:hover:border-navy-500"
+            ? "border-slate-300 bg-slate-50 dark:border-navy-600 dark:bg-navy-800"
+            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-navy-700 dark:bg-navy-900 dark:hover:border-navy-600"
         )}
       >
         <CenterBadge shortCode={active.short_code} />
@@ -89,21 +89,21 @@ export function CenterSwitcher({ centers, activeCenterId }: { centers: Center[];
       {open && (
         <div
           role="menu"
-          className="animate-fade-in-up absolute end-0 z-20 mt-2 w-64 origin-top overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-card-hover dark:border-navy-700 dark:bg-navy-900"
+          className="animate-fade-in-up absolute end-0 z-20 mt-2 w-64 origin-top overflow-hidden rounded-lg border border-slate-200 bg-white p-1.5 shadow-overlay dark:border-navy-700 dark:bg-navy-900"
         >
           {/* Currently-active center — informational only, not a button;
               gives the menu a clear "you are here" anchor before the
               switchable list below. */}
-          <div className="flex items-center gap-2.5 rounded-xl bg-navy-50/70 px-2.5 py-2.5 dark:bg-navy-800/50">
+          <div className="flex items-center gap-2.5 rounded-md bg-navy-50/70 px-2.5 py-2.5 dark:bg-navy-800/50">
             <CenterBadge shortCode={active.short_code} ring="gold" />
             <span className="min-w-0 flex-1" dir="ltr">
               <span className="block truncate text-sm font-semibold text-navy-900 dark:text-white">{active.name}</span>
               <span className="block text-xs text-slate-500 dark:text-navy-400">{active.short_code}</span>
             </span>
-            <Check className="h-4 w-4 shrink-0 text-gold-500 dark:text-gold-400" strokeWidth={2.5} />
+            <Check className="h-4 w-4 shrink-0 text-navy-700 dark:text-navy-200" strokeWidth={2.5} />
           </div>
 
-          <p className="px-2.5 pb-1 pt-2.5 text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-400">
+          <p className="px-2.5 pb-1 pt-2.5 text-xs font-medium text-slate-500 dark:text-navy-400">
             {dict.centerSwitcher.switchTo}
           </p>
           <div className="space-y-0.5">
@@ -113,7 +113,7 @@ export function CenterSwitcher({ centers, activeCenterId }: { centers: Center[];
                 type="button"
                 role="menuitem"
                 onClick={() => switchTo(center.id)}
-                className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-start transition-colors duration-150 hover:bg-navy-50 dark:hover:bg-navy-800/60"
+                className="group flex w-full items-center gap-2.5 rounded-md px-2.5 py-2.5 text-start transition-colors duration-150 hover:bg-navy-50 dark:hover:bg-navy-800/60"
               >
                 <CenterBadge shortCode={center.short_code} />
                 {/* Institution names/short codes are Latin-script brand identifiers,
@@ -143,8 +143,8 @@ function CenterBadge({ shortCode, ring = "white" }: { shortCode: string; ring?: 
   return (
     <span
       className={cn(
-        "relative h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2",
-        ring === "gold" ? "ring-gold-300 dark:ring-gold-500/50" : "ring-white dark:ring-navy-800"
+        "relative h-7 w-7 shrink-0 overflow-hidden rounded-full ring-1",
+        ring === "gold" ? "ring-navy-300 dark:ring-navy-400" : "ring-slate-200 dark:ring-navy-700"
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

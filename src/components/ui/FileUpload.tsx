@@ -200,10 +200,10 @@ export function FileUpload({
         className={cn(
           "relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-all duration-150",
           dragOver
-            ? "border-gold-400 bg-gold-50/60 dark:border-gold-400 dark:bg-gold-500/10"
+            ? "border-navy-500 bg-navy-50/60 dark:border-navy-300 dark:bg-navy-500/10"
             : "border-slate-200 bg-slate-50 hover:border-navy-300 dark:border-navy-700 dark:bg-navy-800/60 dark:hover:border-navy-500",
           displayError && "border-red-300 dark:border-red-800/70",
-          "focus-within:border-navy-400 focus-within:ring-2 focus-within:ring-navy-100 dark:focus-within:border-gold-400 dark:focus-within:ring-navy-800",
+          "focus-within:border-navy-400 focus-within:ring-2 focus-within:ring-navy-100 dark:focus-within:border-navy-300 dark:focus-within:ring-navy-800",
           disabled && "cursor-not-allowed opacity-60"
         )}
       >
@@ -261,7 +261,7 @@ export function FileUpload({
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full",
                   dragOver
-                    ? "bg-gold-100 text-gold-700 dark:bg-gold-500/20 dark:text-gold-300"
+                    ? "bg-navy-50 text-navy-700 dark:bg-navy-500/20 dark:text-navy-100"
                     : "bg-slate-200/70 text-slate-500 dark:bg-navy-700/60 dark:text-navy-300"
                 )}
               >

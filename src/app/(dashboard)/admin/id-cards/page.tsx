@@ -18,9 +18,9 @@ export default async function AdminIdCardsPage({ searchParams }: { searchParams:
   const dict = await getDictionary(await getLocale());
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.idCard.listTitle}</h1>
+        <h1 className="page-title">{dict.idCard.listTitle}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.idCard.listSubtitleAdmin}</p>
       </FadeUp>
 
@@ -55,8 +55,8 @@ export default async function AdminIdCardsPage({ searchParams }: { searchParams:
               {students.map((s) => (
                 <tr key={s.id}>
                   <Td className="font-medium text-slate-900 dark:text-white">
-                    <Link href={`/admin/id-cards/${s.id}`} className="flex items-center gap-3 hover:text-navy-600 dark:hover:text-gold-300">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-navy-gradient text-xs font-semibold text-white">
+                    <Link href={`/admin/id-cards/${s.id}`} className="flex items-center gap-3 hover:text-navy-600 dark:hover:text-white">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-navy-800 text-xs font-semibold text-white">
                         {s.avatar_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={s.avatar_url} alt={s.full_name} className="h-full w-full object-cover" />
@@ -70,7 +70,7 @@ export default async function AdminIdCardsPage({ searchParams }: { searchParams:
                   <Td>{s.className ?? dict.idCard.notAssigned}</Td>
                   <Td>{s.student?.enrollment_number}</Td>
                   <Td>
-                    <Link href={`/admin/id-cards/${s.id}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
+                    <Link href={`/admin/id-cards/${s.id}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-navy-200 dark:hover:text-white">
                       {dict.idCard.viewCard}
                     </Link>
                   </Td>

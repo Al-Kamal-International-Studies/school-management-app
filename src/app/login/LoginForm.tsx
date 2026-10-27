@@ -8,7 +8,6 @@ import { loginAction, type LoginState } from "./actions";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { PasswordField } from "@/components/ui/PasswordField";
-import { CelebrateOnHover } from "@/components/auth/CelebrateOnHover";
 import { BiometricSignInButton } from "@/components/auth/BiometricSignInButton";
 import type { Dictionary } from "@/lib/i18n/types";
 
@@ -17,12 +16,10 @@ const initialState: LoginState = {};
 function SubmitButton({ dict }: { dict: Dictionary }) {
   const { pending } = useFormStatus();
   return (
-    <CelebrateOnHover>
-      <Button type="submit" className="w-full" loading={pending}>
-        {pending ? dict.login.signingIn : dict.login.signIn}
-        {!pending && <ArrowRight className="h-4 w-4" />}
-      </Button>
-    </CelebrateOnHover>
+    <Button type="submit" className="w-full" loading={pending}>
+      {pending ? dict.login.signingIn : dict.login.signIn}
+      {!pending && <ArrowRight className="h-4 w-4" />}
+    </Button>
   );
 }
 
@@ -81,11 +78,11 @@ export function LoginForm({
               type="checkbox"
               name="remember"
               defaultChecked
-              className="h-4 w-4 rounded border-slate-300 text-navy-700 focus:ring-navy-400 dark:border-navy-600 dark:bg-navy-900 dark:focus:ring-gold-400"
+              className="h-4 w-4 rounded border-slate-300 text-navy-700 focus:ring-navy-400 dark:border-navy-600 dark:bg-navy-900 dark:focus:ring-navy-300"
             />
             {dict.login.rememberMe}
           </label>
-          <Link href="/forgot-password" className="font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
+          <Link href="/forgot-password" className="font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-navy-200 dark:hover:text-white">
             {dict.login.forgotPassword}
           </Link>
         </div>

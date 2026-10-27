@@ -63,22 +63,44 @@ const config: Config = {
           900: "rgb(var(--color-navy-900) / <alpha-value>)",
         },
       },
+      // Type system (DESIGN.md): IBM Plex Sans runs every control, row and
+      // paragraph; Source Serif 4 is for display lines only (page titles,
+      // hero numbers). IBM Plex Sans Arabic sits second in both stacks so
+      // Arabic glyphs — which neither Latin face contains — fall through to
+      // the same family instead of a system font.
+      //
+      // The families are named directly (they are the @font-face names
+      // next/font registers from layout.tsx) rather than via var(--font-*):
+      // next/font puts a metric-matched local fallback ("IBM Plex Sans
+      // Fallback" = Arial) inside each variable, and Arial contains Arabic
+      // glyphs, so Arabic text stopped at Arial and never reached IBM Plex
+      // Sans Arabic (found live in the computed stack). Turbopack ignores
+      // adjustFontFallback:false, so naming the families is the reliable fix.
       fontFamily: {
-        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
+        sans: ["\"IBM Plex Sans\"", "\"IBM Plex Sans Arabic\"", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["\"Source Serif 4\"", "\"IBM Plex Sans Arabic\"", "Georgia", "serif"],
+      },
+      // One radius family: 6px controls (rounded-md), 8px small containers
+      // (rounded-lg), 10px cards (rounded-xl). xl/2xl/3xl are pulled in from
+      // Tailwind's softer defaults so the few remaining rounded-2xl call
+      // sites can't drift back to a bubbly 16px.
+      borderRadius: {
+        xl: "0.625rem",
+        "2xl": "0.75rem",
+        "3xl": "0.875rem",
       },
       boxShadow: {
-        // These three stay literal navy (rgb 15 33 49) regardless of center
-        // — they're neutral elevation/depth shadows used on white/light
-        // surfaces app-wide, not a brand accent, so there's nothing for
-        // AKET to differentiate here (matching how e.g. slate-* neutrals
-        // stay constant too).
-        soft: "0 1px 2px 0 rgb(15 33 49 / 0.04), 0 1px 3px 0 rgb(15 33 49 / 0.06)",
-        card: "0 1px 3px 0 rgb(15 33 49 / 0.06), 0 4px 12px -2px rgb(15 33 49 / 0.08)",
-        "card-hover": "0 4px 8px 0 rgb(15 33 49 / 0.08), 0 12px 24px -4px rgb(15 33 49 / 0.12)",
-        // This one IS the brand accent glow (btn-gold), so it follows the
-        // gold-500 CSS variable like everything else in this file.
-        gold: "0 4px 14px 0 rgb(var(--color-gold-500) / 0.25)",
+        // Hairline-first elevation: surfaces are separated by a 1px border,
+        // and shadows only add a whisper of depth. Literal navy (rgb 15 33
+        // 49) regardless of center — neutral depth, not a brand accent.
+        soft: "0 1px 2px 0 rgb(15 33 49 / 0.04)",
+        card: "0 1px 2px 0 rgb(15 33 49 / 0.05)",
+        "card-hover": "0 2px 6px -1px rgb(15 33 49 / 0.08), 0 1px 2px 0 rgb(15 33 49 / 0.05)",
+        // Overlays only (menus, dialogs, the tour card): the one place a
+        // real shadow communicates "this floats above the page".
+        overlay: "0 12px 32px -8px rgb(15 33 49 / 0.22), 0 2px 6px -2px rgb(15 33 49 / 0.10)",
+        // Kept as a name so old call sites compile; no more gold glow.
+        gold: "0 1px 2px 0 rgb(15 33 49 / 0.05)",
       },
       backgroundImage: {
         // Dedicated gradient-stop variables rather than reusing e.g.
@@ -88,10 +110,15 @@ const config: Config = {
         // requirement here. AKET's stops are chosen scale steps (see
         // globals.css) tuned so white text and the active-nav-item accent
         // icon both clear WCAG contrast against the lightest stop.
+        //
+        // Redesign (DESIGN.md, "one named gradient"): navy-gradient is now
+        // a quiet vertical "brand depth" — nearly solid navy, lifting only
+        // slightly toward the top — instead of a diagonal three-stop sweep.
+        // gold-gradient is flattened to solid gold: gold is a signal for the
+        // selected state, never paint.
         "navy-gradient":
-          "linear-gradient(135deg, rgb(var(--color-navy-gradient-from)) 0%, rgb(var(--color-navy-gradient-via)) 55%, rgb(var(--color-navy-gradient-to)) 100%)",
-        "gold-gradient":
-          "linear-gradient(135deg, rgb(var(--color-gold-gradient-from)) 0%, rgb(var(--color-gold-gradient-via)) 50%, rgb(var(--color-gold-gradient-to)) 100%)",
+          "linear-gradient(180deg, rgb(var(--color-navy-gradient-via)) 0%, rgb(var(--color-navy-gradient-from)) 420px)",
+        "gold-gradient": "linear-gradient(rgb(var(--color-gold-500)), rgb(var(--color-gold-500)))",
       },
       keyframes: {
         "fade-in": {
@@ -99,7 +126,7 @@ const config: Config = {
           to: { opacity: "1" },
         },
         "fade-in-up": {
-          from: { opacity: "0", transform: "translateY(8px)" },
+          from: { opacity: "0", transform: "translateY(4px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         // Speech-bubble "pop" entrance for WelcomeRobot — same fill-mode
@@ -137,8 +164,11 @@ const config: Config = {
         // this was reported as. `both` holds the `from` state during the
         // delay (nothing flashes before its turn) and holds the `to` state
         // after the animation ends (nothing reverts once it's finished).
-        "fade-in": "fade-in 0.4s ease-out both",
-        "fade-in-up": "fade-in-up 0.4s ease-out both",
+        // Redesign: one animation per change, ~180ms. fade-in-up's travel
+        // is cut to 4px (see keyframes) so a route change reads as a calm
+        // settle, not a slide.
+        "fade-in": "fade-in 0.18s ease-out both",
+        "fade-in-up": "fade-in-up 0.22s cubic-bezier(0.2, 0, 0, 1) both",
         "pop-in": "pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both",
         wave: "wave 2.2s ease-in-out infinite",
       },

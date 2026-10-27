@@ -12,9 +12,9 @@ export default async function AssignmentDetailPage({ params }: { params: Promise
   if (!detail || detail.assignment.teacher_id !== me.id) notFound();
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{detail.assignment.title}</h1>
+        <h1 className="page-title">{detail.assignment.title}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">Due {detail.assignment.due_date}</p>
         {detail.assignment.description && (
           <p className="mt-3 text-sm text-slate-600 dark:text-navy-200">{detail.assignment.description}</p>

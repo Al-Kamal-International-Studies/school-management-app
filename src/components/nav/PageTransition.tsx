@@ -35,7 +35,10 @@ export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div key={pathname} className="animate-fade-in-up">
+    // The only entrance animation on an authenticated page (DESIGN.md: one
+    // animation per change). Content inside the page no longer staggers in
+    // on top of this — see FadeUp.tsx.
+    <div key={pathname} className="animate-fade-in">
       {children}
     </div>
   );

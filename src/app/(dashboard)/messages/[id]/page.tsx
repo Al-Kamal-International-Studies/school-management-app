@@ -19,7 +19,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <FadeUp>
-        <h1 className="font-display text-xl font-semibold text-navy-900 dark:text-white">{detail.other?.full_name ?? dict.common.unknown}</h1>
+        <h1 className="page-title-compact">{detail.other?.full_name ?? dict.common.unknown}</h1>
       </FadeUp>
       <FadeUp delay={0.05}>
         <Card>

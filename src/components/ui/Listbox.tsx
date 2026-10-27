@@ -182,7 +182,7 @@ export function Listbox({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute z-20 mt-1.5 max-h-60 w-full origin-top overflow-auto rounded-lg border border-slate-200 bg-white p-1 shadow-card-hover dark:border-navy-700 dark:bg-navy-900"
+            className="absolute z-20 mt-1.5 max-h-60 w-full origin-top overflow-auto rounded-lg border border-slate-200 bg-white p-1 shadow-overlay dark:border-navy-700 dark:bg-navy-900"
           >
             {options.map((opt, i) => (
               <button
@@ -203,7 +203,7 @@ export function Listbox({
                 )}
               >
                 <span className="truncate">{opt.label}</span>
-                {opt.value === currentValue && <Check className="h-3.5 w-3.5 shrink-0 text-gold-600 dark:text-gold-400" />}
+                {opt.value === currentValue && <Check className="h-3.5 w-3.5 shrink-0 text-navy-700 dark:text-navy-200" />}
               </button>
             ))}
           </motion.div>

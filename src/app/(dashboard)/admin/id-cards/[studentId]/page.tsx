@@ -27,13 +27,13 @@ export default async function AdminIdCardDetailPage({ params }: { params: Promis
   const canEditPhoto = await canEditIdCardPhoto(me, studentId);
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <FadeUp>
-        <Link href="/admin/id-cards" className="mb-2 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-navy-700 dark:text-navy-400 dark:hover:text-gold-300">
+        <Link href="/admin/id-cards" className="mb-2 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-navy-700 dark:text-navy-400 dark:hover:text-white">
           <ChevronLeft className="h-4 w-4" />
           {dict.idCard.backToList}
         </Link>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{data.fullName}</h1>
+        <h1 className="page-title">{data.fullName}</h1>
       </FadeUp>
       <FadeUp delay={0.06}>
         <IdCardView data={data} canEditPhoto={canEditPhoto} dict={dict} />

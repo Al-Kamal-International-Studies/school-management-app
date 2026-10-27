@@ -22,9 +22,9 @@ export default async function TeacherTimetablePage() {
   }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.myTimetable.title}</h1>
+        <h1 className="page-title">{dict.myTimetable.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.myTimetable.teacherSubtitle}</p>
       </FadeUp>
       <FadeUp delay={0.08}>

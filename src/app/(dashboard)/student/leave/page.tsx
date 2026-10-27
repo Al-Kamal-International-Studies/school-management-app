@@ -22,14 +22,14 @@ export default async function StudentLeavePage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.leave.title}</h1>
+        <h1 className="page-title">{dict.leave.title}</h1>
       </FadeUp>
 
       <FadeUp delay={0.05}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.leave.newRequest}</h2>
+          <h2 className="mb-4 card-title">{dict.leave.newRequest}</h2>
           <LeaveRequestForm />
         </Card>
       </FadeUp>

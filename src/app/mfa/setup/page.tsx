@@ -30,7 +30,7 @@ export default async function MfaSetupPage() {
   return (
     <AuthShell center={center}>
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">
+        <h1 className="page-title">
           Set up two-factor authentication
         </h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">

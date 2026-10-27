@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 /**
  * A minimal inline-SVG trend line for stat tiles — plain markup, zero JS,
  * server-rendered like every other hand-rolled graphic in this app
- * (ProgressRing, Robot.tsx). Single series only (a stat tile's own trend),
+ * (ProgressRing). Single series only (a stat tile's own trend),
  * so per the dataviz stat-tile contract it needs no legend: the tile's
  * label already names what's plotted, and the value/delta text next to it
  * already carries the numbers — the line is reinforcement, not the only
@@ -18,16 +18,24 @@ import { cn } from "@/lib/utils";
 export function Sparkline({
   points,
   height = 36,
+  width = 200,
+  marker = true,
   className,
 }: {
   /** Chronological values, oldest first. Fewer than 2 points renders nothing. */
   points: number[];
   height?: number;
+  /** viewBox width. The <svg> stretches to its container via width="100%",
+   *  so pass roughly the rendered pixel width for small instances (e.g. a
+   *  stat tile’s 96px trend) to keep the end marker round. */
+  width?: number;
+  /** Draw the current-period dot. Off for tiles whose width flexes, where
+   *  the non-uniform viewBox scaling would squash it into an ellipse. */
+  marker?: boolean;
   className?: string;
 }) {
   if (points.length < 2) return null;
 
-  const width = 200; // fixed viewBox unit; the <svg> itself stretches via width="100%"
   const min = Math.min(...points);
   const max = Math.max(...points);
   const range = max - min || 1;
@@ -50,22 +58,20 @@ export function Sparkline({
     // same effect (an ltr-only subtree), no `as` cast needed.
     <div dir="ltr" className={className}>
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none" role="img" aria-hidden="true">
-        <path d={areaPath} className="fill-navy-500/10 dark:fill-navy-300/10" />
+        <path d={areaPath} className="fill-navy-500/[0.07] dark:fill-navy-300/10" />
         <path
           d={linePath}
           fill="none"
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="stroke-navy-400 dark:stroke-navy-300"
+          vectorEffect="non-scaling-stroke"
+          className="stroke-navy-600 dark:stroke-navy-300"
         />
-        {/* Current-period marker in the accent hue, with a surface-color ring
-            so it stays legible where it lands on the line. gold-600/gold-300
-            (not the brand's default gold-500) — validated via the dataviz
-            skill's palette script against each mode's card surface
-            (#fcfcfb light / #0f2131 dark): gold-500 fell under the 3:1
-            contrast floor against the light surface, both shades clear it. */}
-        <circle cx={lastX} cy={lastY} r={4} strokeWidth={2} className="fill-gold-600 stroke-white dark:fill-gold-300 dark:stroke-navy-900" />
+        {/* Current-period marker in ink (redesign: gold is reserved for the
+            selected state on dark chrome), with a surface-color ring so it
+            stays legible where it lands on the line. */}
+        {marker && <circle cx={lastX} cy={lastY} r={3.5} strokeWidth={2} className="fill-navy-800 stroke-white dark:fill-white dark:stroke-navy-900" />}
       </svg>
     </div>
   );

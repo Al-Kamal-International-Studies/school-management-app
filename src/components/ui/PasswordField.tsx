@@ -60,13 +60,12 @@ export function PasswordField({
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? hideLabel : showLabel}
           aria-pressed={visible}
-          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 dark:hover:bg-white/10 dark:focus-visible:ring-gold-400 rtl:right-auto rtl:left-3"
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:text-navy-300 dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-navy-300 rtl:right-auto rtl:left-2"
         >
-          {visible ? (
-            <Eye className="h-4 w-4 text-green-600 dark:text-green-400" />
-          ) : (
-            <EyeOff className="h-4 w-4 text-red-500 dark:text-red-400" />
-          )}
+          {/* Neutral ink (redesign): red/green are reserved for real
+              error/success states app-wide (DESIGN.md), so the eye no
+              longer borrows them to signal hidden/shown. */}
+          {visible ? <Eye className="h-4 w-4" strokeWidth={1.75} /> : <EyeOff className="h-4 w-4" strokeWidth={1.75} />}
         </button>
       </div>
     </FieldWrapper>

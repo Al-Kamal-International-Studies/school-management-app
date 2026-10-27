@@ -42,9 +42,9 @@ export default async function TeacherTimetableBuilderPage({ searchParams }: { se
     })) ?? [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminTimetable.title}</h1>
+        <h1 className="page-title">{dict.adminTimetable.title}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.adminTimetable.subtitle}</p>
       </FadeUp>
 
@@ -57,7 +57,7 @@ export default async function TeacherTimetableBuilderPage({ searchParams }: { se
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
           <FadeUp delay={0.12} className="card h-fit p-6">
-            <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.adminTimetable.addPeriod}</h2>
+            <h2 className="mb-4 section-title">{dict.adminTimetable.addPeriod}</h2>
             {schedule && schedule.assignableSubjects.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-navy-400">
                 {dict.adminTimetable.assignTeacherFirst}
@@ -67,7 +67,7 @@ export default async function TeacherTimetableBuilderPage({ searchParams }: { se
             )}
           </FadeUp>
           <FadeUp delay={0.18}>
-            <WeeklyScheduleGrid entries={entries} dict={dict} />
+            <WeeklyScheduleGrid entries={entries} dict={dict} layout="beside-form" />
           </FadeUp>
         </div>
       )}

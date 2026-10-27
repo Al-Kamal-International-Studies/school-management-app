@@ -21,7 +21,7 @@ export default async function ParentIdCardPage({ searchParams }: { searchParams:
     return (
       <div className="mx-auto max-w-xl">
         <FadeUp>
-          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.idCard.title}</h1>
+          <h1 className="page-title">{dict.idCard.title}</h1>
         </FadeUp>
         <FadeUp delay={0.05} className="mt-4">
           <Alert tone="info">{dict.parent.noChildren}</Alert>
@@ -44,10 +44,10 @@ export default async function ParentIdCardPage({ searchParams }: { searchParams:
   const canEditPhoto = await canEditIdCardPhoto(me, activeChild.id);
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <FadeUp className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.idCard.title}</h1>
+          <h1 className="page-title">{dict.idCard.title}</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.idCard.subtitleParent}</p>
         </div>
         {children.length > 1 && (

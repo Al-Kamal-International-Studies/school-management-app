@@ -29,7 +29,7 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-navy-400">{label}</p>
+      <p className="text-xs font-medium text-slate-500 dark:text-navy-400">{label}</p>
       <p className="text-sm text-slate-900 dark:text-white">{value}</p>
     </div>
   );
@@ -62,10 +62,10 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
   };
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <FadeUp className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{admission.student_full_name}</h1>
+          <h1 className="page-title">{admission.student_full_name}</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">
             {centerShortCode} · {new Date(admission.registration_date).toLocaleDateString()}
           </p>
@@ -109,7 +109,7 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
       </FadeUp>
 
       <FadeUp delay={0.06} className="card space-y-4 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.admissions.sectionStudent}</h2>
+        <h2 className="section-title">{dict.admissions.sectionStudent}</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={dict.admissions.studentFullName} value={admission.student_full_name} />
           <Field label={dict.admissions.studentGender} value={admission.student_gender === "male" ? dict.admissions.genderMale : dict.admissions.genderFemale} />
@@ -123,7 +123,7 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
       </FadeUp>
 
       <FadeUp delay={0.08} className="card space-y-4 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.admissions.sectionFather}</h2>
+        <h2 className="section-title">{dict.admissions.sectionFather}</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={dict.admissions.parentName} value={admission.father_name} />
           <Field label={dict.admissions.parentJobTitle} value={admission.father_job_title} />
@@ -131,7 +131,7 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
           <Field label={dict.admissions.parentEmail} value={admission.father_email} />
           <Field label={dict.admissions.parentNationality} value={admission.father_nationality} />
         </div>
-        <h2 className="pt-2 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.admissions.sectionMother}</h2>
+        <h2 className="pt-2 section-title">{dict.admissions.sectionMother}</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={dict.admissions.parentName} value={admission.mother_name} />
           <Field label={dict.admissions.parentJobTitle} value={admission.mother_job_title} />
@@ -142,7 +142,7 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
       </FadeUp>
 
       <FadeUp delay={0.1} className="card space-y-4 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.admissions.sectionAddress}</h2>
+        <h2 className="section-title">{dict.admissions.sectionAddress}</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={dict.admissions.addressEmirate} value={admission.address_emirate} />
           <Field label={dict.admissions.addressArea} value={admission.address_area} />
@@ -152,7 +152,7 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
       </FadeUp>
 
       <FadeUp delay={0.12} className="card space-y-4 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.admissions.sectionMedical}</h2>
+        <h2 className="section-title">{dict.admissions.sectionMedical}</h2>
         <Field label={dict.admissions.medicalConditionsLabel} value={admission.medical_conditions} />
         <div className="flex flex-wrap gap-2">
           {admission.medical_vision && <Badge>{dict.admissions.medicalVision}</Badge>}
@@ -166,18 +166,18 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
       </FadeUp>
 
       <FadeUp delay={0.14} className="card space-y-4 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.admissions.studentAccount}</h2>
+        <h2 className="section-title">{dict.admissions.studentAccount}</h2>
         {studentProfile ? (
-          <Link href={`/admin/users/${studentProfile.id}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
+          <Link href={`/admin/users/${studentProfile.id}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-navy-200 dark:hover:text-white">
             {studentProfile.full_name} — {studentProfile.email}
           </Link>
         ) : (
           <p className="text-sm text-slate-500 dark:text-navy-400">{dict.admissions.notYetLinked}</p>
         )}
 
-        <h2 className="pt-2 text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.admissions.parentAccount}</h2>
+        <h2 className="pt-2 section-title">{dict.admissions.parentAccount}</h2>
         {parentProfile ? (
-          <Link href={`/admin/users/${parentProfile.id}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200">
+          <Link href={`/admin/users/${parentProfile.id}`} className="text-sm font-medium text-navy-600 hover:text-navy-800 dark:text-navy-200 dark:hover:text-white">
             {parentProfile.full_name} — {parentProfile.email}
           </Link>
         ) : (

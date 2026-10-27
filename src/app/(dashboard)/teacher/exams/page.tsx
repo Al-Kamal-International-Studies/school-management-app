@@ -15,14 +15,14 @@ export default async function TeacherExamsPage() {
   const [exams, options] = await Promise.all([listMyExams(me.id), listMyClassSubjectOptions(me.id)]);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.exams.title}</h1>
+        <h1 className="page-title">{dict.exams.title}</h1>
       </FadeUp>
 
       <FadeUp delay={0.05}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.exams.newExam}</h2>
+          <h2 className="mb-4 card-title">{dict.exams.newExam}</h2>
           <ExamForm options={options} />
         </Card>
       </FadeUp>

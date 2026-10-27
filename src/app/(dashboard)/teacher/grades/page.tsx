@@ -13,14 +13,14 @@ export default async function TeacherGradesPage() {
   const [grades, targets] = await Promise.all([listMyGrades(me.id), listMyGradeTargets(me.id)]);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.grades.title}</h1>
+        <h1 className="page-title">{dict.grades.title}</h1>
       </FadeUp>
 
       <FadeUp delay={0.05}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.grades.newGrade}</h2>
+          <h2 className="mb-4 card-title">{dict.grades.newGrade}</h2>
           <GradeForm targets={targets} />
         </Card>
       </FadeUp>

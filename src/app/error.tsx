@@ -28,7 +28,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
         <AlertTriangle className="h-8 w-8" strokeWidth={1.75} />
       </span>
       <div>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.errorPage.title}</h1>
+        <h1 className="page-title">{dict.errorPage.title}</h1>
         <p className="mt-2 max-w-sm text-sm text-slate-500 dark:text-navy-400">{dict.errorPage.description}</p>
       </div>
       <div className="flex items-center gap-3">

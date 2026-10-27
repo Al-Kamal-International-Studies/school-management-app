@@ -24,9 +24,9 @@ export default async function EditAdmissionPage({ params }: { params: Promise<{ 
   if (!admission) notFound();
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.admissions.editTitle}</h1>
+        <h1 className="page-title">{dict.admissions.editTitle}</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.admissions.editSubtitle}</p>
       </FadeUp>
       <FadeUp delay={0.05} className="card p-6">

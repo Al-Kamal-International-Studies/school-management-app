@@ -20,9 +20,9 @@ export default async function AdminAutismPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-7">
       <FadeUp>
-        <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">
+        <h1 data-tour="page-title" className="page-title">
           {dict.autismSection.adminTitle}
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.autismSection.adminSubtitle}</p>
@@ -30,7 +30,7 @@ export default async function AdminAutismPage() {
 
       <FadeUp delay={0.05}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.autismSection.assignments}</h2>
+          <h2 className="mb-4 card-title">{dict.autismSection.assignments}</h2>
           <AssignForm teachers={teachers} students={students} />
         </Card>
       </FadeUp>
@@ -63,7 +63,7 @@ export default async function AdminAutismPage() {
       </FadeUp>
 
       <FadeUp delay={0.12} className="space-y-3">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.autismSection.allVideos}</h2>
+        <h2 className="section-title">{dict.autismSection.allVideos}</h2>
         {videos.length === 0 ? (
           <EmptyState title={dict.autismSection.noVideosYet} />
         ) : (

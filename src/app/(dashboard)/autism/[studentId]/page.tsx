@@ -23,7 +23,7 @@ export default async function AutismStudentPage({ params }: { params: Promise<{ 
     <div className="mx-auto max-w-2xl space-y-6">
       <FadeUp className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-xl font-semibold text-navy-900 dark:text-white">{feed.student.full_name}</h1>
+          <h1 className="page-title-compact">{feed.student.full_name}</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.autismSection.videoHistory}</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -41,7 +41,7 @@ export default async function AutismStudentPage({ params }: { params: Promise<{ 
 
       <FadeUp delay={0.05}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.autismSection.uploadVideo}</h2>
+          <h2 className="mb-4 card-title">{dict.autismSection.uploadVideo}</h2>
           <UploadVideoForm studentId={studentId} />
         </Card>
       </FadeUp>

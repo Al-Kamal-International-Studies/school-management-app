@@ -28,7 +28,7 @@ export function ForgotPasswordForm() {
   return (
     <>
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.forgotPassword.title}</h1>
+        <h1 className="page-title">{dict.forgotPassword.title}</h1>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-navy-400">{dict.forgotPassword.message}</p>
       </div>
 
@@ -57,7 +57,7 @@ export function ForgotPasswordForm() {
 
       <Link
         href="/login"
-        className="mt-8 flex items-center justify-center gap-1.5 text-sm font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-gold-300 dark:hover:text-gold-200"
+        className="mt-8 flex items-center justify-center gap-1.5 text-sm font-medium text-navy-600 transition-colors hover:text-navy-800 dark:text-navy-200 dark:hover:text-white"
       >
         <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
         {dict.forgotPassword.backToSignIn}

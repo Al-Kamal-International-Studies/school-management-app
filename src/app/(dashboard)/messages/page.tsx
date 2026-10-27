@@ -21,12 +21,12 @@ export default async function MessagesPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.messages.title}</h1>
+        <h1 className="page-title">{dict.messages.title}</h1>
       </FadeUp>
 
       <FadeUp delay={0.05}>
         <Card>
-          <h2 className="mb-3 text-sm font-semibold text-navy-900 dark:text-white">{dict.messages.startWith}</h2>
+          <h2 className="mb-3 card-title">{dict.messages.startWith}</h2>
           <NewConversationForm people={people} />
         </Card>
       </FadeUp>
@@ -38,7 +38,7 @@ export default async function MessagesPage() {
           conversations.map((c) => (
             <Link key={c.id} href={`/messages/${c.id}`}>
               <Card className="flex items-center gap-3 card-hover">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-navy-gradient text-xs font-semibold text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-navy-800 text-xs font-semibold text-white">
                   {c.other?.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={c.other.avatar_url} alt={c.other.full_name} className="h-full w-full object-cover" />

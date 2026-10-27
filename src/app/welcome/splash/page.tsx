@@ -38,14 +38,13 @@ export default function SplashPage() {
         <Logo showWordmark={false} className="scale-[2]" />
       </div>
       <span
-        className="animate-fade-in-up rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-gold-300"
-        style={{ animationDelay: "250ms" }}
+        className="text-[0.8125rem] font-medium text-gold-300"
       >
         {dict.welcome.splashTagline}
       </span>
-      <div className="mt-2 h-1 w-40 animate-fade-in overflow-hidden rounded-full bg-white/10" style={{ animationDelay: "400ms" }}>
+      <div className="mt-2 h-0.5 w-40 overflow-hidden rounded-full bg-white/10">
         <motion.div
-          className="h-full rounded-full bg-gold-gradient"
+          className="h-full rounded-full bg-white/70"
           initial={{ width: "0%" }}
           animate={{ width: "100%" }}
           transition={{ duration: SPLASH_DURATION_MS / 1000, ease: "easeInOut" }}

@@ -23,7 +23,7 @@ export function DownloadButton({ documentId }: { documentId: string }) {
             else setError(result.error ?? "Could not open the file.");
           })
         }
-        className="flex items-center gap-1.5 text-sm font-medium text-navy-700 hover:text-navy-900 disabled:opacity-50 dark:text-gold-300 dark:hover:text-gold-200"
+        className="flex items-center gap-1.5 text-sm font-medium text-navy-700 hover:text-navy-900 disabled:opacity-50 dark:text-navy-200 dark:hover:text-white"
       >
         <Download className="h-3.5 w-3.5" />
         {dict.documents.download}

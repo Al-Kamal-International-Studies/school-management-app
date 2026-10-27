@@ -21,14 +21,14 @@ export default async function AdminDocumentsPage() {
   const [documents, students] = await Promise.all([listAllDocuments(activeCenterId), listStudentsForSelect(activeCenterId)]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-7">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.documents.title}</h1>
+        <h1 className="page-title">{dict.documents.title}</h1>
       </FadeUp>
 
       <FadeUp delay={0.08}>
         <Card>
-          <h2 className="mb-4 text-sm font-semibold text-navy-900 dark:text-white">{dict.documents.upload}</h2>
+          <h2 className="mb-4 card-title">{dict.documents.upload}</h2>
           <UploadForm students={students} />
         </Card>
       </FadeUp>

@@ -74,15 +74,15 @@ export function NotificationBell({ notifications }: { notifications: Notificatio
         aria-expanded={open}
         aria-label={dict.notifications.title}
         className={cn(
-          "relative flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200",
+          "relative flex h-9 w-9 items-center justify-center rounded-md transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500",
           open
-            ? "border-gold-400 bg-white shadow-card ring-2 ring-gold-400/25 dark:bg-navy-800"
-            : "border-slate-200/70 bg-white/70 hover:-translate-y-0.5 hover:border-navy-200 hover:shadow-card dark:border-navy-700 dark:bg-navy-900/50 dark:hover:border-navy-500"
+            ? "bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white"
+            : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-navy-300 dark:hover:bg-white/10 dark:hover:text-white"
         )}
       >
-        <Bell className="h-4 w-4 text-slate-500 dark:text-navy-300" strokeWidth={2} />
+        <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
         {unreadCount > 0 && (
-          <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white dark:ring-navy-950">
+          <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white dark:ring-navy-950">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -91,7 +91,7 @@ export function NotificationBell({ notifications }: { notifications: Notificatio
       {open && (
         <div
           role="menu"
-          className="animate-fade-in-up absolute end-0 z-20 mt-2 w-80 max-w-[92vw] origin-top overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card-hover dark:border-navy-700 dark:bg-navy-900"
+          className="animate-fade-in-up absolute end-0 z-20 mt-2 w-80 max-w-[92vw] origin-top overflow-hidden rounded-lg border border-slate-200 bg-white shadow-overlay dark:border-navy-700 dark:bg-navy-900"
         >
           <div className="flex items-center justify-between border-b border-slate-100 px-3.5 py-2.5 dark:border-navy-800">
             <span className="text-sm font-semibold text-navy-900 dark:text-white">{dict.notifications.title}</span>
@@ -140,7 +140,7 @@ export function NotificationBell({ notifications }: { notifications: Notificatio
                       <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-navy-400">{n.body}</span>
                       <span className="mt-1 block text-[11px] text-slate-400 dark:text-navy-500">{formatRelative(rtf, n.created_at)}</span>
                     </span>
-                    {unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold-400" aria-hidden="true" />}
+                    {unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-navy-600 dark:bg-navy-300" aria-hidden="true" />}
                   </Link>
                 );
               })

@@ -25,10 +25,10 @@ export default async function UsersPage({
   const roleLabel = { admin: dict.common.roleAdmin, teacher: dict.common.roleTeacher, student: dict.common.roleStudent, parent: dict.common.roleParent };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       <FadeUp className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.adminUsers.title}</h1>
+          <h1 className="page-title">{dict.adminUsers.title}</h1>
           <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.adminUsers.subtitle}</p>
         </div>
         <div className="flex flex-wrap gap-3">

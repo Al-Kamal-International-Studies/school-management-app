@@ -41,7 +41,7 @@ export default async function DevicesManagePage() {
   return (
     <AuthShell center={center}>
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.devices.manageTitle}</h1>
+        <h1 className="page-title">{dict.devices.manageTitle}</h1>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-navy-400">{dict.devices.manageMessage}</p>
       </div>
       <DeviceManageList devices={devices} currentDeviceId={currentDeviceId} />

@@ -47,7 +47,7 @@ export function CenterPicker({ selectedCenterId }: { selectedCenterId: string })
 
   return (
     <div className="mb-6 animate-fade-in-up">
-      <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-navy-400">
+      <p className="mb-2.5 text-xs font-medium text-slate-500 dark:text-navy-400">
         {dict.centerPicker.label}
       </p>
       <div role="radiogroup" aria-label={dict.centerPicker.label} className="grid grid-cols-2 gap-3">
@@ -62,21 +62,21 @@ export function CenterPicker({ selectedCenterId }: { selectedCenterId: string })
               aria-checked={active}
               onClick={() => choose(center.id)}
               className={cn(
-                "group relative flex items-center gap-2.5 rounded-xl border-2 px-3 py-3 text-start shadow-soft transition-all duration-200",
+                "group relative flex items-center gap-2.5 rounded-lg border px-3 py-3 text-start transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2",
                 active
-                  ? "border-gold-400 bg-white shadow-card ring-1 ring-gold-400/30 dark:bg-navy-800/70"
-                  : "border-slate-200/80 bg-white/70 hover:-translate-y-0.5 hover:border-navy-200 hover:shadow-card dark:border-navy-700 dark:bg-navy-900/40 dark:hover:border-navy-500"
+                  ? "border-navy-900 bg-white shadow-[inset_0_0_0_1px_rgb(var(--color-navy-900))] dark:border-navy-200 dark:bg-navy-900 dark:shadow-[inset_0_0_0_1px_rgb(var(--color-navy-200))]"
+                  : "border-slate-200 bg-white hover:border-slate-300 dark:border-navy-700 dark:bg-navy-900 dark:hover:border-navy-500"
               )}
             >
               {active && (
-                <span className="absolute end-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-gold-gradient text-navy-900 shadow-gold">
+                <span className="absolute end-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-navy-900 text-white dark:bg-navy-100 dark:text-navy-950">
                   <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
                 </span>
               )}
               <span
                 className={cn(
-                  "relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 transition-all duration-200",
-                  active ? "ring-gold-300 dark:ring-gold-500/50" : "ring-white dark:ring-navy-900"
+                  "relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-1",
+                  "ring-slate-200 dark:ring-navy-700"
                 )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -91,7 +91,7 @@ export function CenterPicker({ selectedCenterId }: { selectedCenterId: string })
               <span className="min-w-0 flex-1" dir="ltr">
                 <span
                   className={cn(
-                    "block truncate text-sm font-semibold tracking-wide",
+                    "block truncate text-sm font-semibold",
                     active ? "text-navy-900 dark:text-white" : "text-slate-600 dark:text-navy-300"
                   )}
                 >

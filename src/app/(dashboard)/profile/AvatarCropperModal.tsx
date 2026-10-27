@@ -309,7 +309,7 @@ export function AvatarCropperModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="avatar-cropper-title"
-        className="relative w-full max-w-sm animate-fade-in-up rounded-2xl border border-slate-200/70 bg-white p-6 shadow-card dark:border-navy-800 dark:bg-navy-900"
+        className="relative w-full max-w-sm animate-fade-in-up rounded-xl border border-slate-200 bg-white p-6 shadow-overlay dark:border-navy-800 dark:bg-navy-900"
       >
         <h2 id="avatar-cropper-title" className="font-display text-lg font-semibold text-navy-900 dark:text-white">
           {dict.profilePage.cropTitle}

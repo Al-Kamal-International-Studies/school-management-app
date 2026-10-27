@@ -26,7 +26,7 @@ export default async function AutismSectionPage() {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <FadeUp>
-          <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">
+          <h1 data-tour="page-title" className="page-title">
             {dict.autismSection.title}
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.autismSection.subtitle}</p>
@@ -71,9 +71,9 @@ export default async function AutismSectionPage() {
   const feeds = (await Promise.all(children.map((c) => getStudentAutismFeed(c.id, me)))).filter((f): f is NonNullable<typeof f> => !!f);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-7">
       <FadeUp>
-        <h1 data-tour="page-title" className="font-display text-2xl font-semibold text-navy-900 dark:text-white">
+        <h1 data-tour="page-title" className="page-title">
           {dict.autismSection.title}
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.autismSection.subtitle}</p>
@@ -84,7 +84,7 @@ export default async function AutismSectionPage() {
       ) : (
         feeds.map((feed) => (
           <FadeUp key={feed.student.id} delay={0.05} className="space-y-2">
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{feed.student.full_name}</h2>
+            <h2 className="section-title">{feed.student.full_name}</h2>
             {feed.videos.length === 0 ? (
               <Card>
                 <p className="text-sm text-slate-500 dark:text-navy-400">{dict.autismSection.noVideosYet}</p>

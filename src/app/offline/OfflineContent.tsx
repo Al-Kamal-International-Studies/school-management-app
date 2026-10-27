@@ -38,7 +38,7 @@ export function OfflineContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 dark:bg-navy-950">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-card dark:border-navy-800 dark:bg-navy-900">
+      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-card dark:border-navy-800 dark:bg-navy-900">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
             <WifiOff className="h-5 w-5" />
@@ -71,13 +71,13 @@ export function OfflineContent() {
               <div className="mt-3 grid grid-cols-2 gap-3">
                 {envelope.data.overallScore !== null && (
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-navy-500">Overall score</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-navy-400">Overall score</p>
                     <p className="text-lg font-semibold text-navy-900 dark:text-white">{envelope.data.overallScore}%</p>
                   </div>
                 )}
                 {envelope.data.attendanceRate !== null && (
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-navy-500">Attendance</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-navy-400">Attendance</p>
                     <p className="text-lg font-semibold text-navy-900 dark:text-white">{envelope.data.attendanceRate}%</p>
                   </div>
                 )}
@@ -85,7 +85,7 @@ export function OfflineContent() {
             </div>
             {envelope.data.announcements.length > 0 && (
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-navy-500">
+                <p className="mb-2 text-xs font-medium text-slate-500 dark:text-navy-400">
                   Recent announcements
                 </p>
                 <div className="space-y-2">
@@ -105,7 +105,7 @@ export function OfflineContent() {
           </p>
         ) : null}
 
-        <Link href={dashboardHref} className="mt-5 block text-center text-sm font-medium text-navy-700 hover:text-navy-900 dark:text-gold-300 dark:hover:text-gold-200">
+        <Link href={dashboardHref} className="mt-5 block text-center text-sm font-medium text-navy-700 hover:text-navy-900 dark:text-navy-200 dark:hover:text-white">
           Back to dashboard
         </Link>
       </div>

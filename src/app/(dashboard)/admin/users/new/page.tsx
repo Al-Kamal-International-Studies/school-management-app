@@ -12,9 +12,9 @@ export default async function NewUserPage() {
   const [classes, students] = await Promise.all([listClassesForSelect(activeCenterId), listStudentsForParentLink(activeCenterId)]);
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-white">{dict.adminUsers.addUserTitle}</h1>
+        <h1 className="page-title">{dict.adminUsers.addUserTitle}</h1>
         <p className="text-sm text-slate-500 dark:text-navy-400">{dict.adminUsers.addUserSubtitle}</p>
       </div>
       <div className="card p-6">

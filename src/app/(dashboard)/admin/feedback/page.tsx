@@ -27,7 +27,7 @@ export default async function AdminFeedbackPage() {
   return (
     <div className="space-y-6">
       <FadeUp>
-        <h1 className="font-display text-2xl font-semibold text-navy-900 dark:text-white">{dict.feedback.inbox}</h1>
+        <h1 className="page-title">{dict.feedback.inbox}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">
           {dict.feedback.inboxSubtitle}
         </p>

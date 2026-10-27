@@ -1,6 +1,4 @@
 import { behaviourLabel } from "@/lib/i18n/labels";
-import Link from "next/link";
-import { MessageSquareText, Megaphone, CalendarClock, ClipboardCheck, Sparkles, Award } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import {
   getMyClassInfo,
@@ -18,31 +16,25 @@ import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Sparkline, TrendDelta } from "@/components/ui/Sparkline";
-import { formatTime, cn } from "@/lib/utils";
-import { schoolWeekdayDb } from "@/lib/dates";
+import { formatTime } from "@/lib/utils";
+import { schoolWeekdayDb, formatSchoolDate } from "@/lib/dates";
 import { attendanceRate, monthlyAttendanceRates, ATTENDANCE_WINDOW } from "@/lib/attendance/rate";
 import { formatMonth, summarizeByMonth } from "@/lib/progress/calculate";
-import { WelcomeRobot } from "@/components/dashboard/WelcomeRobot";
-import { FadeUp, FadeUpStagger, FadeUpItem } from "@/components/motion/FadeUp";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Section, ListCard, ListRows, ListRowLink, ListEmpty } from "@/components/ui/List";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
 
-const UPCOMING_KIND_TONE = { assignment: "navy", exam: "navy", quiz: "gold" } as const;
 // Where each upcoming-item kind's own list page lives — assignments and
 // exams/quizzes are separate pages for a student, so the destination
 // differs per row rather than being one fixed href.
 const UPCOMING_KIND_HREF = { assignment: "/student/assignments", exam: "/student/exams", quiz: "/student/exams" } as const;
 
-// Shared focus/hover treatment for dashboard rows that are now real links —
-// see the identical constant + comment in admin/page.tsx.
-const ROW_LINK_CLASS =
-  "group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-gold-400 dark:focus-visible:ring-offset-navy-950";
-const ROW_CARD_CLASS = "card-hover transition-colors hover:border-navy-200 dark:hover:border-navy-600";
-
 export default async function StudentDashboardPage() {
   const profile = await getCurrentProfile();
-  const dict = await getDictionary(await getLocale());
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
   const { student, classRow } = await getMyClassInfo(profile!.id);
   const [schedule, progressEntries, announcements, remarks, behaviourEntries, recentGrades, upcomingItems, attendanceRecords] = await Promise.all([
     getMySchedule(student?.class_id ?? null),
@@ -76,7 +68,7 @@ export default async function StudentDashboardPage() {
   const attendanceDelta = attendanceMonths.length > 1 ? attendanceMonths[0]!.rate - attendanceMonths[1]!.rate : null;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7">
       {/* Real offline behavior for Apple's Guideline 4.2 review — see the
           identical setup + comment in (dashboard)/parent/page.tsx. */}
       <CacheDashboardForOffline
@@ -93,284 +85,268 @@ export default async function StudentDashboardPage() {
           announcements: announcements.map((a) => ({ title: a.title, date: new Date(a.created_at).toLocaleDateString() })),
         }}
       />
-      <FadeUp>
-        <WelcomeRobot name={profile!.full_name} role="student" dict={dict} dataTour="page-title" />
-        <p className="mt-2 text-sm text-slate-500 dark:text-navy-400">
-          {classRow ? `${classRow.name} - ${classRow.section}` : dict.studentDashboard.noClassAssignedShort} · {dict.studentDashboard.enrollmentHash}
-          {student?.enrollment_number}
-        </p>
-      </FadeUp>
+      <PageHeader
+        eyebrow={formatSchoolDate(new Date(), locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+        title={`${dict.common.welcome}, ${profile!.full_name}`}
+        titleDataTour="page-title"
+        description={
+          <>
+            {classRow ? `${classRow.name} - ${classRow.section}` : dict.studentDashboard.noClassAssignedShort} · {dict.studentDashboard.enrollmentHash}
+            {student?.enrollment_number}
+          </>
+        }
+      />
 
-      {!classRow && (
-        <FadeUp delay={0.06}>
-          <Alert tone="info">{dict.myTimetable.noClassAssigned}</Alert>
-        </FadeUp>
-      )}
+      {!classRow && <Alert tone="info">{dict.myTimetable.noClassAssigned}</Alert>}
 
-      <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2" staggerDelay={0.06}>
-        <FadeUpItem>
-          <Card>
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.academicProgress}</h2>
-              {monthly.length > 1 && <TrendDelta value={scoreDelta} goodDirection="up" />}
-            </div>
-            {latest ? (
-              <div className="flex items-center gap-5">
-                <ProgressRing value={latest.averageScore} label={dict.progress.overallScore} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-slate-500 dark:text-navy-400">{formatMonth(latest.month)}</p>
-                  {scoreTrend.length > 1 && (
-                    <div className="mt-3">
-                      <Sparkline points={scoreTrend} height={28} />
-                      <p className="mt-1 text-[11px] text-slate-400 dark:text-navy-500">{dict.progress.vsLastMonth}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.noProgressYetDescription}</p>
-            )}
-          </Card>
-        </FadeUpItem>
-
-        <FadeUpItem>
-          <Card>
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.attendanceSummary}</h2>
-              {attendanceMonths.length > 1 && <TrendDelta value={attendanceDelta} goodDirection="up" />}
-            </div>
-            {attendanceNow !== null ? (
-              <div>
-                <p className="font-display text-3xl font-semibold text-navy-900 dark:text-white">
-                  {attendanceNow.toFixed(1)}%
-                </p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-navy-400">{formatMonth(attendanceMonths[0]!.month)}</p>
-                {attendanceTrend.length > 1 && (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Card className="p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="card-title">{dict.progress.academicProgress}</h2>
+            {monthly.length > 1 && <TrendDelta value={scoreDelta} goodDirection="up" />}
+          </div>
+          {latest ? (
+            <div className="mt-4 flex items-center gap-5">
+              <ProgressRing value={latest.averageScore} label={dict.progress.overallScore} />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-slate-500 dark:text-navy-400">{formatMonth(latest.month)}</p>
+                {scoreTrend.length > 1 && (
                   <div className="mt-3">
-                    <Sparkline points={attendanceTrend} height={28} />
-                    <p className="mt-1 text-[11px] text-slate-400 dark:text-navy-500">{dict.progress.vsLastMonth}</p>
+                    <Sparkline points={scoreTrend} height={28} />
+                    <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{dict.progress.vsLastMonth}</p>
                   </div>
                 )}
               </div>
-            ) : (
-              <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.noProgressYetDescription}</p>
-            )}
-          </Card>
-        </FadeUpItem>
-      </FadeUpStagger>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-slate-500 dark:text-navy-400">{dict.progress.noProgressYetDescription}</p>
+          )}
+        </Card>
 
-      <FadeUp delay={0.12} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.monthlyOverview}</h2>
-        {monthly.length === 0 ? (
-          <Card>
+        <Card className="p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="card-title">{dict.progress.attendanceSummary}</h2>
+            {attendanceMonths.length > 1 && <TrendDelta value={attendanceDelta} goodDirection="up" />}
+          </div>
+          {attendanceNow !== null ? (
+            <div className="mt-4">
+              <p className="tabular font-display text-[2rem] font-semibold leading-none text-navy-950 dark:text-white">
+                {attendanceNow.toFixed(1)}%
+              </p>
+              <p className="mt-2 text-xs text-slate-500 dark:text-navy-400">{formatMonth(attendanceMonths[0]!.month)}</p>
+              {attendanceTrend.length > 1 && (
+                <div className="mt-3">
+                  <Sparkline points={attendanceTrend} height={28} />
+                  <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{dict.progress.vsLastMonth}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-slate-500 dark:text-navy-400">{dict.progress.noProgressYetDescription}</p>
+          )}
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <Section id="student-today" title={dict.common.todaysSchedule}>
+            <ListCard>
+              {todaysClasses.length === 0 ? (
+                <ListEmpty>{dict.common.noClassesToday}</ListEmpty>
+              ) : (
+                <ListRows>
+                  {/* No per-timeslot detail page exists — rows link to the
+                      full weekly timetable, the closest real destination. */}
+                  {todaysClasses.map((e) => (
+                    <ListRowLink
+                      key={e.id}
+                      href="/student/timetable"
+                      leading={
+                        <span className="tabular w-[8.75rem] shrink-0 whitespace-nowrap text-sm text-slate-500 dark:text-navy-400">
+                          <bdi dir="ltr">{formatTime(e.start_time)} – {formatTime(e.end_time)}</bdi>
+                        </span>
+                      }
+                      title={e.subjectName}
+                      subtitle={e.teacherName}
+                      trailing={
+                        e.room ? (
+                          <span className="shrink-0 text-xs text-slate-500 dark:text-navy-400">
+                            {dict.exams.room} <bdi>{e.room}</bdi>
+                          </span>
+                        ) : undefined
+                      }
+                    />
+                  ))}
+                </ListRows>
+              )}
+            </ListCard>
+          </Section>
+
+          <Section id="student-upcoming" title={dict.progress.upcomingTasks}>
+            <ListCard>
+              {upcomingItems.length === 0 ? (
+                <ListEmpty>{dict.progress.noUpcomingItems}</ListEmpty>
+              ) : (
+                <ListRows>
+                  {/* Assignments and exams/quizzes are two separate list
+                      pages for a student — no shared per-item detail page —
+                      so each row links to whichever list contains it. */}
+                  {upcomingItems.map((item) => (
+                    <ListRowLink
+                      key={`${item.kind}-${item.id}`}
+                      href={UPCOMING_KIND_HREF[item.kind]}
+                      title={item.title}
+                      subtitle={item.subjectName}
+                      trailing={
+                        <span className="flex shrink-0 items-center gap-3">
+                          <Badge tone="navy">
+                            {item.kind === "assignment" ? dict.assignments.assignment : item.kind === "quiz" ? dict.exams.quiz : dict.exams.exam}
+                          </Badge>
+                          <span className="tabular hidden text-xs text-slate-500 dark:text-navy-400 sm:inline">{item.date}</span>
+                        </span>
+                      }
+                    />
+                  ))}
+                </ListRows>
+              )}
+            </ListCard>
+          </Section>
+        </div>
+
+        <Section id="student-announcements" title={dict.announcements.title}>
+          <ListCard>
+            {announcements.length === 0 ? (
+              <ListEmpty>{dict.announcements.noAnnouncements}</ListEmpty>
+            ) : (
+              <ListRows>
+                {announcements.map((a) => (
+                  <li key={a.id} className="px-5 py-4">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{a.title}</p>
+                    <p className="mt-1 line-clamp-3 text-sm text-slate-600 dark:text-navy-300">{a.body}</p>
+                    <p className="mt-2 text-xs text-slate-400 dark:text-navy-500">
+                      <time dateTime={a.created_at}>{formatSchoolDate(a.created_at, locale)}</time>
+                    </p>
+                  </li>
+                ))}
+              </ListRows>
+            )}
+          </ListCard>
+        </Section>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Section id="student-grades" title={dict.grades.recentGrades}>
+          <ListCard>
+            {recentGrades.length === 0 ? (
+              <ListEmpty>{dict.grades.noGrades}</ListEmpty>
+            ) : (
+              <ListRows>
+                {/* No per-grade detail page exists — rows link to the full
+                    grades list, the closest real destination. */}
+                {recentGrades.map((g) => (
+                  <ListRowLink
+                    key={g.id}
+                    href="/student/grades"
+                    title={g.assessment_name}
+                    subtitle={g.subjectName}
+                    trailing={
+                      <span className="tabular shrink-0 text-sm font-semibold text-slate-900 dark:text-white">
+                        {g.marks_obtained}/{g.marks_total}
+                      </span>
+                    }
+                  />
+                ))}
+              </ListRows>
+            )}
+          </ListCard>
+        </Section>
+
+        <Section id="student-comments" title={dict.progress.recentComments}>
+          <ListCard>
+            {recentComments.length === 0 ? (
+              <ListEmpty>{dict.progress.noProgressYetDescription}</ListEmpty>
+            ) : (
+              <ListRows>
+                {recentComments.map((e) => (
+                  <li key={e.id} className="px-5 py-4">
+                    <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
+                      {e.subjectName} · {formatMonth(e.month)}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700 dark:text-navy-100">{e.teacher_comments}</p>
+                  </li>
+                ))}
+              </ListRows>
+            )}
+          </ListCard>
+        </Section>
+      </div>
+
+      <Section id="student-monthly" title={dict.progress.monthlyOverview}>
+        <Card className="p-5">
+          {monthly.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.noProgressYet}</p>
-          </Card>
-        ) : (
-          <Card>
+          ) : (
             <div className="space-y-3">
               {monthly.slice(0, 6).map((m) => (
-                <div key={m.month} className="flex items-center gap-3">
-                  <span className="w-28 shrink-0 text-xs text-slate-500 dark:text-navy-400">{formatMonth(m.month)}</span>
-                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-navy-800">
+                <div key={m.month} className="flex items-center gap-4">
+                  <span className="w-28 shrink-0 text-sm text-slate-500 dark:text-navy-400">{formatMonth(m.month)}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-navy-800">
                     <div
-                      className="h-full rounded-full bg-gold-gradient"
+                      className="h-full rounded-full bg-navy-700 dark:bg-navy-300"
                       style={{ width: `${Math.min(100, (m.averageScore / maxScore) * 100)}%` }}
                     />
                   </div>
-                  <span className="w-10 shrink-0 text-right text-xs font-semibold text-navy-900 dark:text-white">
+                  <span className="tabular w-12 shrink-0 text-end text-sm font-semibold text-slate-900 dark:text-white">
                     {m.averageScore.toFixed(1)}
                   </span>
                 </div>
               ))}
             </div>
-          </Card>
-        )}
-      </FadeUp>
-
-      <FadeUp delay={0.16} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.recentComments}</h2>
-        {recentComments.length === 0 ? (
-          <Card>
-            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.noProgressYetDescription}</p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {recentComments.map((e) => (
-              <Card key={e.id} className="flex gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-navy-50 text-navy-700 dark:bg-navy-800 dark:text-navy-200">
-                  <MessageSquareText className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
-                    {e.subjectName} · {formatMonth(e.month)}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-700 dark:text-navy-100">{e.teacher_comments}</p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </FadeUp>
-
-      <FadeUp delay={0.19} className="space-y-4">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
-          <Award className="h-4 w-4" />
-          {dict.grades.recentGrades}
-        </h2>
-        {recentGrades.length === 0 ? (
-          <Card>
-            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.grades.noGrades}</p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {recentGrades.map((g) => (
-              // No per-grade detail page exists — links to the full grades
-              // list, the closest real destination for "this grade".
-              <Link key={g.id} href="/student/grades" className={ROW_LINK_CLASS}>
-                <Card className={cn("flex items-center justify-between gap-4", ROW_CARD_CLASS)}>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-navy-900 dark:text-white">{g.assessment_name}</p>
-                    <p className="text-xs text-slate-500 dark:text-navy-400">{g.subjectName}</p>
-                  </div>
-                  <span className="shrink-0 text-sm font-semibold text-navy-900 dark:text-white">
-                    {g.marks_obtained}/{g.marks_total}
-                  </span>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </FadeUp>
-
-      <FadeUp delay={0.22} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.announcements.title}</h2>
-        {announcements.length === 0 ? (
-          <Card>
-            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.announcements.noAnnouncements}</p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {announcements.map((a) => (
-              <Card key={a.id} className="flex gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-50 text-gold-700 dark:bg-gold-500/15 dark:text-gold-300">
-                  <Megaphone className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-navy-900 dark:text-white">{a.title}</p>
-                  <p className="mt-0.5 text-sm text-slate-600 dark:text-navy-200">{a.body}</p>
-                  <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">
-                    {new Date(a.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </FadeUp>
+          )}
+        </Card>
+      </Section>
 
       {(remarks.length > 0 || behaviourEntries.length > 0) && (
-        <FadeUp delay={0.25} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
-              <ClipboardCheck className="h-4 w-4" />
-              {dict.remarks.title}
-            </h2>
-            {remarks.length === 0 ? (
-              <Card>
-                <p className="text-sm text-slate-500 dark:text-navy-400">{dict.remarks.noRemarks}</p>
-              </Card>
-            ) : (
-              remarks.map((r) => (
-                <Card key={r.id} className="text-sm">
-                  <p className="text-slate-600 dark:text-navy-200">{r.remark}</p>
-                  <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{new Date(r.created_at).toLocaleDateString()}</p>
-                </Card>
-              ))
-            )}
-          </div>
-          <div className="space-y-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
-              <Sparkles className="h-4 w-4" />
-              {dict.behaviour.title}
-            </h2>
-            {behaviourEntries.length === 0 ? (
-              <Card>
-                <p className="text-sm text-slate-500 dark:text-navy-400">{dict.behaviour.noEntries}</p>
-              </Card>
-            ) : (
-              behaviourEntries.map((b) => (
-                <Card key={b.id} className="text-sm">
-                  <Badge tone={b.category === "positive" ? "green" : "red"}>{behaviourLabel(dict, b.category)}</Badge>
-                  <p className="mt-1.5 text-slate-600 dark:text-navy-200">{b.description}</p>
-                  <p className="mt-1 text-xs text-slate-400 dark:text-navy-500">{new Date(b.created_at).toLocaleDateString()}</p>
-                </Card>
-              ))
-            )}
-          </div>
-        </FadeUp>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Section id="student-remarks" title={dict.remarks.title}>
+            <ListCard>
+              {remarks.length === 0 ? (
+                <ListEmpty>{dict.remarks.noRemarks}</ListEmpty>
+              ) : (
+                <ListRows>
+                  {remarks.map((r) => (
+                    <li key={r.id} className="px-5 py-4 text-sm">
+                      <p className="text-slate-700 dark:text-navy-100">{r.remark}</p>
+                      <p className="mt-1.5 text-xs text-slate-400 dark:text-navy-500">
+                        <time dateTime={r.created_at}>{formatSchoolDate(r.created_at, locale)}</time>
+                      </p>
+                    </li>
+                  ))}
+                </ListRows>
+              )}
+            </ListCard>
+          </Section>
+          <Section id="student-behaviour" title={dict.behaviour.title}>
+            <ListCard>
+              {behaviourEntries.length === 0 ? (
+                <ListEmpty>{dict.behaviour.noEntries}</ListEmpty>
+              ) : (
+                <ListRows>
+                  {behaviourEntries.map((b) => (
+                    <li key={b.id} className="px-5 py-4 text-sm">
+                      <Badge tone={b.category === "positive" ? "green" : "red"}>{behaviourLabel(dict, b.category)}</Badge>
+                      <p className="mt-2 text-slate-700 dark:text-navy-100">{b.description}</p>
+                      <p className="mt-1.5 text-xs text-slate-400 dark:text-navy-500">
+                        <time dateTime={b.created_at}>{formatSchoolDate(b.created_at, locale)}</time>
+                      </p>
+                    </li>
+                  ))}
+                </ListRows>
+              )}
+            </ListCard>
+          </Section>
+        </div>
       )}
-
-      <FadeUp delay={0.28} className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-navy-100">{dict.progress.upcomingTasks}</h2>
-        {upcomingItems.length === 0 ? (
-          <Card>
-            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.progress.noUpcomingItems}</p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {upcomingItems.map((item) => (
-              // Assignments and exams/quizzes are two separate list pages
-              // for a student — no shared per-item detail page — so each
-              // row links to whichever list actually contains it.
-              <Link key={`${item.kind}-${item.id}`} href={UPCOMING_KIND_HREF[item.kind]} className={ROW_LINK_CLASS}>
-                <Card className={cn("flex items-center justify-between gap-4", ROW_CARD_CLASS)}>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-medium text-navy-900 dark:text-white">{item.title}</p>
-                      <Badge tone={UPCOMING_KIND_TONE[item.kind]}>
-                        {item.kind === "assignment" ? dict.assignments.assignment : item.kind === "quiz" ? dict.exams.quiz : dict.exams.exam}
-                      </Badge>
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{item.subjectName}</p>
-                  </div>
-                  <span className="shrink-0 text-xs text-slate-400 dark:text-navy-500">{item.date}</span>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </FadeUp>
-
-      <FadeUp delay={0.32} className="space-y-4">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-navy-100">
-          <CalendarClock className="h-4 w-4" />
-          {dict.common.todaysSchedule}
-        </h2>
-        {todaysClasses.length === 0 ? (
-          <Card>
-            <p className="text-sm text-slate-500 dark:text-navy-400">{dict.common.noClassesToday}</p>
-          </Card>
-        ) : (
-          <FadeUpStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={0.06}>
-            {todaysClasses.map((e) => (
-              <FadeUpItem key={e.id}>
-                {/* No per-timeslot detail page exists — links to the full
-                    weekly timetable, the closest real destination. */}
-                <Link href="/student/timetable" className={ROW_LINK_CLASS}>
-                  <Card className={ROW_CARD_CLASS}>
-                    <p className="text-xs font-medium text-slate-500 dark:text-navy-400">
-                      <bdi dir="ltr">{formatTime(e.start_time)} – {formatTime(e.end_time)}</bdi>
-                    </p>
-                    <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{e.subjectName}</p>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{e.teacherName}</p>
-                    {e.room && <p className="mt-0.5 text-xs text-slate-500 dark:text-navy-400">{dict.exams.room} <bdi>{e.room}</bdi></p>}
-                  </Card>
-                </Link>
-              </FadeUpItem>
-            ))}
-          </FadeUpStagger>
-        )}
-      </FadeUp>
     </div>
   );
 }

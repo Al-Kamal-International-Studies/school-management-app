@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Lora } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Sans_Arabic, Source_Serif_4 } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
 import { NativeAppBootstrap } from "@/components/NativeAppBootstrap";
 import { OfflineBanner } from "@/components/offline/OfflineBanner";
@@ -11,17 +11,30 @@ import { getTheme } from "@/lib/theme/getTheme";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 import "./globals.css";
 
-const sans = Plus_Jakarta_Sans({
+// One sans for every control, row and paragraph (IBM Plex Sans), its Arabic
+// sibling so the `ar` locale renders in the same family instead of a system
+// fallback, and one serif reserved for display lines only — page titles and
+// hero numbers (Source Serif 4). See DESIGN.md, and tailwind.config.ts for
+// why the font stacks name these families directly.
+const sans = IBM_Plex_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
+  weight: ["400", "500", "600"],
 });
 
-const display = Lora({
+const arabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic"],
+  variable: "--font-arabic",
+  display: "swap",
+  weight: ["400", "500", "600"],
+});
+
+const display = Source_Serif_4({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
-  weight: ["600", "700"],
+  weight: ["600"],
 });
 
 export const metadata: Metadata = {
@@ -60,7 +73,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={locale}
       dir={dir}
-      className={`${sans.variable} ${display.variable}${theme === "dark" ? " dark" : ""}`}
+      className={`${sans.variable} ${arabic.variable} ${display.variable}${theme === "dark" ? " dark" : ""}`}
       suppressHydrationWarning
     >
       <body>

@@ -58,8 +58,8 @@ function computePlacement(rect: Rect | null, size: { width: number; height: numb
     // keyframe animation replaces an element's *entire* computed transform
     // for its duration and — with `fill-mode: both`, which this animation
     // uses — permanently after it ends too, the exact same clobbering bug
-    // WelcomeRobot.tsx's own doc comments already warned about for a
-    // different element. It silently ate the `translate(-50%, -50%)` here,
+    // the (since removed) WelcomeRobot mascot had hit on a different
+    // element. It silently ate the `translate(-50%, -50%)` here,
     // so the "centered" welcome step actually rendered flush against the
     // container's top-left-of-center point, unshifted — invisible at a wide
     // desktop viewport (still happens to fit on-screen), but genuinely
@@ -239,7 +239,7 @@ export function TourOverlay() {
 
       {targetRect && (
         <div
-          className="pointer-events-none absolute rounded-xl ring-[3px] ring-gold-400 transition-all duration-300 ease-out"
+          className="pointer-events-none absolute rounded-xl ring-2 ring-gold-400 ring-offset-2 ring-offset-transparent transition-all duration-300 ease-out"
           style={{
             top: targetRect.top - SPOTLIGHT_PADDING,
             left: targetRect.left - SPOTLIGHT_PADDING,
@@ -268,23 +268,23 @@ export function TourOverlay() {
         // the viewport, by scrolling its own content instead — no clamp
         // can otherwise put a too-tall box fully on-screen, since there's
         // no valid position for one.
-        className="animate-fade-in-up absolute w-[min(92vw,340px)] max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-navy-gradient p-5 text-white shadow-card-hover"
+        className="animate-fade-in-up absolute w-[min(92vw,340px)] max-h-[calc(100vh-32px)] overflow-y-auto rounded-xl border border-white/10 bg-navy-950 p-5 text-white shadow-overlay"
         style={placement}
       >
         <div className="mb-3 flex items-center justify-between gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-gold-300">{stepLabel}</span>
+          <span className="text-xs font-medium text-gold-300">{stepLabel}</span>
           <button
             type="button"
             onClick={skipTour}
             aria-label={dict.tour.skip}
-            className="rounded-full p-1 text-navy-200 transition-colors hover:bg-white/10 hover:text-white"
+            className="-me-1 rounded-md p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <h3 className="font-display text-lg font-semibold text-white">{step.title(dict)}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-navy-100">{step.body(dict)}</p>
+        <p className="mt-2 text-sm leading-relaxed text-white/75">{step.body(dict)}</p>
 
         <div className="mt-4 flex items-center gap-1.5">
           {steps.map((s, i) => (
@@ -296,7 +296,7 @@ export function TourOverlay() {
         </div>
 
         <div className="mt-5 flex items-center justify-between gap-3">
-          <button type="button" onClick={skipTour} className="text-sm font-medium text-navy-200 transition-colors hover:text-white">
+          <button type="button" onClick={skipTour} className="rounded text-sm font-medium text-white/60 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
             {dict.tour.skip}
           </button>
           <div className="flex items-center gap-2">
@@ -304,13 +304,13 @@ export function TourOverlay() {
               <button
                 type="button"
                 onClick={backStep}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+                className="btn border border-white/20 px-3.5 text-white hover:bg-white/10 focus-visible:ring-white/60 focus-visible:ring-offset-navy-950"
               >
                 <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
                 {dict.tour.back}
               </button>
             )}
-            <button type="button" onClick={isLast ? finishTour : nextStep} className="btn-gold">
+            <button type="button" onClick={isLast ? finishTour : nextStep} className="btn bg-white text-navy-950 hover:bg-navy-50 focus-visible:ring-white/60 focus-visible:ring-offset-navy-950">
               {isLast ? dict.tour.finish : dict.tour.next}
               {!isLast && <ArrowRight className="h-4 w-4 rtl:rotate-180" />}
             </button>

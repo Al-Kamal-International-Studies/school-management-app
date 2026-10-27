@@ -121,55 +121,143 @@
   html {
     font-family: theme("fontFamily.sans");
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-slate-50 text-slate-900 antialiased dark:bg-navy-950 dark:text-navy-50;
-    line-height: 1.6;
+    @apply bg-slate-50 text-slate-800 antialiased dark:bg-navy-950 dark:text-navy-50;
+    line-height: 1.55;
   }
   p {
     @apply leading-relaxed;
   }
+  /* Digits line up everywhere numbers are the content: tables, stat
+     values, timetables, dates in lists. */
+  table,
+  time,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
   ::selection {
-    @apply bg-gold-200 text-navy-900 dark:bg-gold-600/50 dark:text-white;
+    @apply bg-navy-100 text-navy-950 dark:bg-navy-600/60 dark:text-white;
+  }
+  /* Native checkboxes, radios and range sliders take the brand ink instead
+     of the browser's default blue (follows the active center via the CSS
+     variable). */
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"] {
+    accent-color: rgb(var(--color-navy-800));
+  }
+  .dark input[type="checkbox"],
+  .dark input[type="radio"],
+  .dark input[type="range"] {
+    accent-color: rgb(var(--color-navy-200));
+  }
+
+  /* 44px touch targets on touch devices (DESIGN.md). Desktop keeps the
+     denser 40px control height. */
+  @media (pointer: coarse) {
+    .btn,
+    .input {
+      min-height: 44px;
+    }
+  }
+
+  /* Reduced motion shows the final state, never an empty stage. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer components {
   .font-display {
     font-family: theme("fontFamily.display");
+    font-optical-sizing: auto;
+    letter-spacing: -0.012em;
   }
 
+  /* ---- Heading roles (DESIGN.md) ------------------------------------
+     page-title: the one h1 per screen — serif, 28px/600.
+     section-title: an h2 heading a region of the page — sans 15px/600.
+     card-title: an h2/h3 inside a card — sans 15px/600, ink colour.
+     eyebrow: the small grey line above a page title. */
+  .page-title {
+    @apply font-display text-[1.75rem] font-semibold leading-9 text-navy-950 dark:text-white;
+  }
+  /* Detail headers that sit beside an avatar or above a thread/video
+     (message, class-chat, autism video pages). */
+  .page-title-compact {
+    @apply font-display text-[1.375rem] font-semibold leading-7 text-navy-950 dark:text-white;
+  }
+  .section-title {
+    @apply text-[0.9375rem] font-semibold leading-6 text-slate-900 dark:text-white;
+  }
+  .card-title {
+    @apply text-[0.9375rem] font-semibold leading-6 text-slate-900 dark:text-white;
+  }
+  .eyebrow {
+    @apply text-[0.8125rem] font-medium text-slate-500 dark:text-navy-300;
+  }
+
+  /* ---- Buttons --------------------------------------------------------
+     40px tall on desktop (44px on touch, see base layer), 6px radius,
+     medium weight. Height comes from padding + line-height rather than a
+     fixed `h-*`, so the few call sites that pass a smaller `py-*` keep
+     working. One filled button per screen; everything else is secondary
+     or a text link. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] focus-visible:ring-offset-white dark:focus-visible:ring-offset-navy-950;
+    @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium leading-6 transition-[background-color,border-color,color,box-shadow] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:translate-y-px disabled:pointer-events-none disabled:opacity-50 dark:focus-visible:ring-navy-300 dark:focus-visible:ring-offset-navy-950;
   }
   .btn-primary {
-    @apply btn bg-navy-800 text-white shadow-soft hover:bg-navy-700 hover:shadow-card focus-visible:ring-gold-400 dark:bg-navy-600 dark:hover:bg-navy-500;
+    @apply btn bg-navy-900 text-white hover:bg-navy-800 dark:bg-navy-100 dark:text-navy-950 dark:hover:bg-white;
   }
   .btn-secondary {
-    @apply btn bg-white text-navy-800 border border-slate-200 shadow-soft hover:border-navy-200 hover:bg-navy-50 focus-visible:ring-navy-400 dark:bg-navy-900 dark:text-navy-50 dark:border-navy-700 dark:hover:border-navy-500 dark:hover:bg-navy-800;
+    @apply btn border border-slate-300 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50 dark:border-navy-700 dark:bg-navy-900 dark:text-navy-50 dark:hover:border-navy-500 dark:hover:bg-navy-800;
   }
   .btn-danger {
-    @apply btn bg-red-600 text-white shadow-soft hover:bg-red-700 focus-visible:ring-red-400;
+    @apply btn bg-red-700 text-white hover:bg-red-800 focus-visible:ring-red-500;
   }
+  /* Retired: gold is a selection signal, not a button colour. Kept as an
+     alias of the primary button so any remaining call site still renders
+     as the screen's one primary action. */
   .btn-gold {
-    @apply btn bg-gold-gradient text-navy-900 shadow-gold hover:brightness-105 focus-visible:ring-gold-500;
+    @apply btn-primary;
   }
 
+  /* ---- Fields ---------------------------------------------------------- */
   .input {
-    @apply block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-soft transition-all duration-150 placeholder:text-slate-400 focus:border-navy-400 focus:outline-none focus:ring-2 focus:ring-navy-100 dark:border-navy-700 dark:bg-navy-900 dark:text-navy-50 dark:placeholder:text-navy-500 dark:focus:border-gold-400 dark:focus:ring-navy-800;
+    @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-[7px] text-sm leading-6 text-slate-900 transition-[border-color,box-shadow] duration-150 placeholder:text-slate-400 hover:border-slate-400 focus:border-navy-600 focus:outline-none focus:ring-[3px] focus:ring-navy-600/15 dark:border-navy-700 dark:bg-navy-900 dark:text-navy-50 dark:placeholder:text-navy-500 dark:hover:border-navy-600 dark:focus:border-navy-300 dark:focus:ring-navy-300/20;
   }
   .label {
-    @apply mb-2 block text-sm font-medium text-slate-700 dark:text-navy-200;
+    @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-navy-200;
   }
+
+  /* ---- Surfaces ---------------------------------------------------------
+     A card holds an object (a class, a student, a table, a form). Hairline
+     border, a whisper of shadow, 10px radius. */
   .card {
-    @apply rounded-2xl border border-slate-200/70 bg-white shadow-card transition-shadow duration-200 dark:border-navy-800 dark:bg-navy-900;
+    @apply rounded-xl border border-slate-200 bg-white shadow-card dark:border-navy-800 dark:bg-navy-900;
   }
   .card-hover {
-    @apply hover:shadow-card-hover;
+    @apply transition-[border-color,box-shadow] duration-150 hover:border-slate-300 hover:shadow-card-hover dark:hover:border-navy-700;
   }
 
   .card table tbody tr {
-    @apply transition-colors duration-150 hover:bg-navy-50/40 dark:hover:bg-white/5;
+    @apply transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-white/[0.03];
   }
 }
 
@@ -187,7 +275,7 @@
      actively being scrolled, then fades back out shortly after scrolling
      stops. The sidebar is a fixed dark navy gradient regardless of the
      app's light/dark theme, so this is themed against that navy
-     background specifically (gold accent, thin + rounded), not against
+     background specifically (thin, rounded, translucent white), not against
      `dark:` — Tailwind's scrollbar utilities don't reach
      ::-webkit-scrollbar or Firefox's scrollbar-color, so this needs plain
      CSS.
@@ -202,14 +290,13 @@
      behavior still works correctly there. */
   .nav-scrollbar {
     scrollbar-width: thin;
-    /* rgb(212 175 55) was gold-500's literal value — now the CSS variable,
-       so this follows AKET's amber accent too instead of staying
-       AKIS-gold regardless of the active center. */
-    scrollbar-color: rgb(var(--color-gold-500) / 0) transparent;
+    /* Neutral white thumb (redesign): gold is reserved for the selected
+       nav item, so the scrollbar no longer borrows it. */
+    scrollbar-color: rgb(255 255 255 / 0) transparent;
     transition: scrollbar-color 300ms ease;
   }
   .nav-scrollbar.is-scrolling {
-    scrollbar-color: rgb(var(--color-gold-500) / 0.35) transparent;
+    scrollbar-color: rgb(255 255 255 / 0.22) transparent;
   }
   .nav-scrollbar::-webkit-scrollbar {
     width: 6px;
@@ -218,7 +305,7 @@
     background: transparent;
   }
   .nav-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgb(var(--color-gold-500) / 0.35);
+    background-color: rgb(255 255 255 / 0.22);
     border-radius: 9999px;
     opacity: 0;
     transition: opacity 300ms ease;
@@ -227,6 +314,6 @@
     opacity: 1;
   }
   .nav-scrollbar.is-scrolling::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(var(--color-gold-500) / 0.65);
+    background-color: rgb(255 255 255 / 0.4);
   }
 }

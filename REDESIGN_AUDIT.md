@@ -1,5 +1,10 @@
 # Redesign Audit — Al Kamal International Studies App
 
+> **Superseded (2026-10-27).** The full corporate redesign that followed this
+> audit replaced the font pairing, retired gold as a button/glow colour and
+> removed the mascots — see `DESIGN.md` for the current rules and HANDOVER.md
+> Part 35 for what changed and why. The findings below are kept as history.
+
 *Scan date: 2026-10-01. Scope: design system config, all `src/components/ui` primitives, the nav shell, the auth shell, and a representative cross-section of ~15 pages across admin/teacher/student/parent/settings/auth flows.*
 
 ## Headline finding

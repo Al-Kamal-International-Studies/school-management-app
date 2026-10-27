@@ -121,7 +121,7 @@ export function AvatarUpload({
       <motion.button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="group relative h-24 w-24 overflow-hidden rounded-full bg-navy-gradient shadow-card ring-4 ring-white"
+        className="group relative h-24 w-24 overflow-hidden rounded-full bg-navy-800 shadow-card ring-4 ring-white"
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
       >
