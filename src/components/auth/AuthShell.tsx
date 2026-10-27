@@ -1,6 +1,7 @@
 "use client";
 
-import { GraduationCap, ShieldCheck, Landmark } from "lucide-react";
+import { GraduationCap, ShieldCheck, Landmark, LogOut } from "lucide-react";
+import { signOutAction } from "@/app/logout/actions";
 import { CenterLogo } from "./CenterLogo";
 import { AuthBackground } from "./AuthBackground";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -18,7 +19,18 @@ import type { ReactNode } from "react";
  * (AuthBackground) — beside a plain form panel. The drifting glow blobs,
  * walking robot mascots and sign-in confetti were removed.
  */
-export function AuthShell({ children }: { children: ReactNode }) {
+export function AuthShell({
+  children,
+  signOutExit = false,
+}: {
+  children: ReactNode;
+  /** For the steps that come AFTER a correct password (2FA, passkey setup,
+   *  forced password change, device limit): the session already exists, so
+   *  reopening the app resumes here. This gives the visitor a way out —
+   *  a real sign-out (not just a link, which the gate would bounce back
+   *  from) that returns them to /login. */
+  signOutExit?: boolean;
+}) {
   const { dict } = useLocale();
   const { theme } = useTheme();
   const center = AKIS_CENTER;
@@ -72,7 +84,20 @@ export function AuthShell({ children }: { children: ReactNode }) {
             never fail to become visible. Plain CSS keyframe (no JS
             completion dependency; its before/after states are both normal,
             opaque CSS), and the only animation on the page. */}
-        <div className="w-full max-w-[400px] animate-fade-in-up">{children}</div>
+        <div className="w-full max-w-[400px] animate-fade-in-up">
+          {children}
+          {signOutExit && (
+            <form action={signOutAction} className="mt-8 border-t border-slate-200 pt-6 text-center dark:border-navy-800">
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-navy-700 transition-colors hover:text-navy-950 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:text-navy-200 dark:hover:text-white"
+              >
+                <LogOut className="h-4 w-4 rtl:rotate-180" strokeWidth={1.75} />
+                {dict.common.signOutToSignIn}
+              </button>
+            </form>
+          )}
+        </div>
       </main>
     </div>
   );

@@ -22,7 +22,7 @@ export default async function ForcePasswordChangePage() {
   const minLength = profile.role === "admin" ? MIN_PASSWORD_LENGTH_ADMIN : MIN_PASSWORD_LENGTH;
 
   return (
-    <AuthShell>
+    <AuthShell signOutExit>
       <div className="mb-8">
         <h1 className="page-title">{dict.forcePasswordChange.title}</h1>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-navy-400">{dict.forcePasswordChange.message}</p>

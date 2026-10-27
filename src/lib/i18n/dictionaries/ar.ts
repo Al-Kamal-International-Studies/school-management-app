@@ -56,6 +56,7 @@ const ar: Dictionary = {
     openMenu: "فتح القائمة",
     closeMenu: "إغلاق القائمة",
     signOut: "تسجيل الخروج",
+    signOutToSignIn: "تسجيل الخروج والعودة إلى صفحة الدخول",
     noClasses: "لا توجد حصص",
     todaysSchedule: "جدول اليوم",
     todaysScheduleAndClasses: "جدول اليوم وفصولك.",

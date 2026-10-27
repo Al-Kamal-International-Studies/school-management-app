@@ -57,6 +57,7 @@ const en = {
     openMenu: "Open menu",
     closeMenu: "Close menu",
     signOut: "Sign out",
+    signOutToSignIn: "Sign out and return to sign in",
     noClasses: "No classes",
     todaysSchedule: "Today's schedule",
     todaysScheduleAndClasses: "Today's schedule and your classes.",

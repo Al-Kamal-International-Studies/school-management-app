@@ -23,7 +23,7 @@ export default async function MfaSetupPage() {
 
 
   return (
-    <AuthShell>
+    <AuthShell signOutExit>
       <div className="mb-8">
         <h1 className="page-title">
           Set up two-factor authentication

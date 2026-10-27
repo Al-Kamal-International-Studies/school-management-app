@@ -34,7 +34,7 @@ export default async function SetupPasskeyPage() {
   const dict = await getDictionary(await getLocale());
 
   return (
-    <AuthShell>
+    <AuthShell signOutExit>
       <div className="mb-8">
         <h1 className="page-title">{dict.passkeySuggestion.title}</h1>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-navy-400">{dict.passkeySuggestion.subtitle}</p>

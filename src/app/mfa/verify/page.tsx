@@ -26,7 +26,7 @@ export default async function MfaVerifyPage() {
 
 
   return (
-    <AuthShell>
+    <AuthShell signOutExit>
       <div className="mb-8">
         <h1 className="page-title">Verify it's you</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">
