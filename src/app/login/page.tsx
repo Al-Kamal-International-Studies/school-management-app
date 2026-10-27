@@ -12,13 +12,15 @@ export default async function LoginPage({
 }) {
   const profile = await getCurrentProfile();
   if (profile) {
-    redirect(dashboardPathForRole(profile.role));
+    // A locked/deactivated account's session must be ended, not bounced to
+    // a dashboard that sends it straight back here (a redirect loop).
+    redirect(profile.is_active ? dashboardPathForRole(profile.role) : "/access-revoked");
   }
 
   const { next, error } = await searchParams;
   const dict = await getDictionary(await getLocale());
   const notice =
-    error === "account_deactivated" ? dict.login.deactivated : error === "no_access" ? dict.login.noAccess : undefined;
+    error === "account_deactivated" ? dict.login.deactivated : error === "account_locked" ? dict.login.locked : error === "no_access" ? dict.login.noAccess : undefined;
 
   return (
     <AuthShell>

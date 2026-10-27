@@ -68,7 +68,7 @@ export async function requireRole(...roles: UserRole[]): Promise<Profile> {
   }
 
   if (!profile.is_active) {
-    redirect("/login?error=account_deactivated");
+    redirect("/access-revoked");
   }
 
   if (!roles.includes(profile.role)) {
@@ -91,7 +91,7 @@ export async function requireRole(...roles: UserRole[]): Promise<Profile> {
  * (the 2026-10-02 audit found /profile, /messages, /class-chat and ~12 shared
  * actions were checking sign-in only — HANDOVER Part 33).
  */
-async function enforceSecurityGates(profile: Profile): Promise<void> {
+const enforceSecurityGates = cache(async (profile: Profile): Promise<void> => {
   // An admin who already has a real MFA factor enrolled must clear that
   // challenge (reach aal2) before force-password-change is even attempted —
   // Supabase's own Auth API rejects auth.updateUser({password}) at aal1
@@ -117,7 +117,7 @@ async function enforceSecurityGates(profile: Profile): Promise<void> {
   if (profile.role === "admin") {
     await requireAdminMfaVerified(profile.id);
   }
-}
+});
 
 /**
  * Like requireRole() for a page or Server Action that any signed-in role may
@@ -135,11 +135,26 @@ export async function requireSession(): Promise<Profile> {
   }
 
   if (!profile.is_active) {
-    redirect("/login?error=account_deactivated");
+    redirect("/access-revoked");
   }
 
   await enforceSecurityGates(profile);
 
+  return profile;
+}
+
+/**
+ * For (dashboard)/layout.tsx: every gate requireRole() applies (security gates
+ * plus the passkey nudge), but role-agnostic. Run in the layout, BEFORE the
+ * dashboard shell renders — otherwise the shell and the route's loading.tsx
+ * stream to the browser first and the role layout's redirect to /mfa/verify
+ * (or /setup-passkey…) only lands afterwards, showing a blink of the
+ * dashboard (HANDOVER Part 40). The gates are cache()d per request, so the
+ * role layout's requireRole() re-check costs nothing.
+ */
+export async function requireDashboardAccess(): Promise<Profile> {
+  const profile = await requireSession();
+  await requirePasskeyPromptResolved(profile);
   return profile;
 }
 
@@ -223,7 +238,7 @@ export async function requireAdminMfaVerified(userId: string): Promise<void> {
  * Auth API hiccup here must not turn into "can't get into the account at
  * all, ever."
  */
-async function requireAdminMfaChallengeIfEnrolled(): Promise<void> {
+export async function requireAdminMfaChallengeIfEnrolled(): Promise<void> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
@@ -250,7 +265,7 @@ async function requireAdminMfaChallengeIfEnrolled(): Promise<void> {
  * webauthn_credentials lookup, the same "cheap once resolved" shape as
  * requireDeviceApproved above.
  */
-async function requirePasskeyPromptResolved(profile: Profile): Promise<void> {
+const requirePasskeyPromptResolved = cache(async (profile: Profile): Promise<void> => {
   if (profile.passkey_prompt_dismissed_at) return;
 
   const supabase = await createClient();
@@ -262,7 +277,7 @@ async function requirePasskeyPromptResolved(profile: Profile): Promise<void> {
   if ((count ?? 0) === 0) {
     redirect("/setup-passkey");
   }
-}
+});
 
 export function dashboardPathForRole(role: UserRole): string {
   switch (role) {

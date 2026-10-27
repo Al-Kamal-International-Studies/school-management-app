@@ -1,18 +1,13 @@
 import { redirect } from "next/navigation";
-import { getCurrentProfile } from "@/lib/auth";
+import { requireDashboardAccess } from "@/lib/auth";
 import { DashboardShell } from "@/components/nav/DashboardShell";
 import { hasAkisAccess } from "@/lib/centers/hasAkisAccess";
 import { listMyNotifications } from "@/lib/notifications/queries";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const profile = await getCurrentProfile();
-
-  if (!profile) {
-    redirect("/login");
-  }
-  if (!profile.is_active) {
-    redirect("/login?error=account_deactivated");
-  }
+  // Every security gate (2FA, forced password change, device, passkey nudge)
+  // runs here, before the shell renders — see requireDashboardAccess().
+  const profile = await requireDashboardAccess();
 
   const [akisAccess, notifications] = await Promise.all([hasAkisAccess(profile.id), listMyNotifications(profile.id)]);
 

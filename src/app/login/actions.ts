@@ -8,6 +8,7 @@ import { setAccountBanned } from "@/lib/auth/accountAccess";
 import { logAuditEvent } from "@/lib/audit/log";
 import { completeLogin } from "@/lib/auth/completeLogin";
 import { WEBAUTHN_LOGIN_VERIFIED_COOKIE } from "@/lib/webauthn/config";
+import { MAX_FAILED_ATTEMPTS, ACCOUNT_LOCKED_MESSAGE } from "@/lib/auth/lockout";
 
 export interface LoginState {
   error?: string;
@@ -16,11 +17,6 @@ export interface LoginState {
 const LOGIN_MAX_ATTEMPTS = 10;
 const LOGIN_WINDOW_SECONDS = 15 * 60;
 
-/** Account auto-deactivates after this many *consecutive* failed attempts —
- * a real, permanent-until-an-admin-fixes-it lockout, separate from and in
- * addition to the rate limiter above (which just slows down guessing for
- * 15 minutes and resets itself; this one actually disables the account). */
-const MAX_FAILED_ATTEMPTS = 3;
 
 export async function loginAction(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
@@ -74,13 +70,25 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
       .is("archived_at", null)
       .maybeSingle();
 
-    if (target && target.is_active) {
+    // Already locked (or deactivated by an admin): the Auth-level ban makes
+    // signInWithPassword fail even with the CORRECT password, which lands
+    // here — say the account is locked rather than "incorrect password".
+    if (target && !target.is_active) {
+      return {
+        error:
+          target.failed_login_attempts >= MAX_FAILED_ATTEMPTS
+            ? ACCOUNT_LOCKED_MESSAGE
+            : "This account has been deactivated. Contact your administrator.",
+      };
+    }
+
+    if (target) {
       const attempts = target.failed_login_attempts + 1;
       if (attempts >= MAX_FAILED_ATTEMPTS) {
         await admin.from("profiles").update({ failed_login_attempts: attempts, is_active: false }).eq("id", target.id);
         await setAccountBanned(target.id, true);
         await logAuditEvent(target.id, "auto_deactivate_failed_logins", "profiles", target.id, { attempts });
-        return { error: "This account has been deactivated after 3 failed attempts. Contact your administrator." };
+        return { error: ACCOUNT_LOCKED_MESSAGE };
       }
       await admin.from("profiles").update({ failed_login_attempts: attempts }).eq("id", target.id);
     }
@@ -101,8 +109,13 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
 
   if (!profile.is_active) {
     await supabase.auth.signOut();
-    return { error: "This account has been deactivated. Contact your administrator." };
+    return {
+      error:
+        profile.failed_login_attempts >= MAX_FAILED_ATTEMPTS
+          ? ACCOUNT_LOCKED_MESSAGE
+          : "This account has been deactivated. Contact your administrator.",
+    };
   }
 
-  return completeLogin(profile, { email, centerDeniedMessage: "Incorrect email or password.", next });
+  return completeLogin(profile, { email, centerDeniedMessage: "Incorrect email or password.", next, passwordLogin: true });
 }

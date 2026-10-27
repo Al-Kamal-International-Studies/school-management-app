@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { dashboardPathForRole } from "@/lib/auth";
+import { dashboardPathForRole, requireAdminMfaChallengeIfEnrolled } from "@/lib/auth";
 import { getDeviceIdCookie, setDeviceCookie, labelFromUserAgent, locationFromHeaders, MAX_DEVICES } from "@/lib/auth/deviceCookie";
 import { recordRateLimitAttempt } from "@/lib/security/rateLimit";
 import { safeNext } from "@/lib/auth/safeNext";
@@ -102,7 +102,12 @@ async function verifyLoginCenter(profileId: string): Promise<string | null> {
  */
 export async function completeLogin(
   profile: Pick<Profile, "id" | "role" | "failed_login_attempts">,
-  { email, centerDeniedMessage, next }: { email: string; centerDeniedMessage: string; next?: string }
+  {
+    email,
+    centerDeniedMessage,
+    next,
+    passwordLogin = false,
+  }: { email: string; centerDeniedMessage: string; next?: string; passwordLogin?: boolean }
 ): Promise<{ error?: string }> {
   if (profile.failed_login_attempts > 0) {
     const admin = createAdminClient();
@@ -118,7 +123,7 @@ export async function completeLogin(
     // center" guesses against the same email can't be used to double an
     // attacker's effective attempt budget. Deliberately NOT the separate,
     // harsher failed_login_attempts/3-strikes account-deactivation counter
-    // (lib/auth.ts's MAX_FAILED_ATTEMPTS, checked in login/actions.ts) —
+    // (lib/auth/lockout.ts's MAX_FAILED_ATTEMPTS, checked in login/actions.ts) —
     // that counter's whole purpose is tracking wrong *password* guesses, and
     // this is a correct password on the wrong center selection, a plausible
     // innocent mistake (shared computer, stale picker choice) rather than a
@@ -139,6 +144,13 @@ export async function completeLogin(
   const deviceStatus = await ensureDeviceRegistered(profile.id);
   if (deviceStatus === "limit_reached") {
     redirect("/devices/manage");
+  }
+
+  // A password sign-in by an admin goes straight to the 2FA step — never
+  // via the dashboard URL first (HANDOVER Part 40). Passkey sign-ins skip
+  // this: the passkey already is the second factor.
+  if (passwordLogin && profile.role === "admin") {
+    await requireAdminMfaChallengeIfEnrolled();
   }
 
   redirect(safeNext(next) ?? dashboardPathForRole(profile.role));

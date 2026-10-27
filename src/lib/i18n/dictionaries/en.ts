@@ -116,6 +116,7 @@ const en = {
     signingIn: "Signing in…",
     footer: "Accounts are created by your school administrator. Contact them if you need access.",
     deactivated: "This account has been deactivated. Please contact your administrator.",
+    locked: "This account is locked after 3 failed sign-in attempts. Contact your administrator to unlock it.",
     noAccess: "This account doesn't have access to Al Kamal International Studies. Please contact your administrator.",
     showPassword: "Show password",
     hidePassword: "Hide password",
