@@ -18,14 +18,14 @@ const MAX_VIDEO_BYTES = 150 * 1024 * 1024; // 150MB — keep in sync with 0039_l
 const VIDEO_PATH_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(mp4|mov|webm)$/;
 
 const prepareUploadSchema = z.object({
-  student_id: z.string().uuid(),
+  student_id: z.string().guid(),
   file_type: z.string(),
   file_size: z.number().int().positive(),
   file_name: z.string().max(300),
 });
 
 const finalizeUploadSchema = z.object({
-  student_id: z.string().uuid(),
+  student_id: z.string().guid(),
   path: z.string().regex(VIDEO_PATH_RE),
   title: z.string().trim().max(200).optional(),
 });
@@ -146,7 +146,7 @@ export async function finalizeAutismVideoUploadAction(input: {
 }
 
 const commentSchema = z.object({
-  video_id: z.string().uuid(),
+  video_id: z.string().guid(),
   content: z.string().trim().min(1).max(4000),
 });
 

@@ -13,7 +13,7 @@ export interface ActionState {
 }
 
 const remarkSchema = z.object({
-  student_id: z.string().uuid(),
+  student_id: z.string().guid(),
   remark: requiredText("Remark is required.", 2000),
 });
 
@@ -33,7 +33,7 @@ export async function addRemarkAction(_prevState: ActionState, formData: FormDat
 }
 
 const behaviourSchema = z.object({
-  student_id: z.string().uuid(),
+  student_id: z.string().guid(),
   category: z.enum(["positive", "negative"]),
   description: requiredText("Description is required.", 2000),
 });

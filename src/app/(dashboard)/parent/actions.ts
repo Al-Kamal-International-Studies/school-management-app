@@ -15,7 +15,7 @@ export interface ActionState {
 // Built per call (not at module load) because the date window depends on "today".
 const leaveSchema = () =>
   z
-  .object({ student_id: z.string().uuid(), ...leaveRequestFields(schoolToday()) })
+  .object({ student_id: z.string().guid(), ...leaveRequestFields(schoolToday()) })
   .refine((d) => d.end_date >= d.start_date, { message: "End date must be on or after the start date.", path: ["end_date"] });
 
 /** Submits a leave request on behalf of a linked child. RLS (is_parent_of) rejects any other student_id. */

@@ -11,7 +11,7 @@ export interface ActionState {
 }
 
 const messageSchema = z.object({
-  channel_id: z.string().uuid(),
+  channel_id: z.string().guid(),
   content: z.string().trim().min(1).max(4000),
 });
 

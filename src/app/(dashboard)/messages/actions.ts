@@ -47,7 +47,7 @@ export async function startConversationAction(otherUserId: string) {
 }
 
 const messageSchema = z.object({
-  conversation_id: z.string().uuid(),
+  conversation_id: z.string().guid(),
   content: z.string().trim().min(1).max(2000),
 });
 

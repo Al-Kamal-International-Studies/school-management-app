@@ -16,9 +16,9 @@ export interface ActionState {
 const percent = numberInRange("Enter a number from 0 to 100.", { min: 0, max: 100 });
 
 const entrySchema = z.object({
-  student_id: z.string().uuid(),
-  subject_id: z.string().uuid(),
-  class_id: z.string().uuid(),
+  student_id: z.string().guid(),
+  subject_id: z.string().guid(),
+  class_id: z.string().guid(),
   // "YYYY-MM" (what <input type="month"> sends) or "YYYY-MM-01"; browsers without a
   // month picker send free text, so it is validated, and a progress report can't
   // be filed for a future month (it used to become the student's "current" score)

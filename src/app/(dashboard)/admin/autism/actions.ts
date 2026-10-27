@@ -12,8 +12,8 @@ export interface ActionState {
 }
 
 const assignmentSchema = z.object({
-  teacher_id: z.string().uuid(),
-  student_id: z.string().uuid(),
+  teacher_id: z.string().guid(),
+  student_id: z.string().guid(),
 });
 
 /**

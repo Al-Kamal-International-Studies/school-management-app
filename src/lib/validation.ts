@@ -8,7 +8,9 @@ import { z } from "zod";
  * now fails validation with `message` instead.
  */
 export function numberInRange(message: string, { min, max, gt }: { min?: number; max?: number; gt?: number } = {}) {
-  let n = z.coerce.number({ required_error: message, invalid_type_error: message }).finite(message);
+  // Zod 4: `{ error }` replaces v3's required_error/invalid_type_error, and
+  // numbers are finite by default (v3's .finite() is no longer needed).
+  let n = z.coerce.number({ error: message });
   if (min !== undefined) n = n.min(min, message);
   if (max !== undefined) n = n.max(max, message);
   if (gt !== undefined) n = n.gt(gt, message);

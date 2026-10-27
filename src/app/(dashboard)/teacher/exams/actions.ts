@@ -14,8 +14,8 @@ export interface ActionState {
 }
 
 const examSchema = z.object({
-  class_id: z.string().uuid(),
-  subject_id: z.string().uuid(),
+  class_id: z.string().guid(),
+  subject_id: z.string().guid(),
   title: requiredText("Title is required.", 200),
   exam_type: z.enum(["exam", "quiz"]),
   exam_date: z.string().min(1, "Date is required."),

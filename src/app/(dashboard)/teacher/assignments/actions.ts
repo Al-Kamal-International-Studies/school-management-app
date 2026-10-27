@@ -14,8 +14,8 @@ export interface ActionState {
 }
 
 const assignmentSchema = z.object({
-  class_id: z.string().uuid(),
-  subject_id: z.string().uuid(),
+  class_id: z.string().guid(),
+  subject_id: z.string().guid(),
   title: requiredText("Title is required.", 200),
   description: z.string().trim().max(5000, "Keep the description under 5000 characters.").optional(),
   due_date: z.string().min(1, "Due date is required."),
@@ -62,8 +62,8 @@ export async function createAssignmentAction(_prevState: ActionState, formData: 
 }
 
 const gradeSchema = z.object({
-  assignment_id: z.string().uuid(),
-  student_id: z.string().uuid(),
+  assignment_id: z.string().guid(),
+  student_id: z.string().guid(),
   // A blank grade must NOT become a real 0 that marks the work "graded".
   grade: numberInRange("Enter a grade between 0 and 100.", { min: 0, max: 100 }),
   feedback: z.string().trim().max(2000, "Keep the feedback under 2000 characters.").optional(),

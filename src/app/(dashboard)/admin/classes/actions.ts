@@ -88,9 +88,9 @@ export async function updateClassAction(_prevState: ActionState, formData: FormD
 }
 
 const assignTeacherSchema = z.object({
-  class_id: z.string().uuid(),
-  subject_id: z.string().uuid(),
-  teacher_id: z.string().uuid(),
+  class_id: z.string().guid(),
+  subject_id: z.string().guid(),
+  teacher_id: z.string().guid(),
 });
 
 export async function assignSubjectTeacherAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {

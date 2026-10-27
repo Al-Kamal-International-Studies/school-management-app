@@ -12,9 +12,9 @@ export interface ActionState {
 }
 
 const entrySchema = z.object({
-  class_id: z.string().uuid(),
-  subject_id: z.string().uuid(),
-  teacher_id: z.string().uuid(),
+  class_id: z.string().guid(),
+  subject_id: z.string().guid(),
+  teacher_id: z.string().guid(),
   day_of_week: z.coerce.number().int().min(1).max(7),
   start_time: z.string().regex(/^\d{2}:\d{2}$/, "Enter a start time."),
   end_time: z.string().regex(/^\d{2}:\d{2}$/, "Enter an end time."),

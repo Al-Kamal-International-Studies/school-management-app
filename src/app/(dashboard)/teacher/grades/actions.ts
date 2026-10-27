@@ -13,9 +13,9 @@ export interface ActionState {
 }
 
 const gradeSchema = z.object({
-  student_id: z.string().uuid(),
-  subject_id: z.string().uuid(),
-  class_id: z.string().uuid(),
+  student_id: z.string().guid(),
+  subject_id: z.string().guid(),
+  class_id: z.string().guid(),
   assessment_name: requiredText("Assessment name is required.", 200),
   marks_obtained: numberInRange("Enter the marks obtained (0 or more).", { min: 0, max: 9999 }),
   marks_total: numberInRange("Enter the total marks (greater than 0).", { gt: 0, max: 9999 }),

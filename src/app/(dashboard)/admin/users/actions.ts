@@ -180,7 +180,7 @@ function friendlyDbError(message: string): string {
 }
 
 const updateUserSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().guid(),
   full_name: z.string().trim().min(2, "Full name is required."),
   phone: z.string().optional(),
   class_id: z.string().optional(),
@@ -327,7 +327,7 @@ export async function archiveUserAction(userId: string) {
 export async function adminSetUserPasswordAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const me = await requireRole("admin");
 
-  const schema = z.object({ id: z.string().uuid(), password: z.string() });
+  const schema = z.object({ id: z.string().guid(), password: z.string() });
   const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: "Invalid form data." };
 
