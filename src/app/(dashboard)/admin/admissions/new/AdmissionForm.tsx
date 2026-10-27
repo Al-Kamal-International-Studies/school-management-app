@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import { createAdmissionAction, updateAdmissionAction, type ActionState } from "../actions";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { AKIS_CENTER_ID, AKET_CENTER_ID, type Admission, type ClassRow } from "@/lib/types/database.types";
+import { AKIS_CENTER_ID, type Admission, type ClassRow } from "@/lib/types/database.types";
 import type { Dictionary } from "@/lib/i18n/types";
 
 const initialState: ActionState = {};
@@ -45,8 +45,6 @@ export function AdmissionForm({
   dict,
   classes,
   admission,
-  allowedCenters = ["AKIS", "AKET"],
-  defaultCenter,
 }: {
   dict: Dictionary;
   classes: Pick<ClassRow, "id" | "name" | "section" | "center_id">[];
@@ -54,45 +52,17 @@ export function AdmissionForm({
    * — pre-fills every field with the admission's currently-saved data and
    * submits to updateAdmissionAction instead of createAdmissionAction. */
   admission?: Admission;
-  /** Centers this admin may admit into (default: both). */
-  allowedCenters?: ("AKIS" | "AKET")[];
-  /** Pre-selected center for a NEW admission (default: AKIS). */
-  defaultCenter?: "AKIS" | "AKET";
 }) {
   const editing = admission !== undefined;
   const boundUpdateAction = editing ? updateAdmissionAction.bind(null, admission.id) : null;
   const [state, formAction] = useActionState(boundUpdateAction ?? createAdmissionAction, initialState);
-  const [center, setCenter] = useState<"AKIS" | "AKET">(admission ? (admission.center_id === AKET_CENTER_ID ? "AKET" : "AKIS") : (defaultCenter ?? "AKIS"));
-  const [isAutistic, setIsAutistic] = useState(admission?.is_autistic ?? false);
-  // The full class list (both centers) is fetched once server-side and
-  // filtered here by the locally-toggled `center` — same shape as this
-  // form's existing center-conditional sections below, just applied to a
-  // fetched list instead of a hardcoded block of fields.
-  const classesForCenter = classes.filter((c) => c.center_id === (center === "AKIS" ? AKIS_CENTER_ID : AKET_CENTER_ID));
+  // Single institution (AKIS, HANDOVER Part 37): only AKIS classes are offered.
+  const classesForCenter = classes.filter((c) => c.center_id === AKIS_CENTER_ID);
 
   return (
     <ActionForm action={formAction} state={state} className="space-y-6">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {editing && <Alert tone="info">{dict.admissions.editScopeNote}</Alert>}
-
-      <Select
-        label={dict.admissions.chooseCenter}
-        name="center"
-        value={center}
-        onChange={(e) => {
-          const next = e.target.value as "AKIS" | "AKET";
-          setCenter(next);
-          // is_autistic can only ever be true for AKET (DB constraint,
-          // 0040_admissions_autism_and_class.sql) — the toggle and its
-          // fields are hidden entirely for AKIS below, so reset the state
-          // too rather than leaving a stale "checked" value the user can no
-          // longer see or uncheck.
-          if (next === "AKIS") setIsAutistic(false);
-        }}
-      >
-        {allowedCenters.includes("AKIS") && <option value="AKIS">{dict.admissions.centerAkis}</option>}
-        {allowedCenters.includes("AKET") && <option value="AKET">{dict.admissions.centerAket}</option>}
-      </Select>
 
       <SectionCard title={dict.admissions.sectionStudent}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -167,67 +137,6 @@ export function AdmissionForm({
         <Input label={dict.admissions.medicalAllergiesDetail} name="medical_allergies_detail" defaultValue={admission?.medical_allergies_detail ?? undefined} />
       </SectionCard>
 
-      {/* AKET only (Autism Section is a confirmed AKET-only program, enforced
-          at the DB level too — see 0040_admissions_autism_and_class.sql).
-          Intentionally NOT asking for a type/severity here — the school
-          determines that later via an in-person evaluation with the Autism
-          Teacher present; this only captures what a parent can answer on a
-          form, to inform that evaluation. */}
-      {center === "AKET" && (
-        <SectionCard title={dict.admissions.sectionAutism}>
-          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-navy-200">
-            <input
-              type="checkbox"
-              name="is_autistic"
-              className={CHECKBOX_CLASS}
-              checked={isAutistic}
-              onChange={(e) => setIsAutistic(e.target.checked)}
-            />
-            {dict.admissions.isAutisticQuestion}
-          </label>
-          <p className="text-xs leading-relaxed text-slate-500 dark:text-navy-400">{dict.admissions.autismSectionHint}</p>
-
-          {isAutistic && (
-            <div className="space-y-4 border-t border-slate-200 pt-4 dark:border-navy-700">
-              <CheckboxField name="autism_diagnosed_before" label={dict.admissions.autismDiagnosedBefore} defaultChecked={admission?.autism_diagnosed_before} />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input label={dict.admissions.autismDiagnosisDate} name="autism_diagnosis_date" type="date" defaultValue={admission?.autism_diagnosis_date ?? undefined} />
-                <Input label={dict.admissions.autismDiagnosedBy} name="autism_diagnosed_by" defaultValue={admission?.autism_diagnosed_by ?? undefined} />
-              </div>
-              <Textarea
-                label={dict.admissions.autismCurrentSupport}
-                name="autism_current_support"
-                rows={2}
-                hint={dict.admissions.autismCurrentSupportHint}
-                defaultValue={admission?.autism_current_support ?? undefined}
-              />
-              <Textarea
-                label={dict.admissions.autismCommunicationAbility}
-                name="autism_communication_ability"
-                rows={2}
-                hint={dict.admissions.autismCommunicationAbilityHint}
-                defaultValue={admission?.autism_communication_ability ?? undefined}
-              />
-              <Textarea
-                label={dict.admissions.autismSensoryNotes}
-                name="autism_sensory_notes"
-                rows={2}
-                hint={dict.admissions.autismSensoryNotesHint}
-                defaultValue={admission?.autism_sensory_notes ?? undefined}
-              />
-              <Textarea label={dict.admissions.autismBehavioralNotes} name="autism_behavioral_notes" rows={2} defaultValue={admission?.autism_behavioral_notes ?? undefined} />
-              <Textarea
-                label={dict.admissions.autismParentNotes}
-                name="autism_parent_notes"
-                rows={2}
-                hint={dict.admissions.autismParentNotesHint}
-                defaultValue={admission?.autism_parent_notes ?? undefined}
-              />
-            </div>
-          )}
-        </SectionCard>
-      )}
-
       <SectionCard title={dict.admissions.sectionConsent}>
         <CheckboxField name="consent_accepted" label={dict.admissions.consentAccepted} defaultChecked={admission?.consent_accepted} />
       </SectionCard>
@@ -236,21 +145,15 @@ export function AdmissionForm({
         <CheckboxField name="payment_policy_accepted" label={dict.admissions.paymentPolicyAccepted} defaultChecked={admission?.payment_policy_accepted} />
       </SectionCard>
 
-      {center === "AKIS" && (
-        <SectionCard title={dict.admissions.sectionAdditional}>
-          <CheckboxField
-            name="additional_policies_accepted"
-            label={dict.admissions.additionalPoliciesAccepted}
-            defaultChecked={admission?.additional_policies_accepted ?? undefined}
-          />
-        </SectionCard>
-      )}
+      <SectionCard title={dict.admissions.sectionAdditional}>
+        <CheckboxField
+          name="additional_policies_accepted"
+          label={dict.admissions.additionalPoliciesAccepted}
+          defaultChecked={admission?.additional_policies_accepted ?? undefined}
+        />
+      </SectionCard>
 
-      {center === "AKIS" ? (
-        <Input label={dict.admissions.enrolmentGrade} name="enrolment_grade" defaultValue={admission?.enrolment_grade ?? undefined} />
-      ) : (
-        <Input label={dict.admissions.packageName} name="package_name" defaultValue={admission?.package_name ?? undefined} />
-      )}
+      <Input label={dict.admissions.enrolmentGrade} name="enrolment_grade" defaultValue={admission?.enrolment_grade ?? undefined} />
 
       <SubmitButton dict={dict} editing={editing} />
     </ActionForm>

@@ -5,12 +5,10 @@
 // static, immutable assets (icons, manifest, built JS/CSS chunks) — WITH
 // ONE DELIBERATE EXCEPTION: /offline (see below), a genuinely static,
 // no-auth, no-server-fetch route (app/offline/page.tsx) built specifically
-// to be cacheable, which is the real answer to "does this app have actual
-// offline behavior" (see HANDOVER.md's App Store plan / Apple Guideline
-// 4.2). Caching /offline is not a change to the "never cache per-user data"
-// rule above — it's a static shell that reads its own per-user summary out
-// of localStorage client-side (see lib/offline/offlineCache.ts), never out
-// of this cache.
+// to be cacheable, so a lost connection shows a clear "you're offline"
+// screen instead of the browser's error page. Caching /offline is not a
+// change to the "never cache per-user data" rule above — it holds no
+// per-user data at all.
 
 // v3: manifest.json's start_url changed ("/" -> "/login", see HANDOVER.md
 // Part 29) — manifest.json matches STATIC_CACHE_PATTERNS below and the fetch
@@ -19,7 +17,10 @@
 // would otherwise keep being served the OLD manifest indefinitely. Bumping
 // the cache name is what actually invalidates that old entry (see the
 // `activate` handler below, which deletes every cache not named CACHE_NAME).
-const CACHE_NAME = "akis-static-v4";
+// v5: /offline no longer reads a localStorage dashboard snapshot (removed
+// with the App Store work, HANDOVER Part 37) — bumping drops the old cached
+// copy of that page.
+const CACHE_NAME = "akis-static-v5";
 const STATIC_CACHE_PATTERNS = [/^\/icons\//, /^\/_next\/static\//, /^\/manifest\.json$/];
 const OFFLINE_URL = "/offline";
 

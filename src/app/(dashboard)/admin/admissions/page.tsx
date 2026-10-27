@@ -49,7 +49,6 @@ export default async function AdmissionsPage() {
             <Thead>
               <tr>
                 <Th>{dict.admissions.student}</Th>
-                <Th>{dict.admissions.center}</Th>
                 <Th>{dict.admissions.date}</Th>
                 <Th>{dict.admissions.status}</Th>
                 <Th></Th>
@@ -63,7 +62,6 @@ export default async function AdmissionsPage() {
                       {a.student_full_name}
                     </Link>
                   </Td>
-                  <Td>{a.centerShortCode}</Td>
                   <Td>{new Date(a.registration_date).toLocaleDateString()}</Td>
                   <Td>
                     <Badge tone={STATUS_TONE[a.status]}>{statusLabel[a.status]}</Badge>

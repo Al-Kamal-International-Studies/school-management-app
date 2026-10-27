@@ -1,9 +1,6 @@
 import { examTypeLabel, behaviourLabel } from "@/lib/i18n/labels";
-import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth";
 import { listMyChildren, getChildOverview } from "./queries";
-import { getLatestAutismVideo } from "../autism/queries";
-import { getAutismVideoUrlAction } from "@/lib/autism/getVideoUrl";
 import { listVisibleAnnouncements } from "@/lib/queries/announcements";
 import { ChildLeaveForm } from "./ChildLeaveForm";
 import { Card } from "@/components/ui/Card";
@@ -19,7 +16,6 @@ import { formatSchoolDate } from "@/lib/dates";
 import { attendanceRate as computeAttendanceRate } from "@/lib/attendance/rate";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
-import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
 import type { LeaveStatus } from "@/lib/types/database.types";
 
 const LEAVE_TONE: Record<LeaveStatus, "amber" | "green" | "red"> = { pending: "amber", approved: "green", rejected: "red" };
@@ -44,37 +40,11 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
     );
   }
 
-  const [overview, announcements, latestAutism] = await Promise.all([
-    getChildOverview(activeChild.id),
-    listVisibleAnnouncements(5),
-    getLatestAutismVideo(activeChild.id),
-  ]);
-  // Only fetched once we know there's actually a video to show — no point
-  // minting a signed URL (getAutismVideoUrlAction) for a widget that won't
-  // render. AKET-only in practice: an AKIS child will simply never have an
-  // autism_videos row, so `latestAutism` is null and this whole block is
-  // skipped, same as the sidebar/tour center-gating elsewhere in this Part.
-  const autismVideoUrl = latestAutism ? (await getAutismVideoUrlAction(latestAutism.video.id)).url : undefined;
+  const [overview, announcements] = await Promise.all([getChildOverview(activeChild.id), listVisibleAnnouncements(5)]);
   const attendanceRate = computeAttendanceRate(overview.attendance);
 
   return (
     <div className="space-y-7">
-      {/* Real offline behavior for Apple's Guideline 4.2 review (see
-          HANDOVER.md's App Store plan) — not visible UI, just a client-side
-          write of this render's already-RLS-scoped data into localStorage
-          so app/offline/page.tsx has something real to show if this same
-          parent opens the app later with no connection. */}
-      <CacheDashboardForOffline
-        userId={me.id}
-        role="parent"
-        summary={{
-          displayName: activeChild.full_name,
-          subtitle: [activeChild.className ?? dict.common.notAssigned, `#${activeChild.enrollment_number}`].join(" · "),
-          overallScore: overview.overallScore,
-          attendanceRate,
-          announcements: announcements.map((a) => ({ title: a.title, date: new Date(a.created_at).toLocaleDateString() })),
-        }}
-      />
       <PageHeader
         eyebrow={greeting}
         title={activeChild.full_name}
@@ -159,26 +129,6 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
           )}
         </Card>
       </div>
-
-      {latestAutism && (
-        <div data-tour="autism-widget">
-          <Section id="parent-autism" title={dict.autismSection.widgetTitle}>
-            <Card className="p-5">
-              {autismVideoUrl && <video src={autismVideoUrl} controls className="aspect-video w-full rounded-lg bg-black" />}
-              {latestAutism.video.title && <p className="mt-4 text-sm font-medium text-slate-900 dark:text-white">{latestAutism.video.title}</p>}
-              {latestAutism.latestComment && (
-                <p className="mt-1.5 text-sm text-slate-600 dark:text-navy-300">{latestAutism.latestComment.content}</p>
-              )}
-              <Link
-                href={`/autism/video/${latestAutism.video.id}`}
-                className="mt-3 inline-block rounded text-sm font-medium text-navy-700 hover:text-navy-950 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:text-navy-200 dark:hover:text-white"
-              >
-                {dict.autismSection.watchFull}
-              </Link>
-            </Card>
-          </Section>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">

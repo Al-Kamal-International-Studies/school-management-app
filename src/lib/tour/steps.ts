@@ -1,5 +1,5 @@
 import type { Dictionary } from "@/lib/i18n/types";
-import { AKET_CENTER_ID, type UserRole } from "@/lib/types/database.types";
+import type { UserRole } from "@/lib/types/database.types";
 
 /**
  * Where a step points:
@@ -26,19 +26,6 @@ export interface TourStep {
   body: (dict: Dictionary) => string;
   /** See CURRENT_TOUR_VERSION below. */
   version: number;
-  /** Set only for a step whose target doesn't exist for every center —
-   * currently just the Autism Section steps (AKET only, same concept as
-   * Sidebar.tsx's NavItem.centerRestricted). Undefined means "shown in
-   * every center", the default for every pre-existing step. Checked by
-   * TourProvider.tsx before a step is ever added to what's shown, so an
-   * AKIS-only account never sees a step pointing at a nav item (or, for
-   * the parent widget step, a page section) it doesn't have. */
-  centerRestricted?: string;
-  /** Set only on the parent role's Autism Section step — same concept as
-   * Sidebar.tsx's NavItem.autismGated. A parent must actually have a child
-   * flagged autistic, not just be at the right center, to see this step.
-   * See lib/autism/hasAutismAccess.ts. */
-  autismGated?: boolean;
 }
 
 /**
@@ -55,10 +42,8 @@ export interface TourStep {
  *
  * History: 1 = the original per-role tour (Part 6). 2 = Class Chat, added
  * for teacher/student (Part 9). 3 = Autism Section, added for
- * admin/teacher/parent (Part 11) — AKET-only, see `centerRestricted` below.
- * 4 = Admissions Digitization, added for admin only (Part 12) — not
- * center-restricted, since the feature's own center selector inside the
- * form covers both AKIS and AKET.
+ * admin/teacher/parent (Part 11) — AKET-only, removed with AKET (Part 37).
+ * 4 = Admissions Digitization, added for admin only (Part 12).
  */
 export const CURRENT_TOUR_VERSION = 4;
 
@@ -66,11 +51,9 @@ function step(
   id: string,
   target: TourStepTarget,
   pick: (dict: Dictionary) => { title: string; body: string },
-  version = 1,
-  centerRestricted?: string,
-  autismGated?: boolean
+  version = 1
 ): TourStep {
-  return { id, target, title: (dict) => pick(dict).title, body: (dict) => pick(dict).body, version, centerRestricted, autismGated };
+  return { id, target, title: (dict) => pick(dict).title, body: (dict) => pick(dict).body, version };
 }
 
 const welcomeStep = (role: UserRole): TourStep => step("welcome", { kind: "center" }, (dict) => dict.tour.welcome[role]);
@@ -94,7 +77,6 @@ export const TOUR_STEPS: Record<UserRole, TourStep[]> = {
     step("leave", { kind: "nav", href: "/admin/leave-requests" }, (d) => d.tour.steps.admin.leave),
     step("announcements", { kind: "nav", href: "/admin/announcements" }, (d) => d.tour.steps.admin.announcements),
     step("auditLog", { kind: "nav", href: "/admin/audit-log" }, (d) => d.tour.steps.admin.auditLog),
-    step("autismSection", { kind: "nav", href: "/admin/autism" }, (d) => d.tour.steps.admin.autismSection, 3, AKET_CENTER_ID),
     step("admissions", { kind: "nav", href: "/admin/admissions" }, (d) => d.tour.steps.admin.admissions, 4),
     step("settings", { kind: "nav", href: "/settings" }, (d) => d.tour.steps.admin.settings),
   ],
@@ -102,7 +84,6 @@ export const TOUR_STEPS: Record<UserRole, TourStep[]> = {
     welcomeStep("teacher"),
     step("myClasses", { kind: "element", selector: '[data-tour="page-title"]' }, (d) => d.tour.steps.teacher.myClasses),
     step("classChat", { kind: "nav", href: "/class-chat" }, (d) => d.tour.steps.teacher.classChat, 2),
-    step("autismSection", { kind: "nav", href: "/autism" }, (d) => d.tour.steps.teacher.autismSection, 3, AKET_CENTER_ID),
     step("timetable", { kind: "nav", href: "/teacher/timetable" }, (d) => d.tour.steps.teacher.timetable),
     step("attendance", { kind: "nav", href: "/teacher/attendance" }, (d) => d.tour.steps.teacher.attendance),
     step("assignments", { kind: "nav", href: "/teacher/assignments" }, (d) => d.tour.steps.teacher.assignments),
@@ -126,7 +107,6 @@ export const TOUR_STEPS: Record<UserRole, TourStep[]> = {
   parent: [
     welcomeStep("parent"),
     step("dashboard", { kind: "element", selector: '[data-tour="page-title"]' }, (d) => d.tour.steps.parent.dashboard),
-    step("autismSection", { kind: "element", selector: '[data-tour="autism-widget"]' }, (d) => d.tour.steps.parent.autismSection, 3, AKET_CENTER_ID, true),
     step("calendar", { kind: "nav", href: "/calendar" }, (d) => d.tour.steps.parent.calendar),
     step("documents", { kind: "nav", href: "/documents" }, (d) => d.tour.steps.parent.documents),
     step("messages", { kind: "nav", href: "/messages" }, (d) => d.tour.steps.parent.messages),

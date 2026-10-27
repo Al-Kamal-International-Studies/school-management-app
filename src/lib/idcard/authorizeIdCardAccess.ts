@@ -1,7 +1,8 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import { getAccessibleCenters } from "@/lib/centers/getAccessibleCenters";
+import { hasAkisAccess } from "@/lib/centers/hasAkisAccess";
+import { AKIS_CENTER_ID } from "@/lib/types/database.types";
 import type { Profile } from "@/lib/types/database.types";
 
 /**
@@ -53,8 +54,9 @@ export async function canViewIdCard(caller: Profile, studentId: string): Promise
   if (caller.role === "admin") {
     const { data: target } = await supabase.from("profiles").select("center_id").eq("id", studentId).eq("role", "student").maybeSingle();
     if (!target) return false;
-    const accessible = await getAccessibleCenters(caller.id);
-    return accessible.some((c) => c.id === target.center_id);
+    // Single institution (AKIS, HANDOVER Part 37): an admin may open the
+    // card of any AKIS student, provided the admin holds an AKIS grant.
+    return target.center_id === AKIS_CENTER_ID && (await hasAkisAccess(caller.id));
   }
 
   return false;

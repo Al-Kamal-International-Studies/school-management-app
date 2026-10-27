@@ -14,7 +14,7 @@
  * to the host's own timezone.
  */
 
-/** Both AKIS and AKET are in the UAE. */
+/** AKIS is in the UAE. */
 export const SCHOOL_TIME_ZONE = "Asia/Dubai";
 
 const ymdFormatter = new Intl.DateTimeFormat("en-CA", {

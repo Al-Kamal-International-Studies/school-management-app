@@ -1,23 +1,18 @@
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { initials } from "@/lib/utils";
-import { CenterSwitcher } from "@/components/nav/CenterSwitcher";
 import { NotificationBell } from "@/components/nav/NotificationBell";
 import { SignOutForm } from "@/components/nav/SignOutForm";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { displayTitle } from "@/lib/i18n/labels";
-import type { Center, Notification, Profile } from "@/lib/types/database.types";
+import type { Notification, Profile } from "@/lib/types/database.types";
 
 export function Topbar({
   profile,
-  centers,
-  activeCenterId,
   notifications,
   onMenuClick,
 }: {
   profile: Profile;
-  centers: Center[];
-  activeCenterId: string;
   notifications: Notification[];
   onMenuClick: () => void;
 }) {
@@ -35,7 +30,6 @@ export function Topbar({
       </button>
       <div className="hidden lg:block" />
       <div className="flex items-center gap-1.5 sm:gap-3">
-        <CenterSwitcher centers={centers} activeCenterId={activeCenterId} />
         <NotificationBell notifications={notifications} />
         <Link
           href="/profile"

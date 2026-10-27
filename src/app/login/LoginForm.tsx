@@ -25,11 +25,12 @@ function SubmitButton({ dict }: { dict: Dictionary }) {
 
 export function LoginForm({
   next,
-  deactivated,
+  notice,
   dict,
 }: {
   next?: string;
-  deactivated?: boolean;
+  /** Why the visitor was sent back here (deactivated account, no access). */
+  notice?: string;
   dict: Dictionary;
 }) {
   const [state, formAction] = useActionState(loginAction, initialState);
@@ -40,7 +41,7 @@ export function LoginForm({
     <div className="space-y-4">
       <ActionForm action={formAction} state={state} className="space-y-4">
         {next && <input type="hidden" name="next" value={next} />}
-        {deactivated && <Alert tone="error">{dict.login.deactivated}</Alert>}
+        {notice && <Alert tone="error">{notice}</Alert>}
         {state.error && <Alert tone="error">{state.error}</Alert>}
 
         <div>

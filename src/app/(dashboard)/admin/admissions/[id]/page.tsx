@@ -13,7 +13,7 @@ import { Alert } from "@/components/ui/Alert";
 import { FadeUp } from "@/components/motion/FadeUp";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
-import { AKIS_CENTER_ID, type AdmissionStatus } from "@/lib/types/database.types";
+import type { AdmissionStatus } from "@/lib/types/database.types";
 
 const STATUS_TONE: Record<AdmissionStatus, "green" | "red" | "amber"> = {
   processed: "green",
@@ -53,7 +53,7 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
 
   const studentProfile = linkedProfiles?.find((p) => p.id === admission.student_profile_id) ?? null;
   const parentProfile = linkedProfiles?.find((p) => p.id === admission.parent_profile_id) ?? null;
-  const centerShortCode = admission.center_id === AKIS_CENTER_ID ? "AKIS" : "AKET";
+  const centerShortCode = "AKIS";
 
   const statusLabel: Record<AdmissionStatus, string> = {
     pending: dict.admissions.statusPending,
@@ -118,7 +118,6 @@ export default async function AdmissionDetailPage({ params }: { params: Promise<
           <Field label={dict.admissions.studentReligion} value={admission.student_religion} />
           <Field label={dict.admissions.studentNationality} value={admission.student_nationality} />
           {admission.enrolment_grade && <Field label={dict.admissions.enrolmentGrade} value={admission.enrolment_grade} />}
-          {admission.package_name && <Field label={dict.admissions.packageName} value={admission.package_name} />}
         </div>
       </FadeUp>
 

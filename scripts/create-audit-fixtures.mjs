@@ -14,7 +14,7 @@
 //
 // The five primary demo accounts (all on AKIS unless noted):
 //   admin      audit.admin@…      admin, title "Administrator", AKIS only
-//   principal  audit.principal@…  admin, title "Principal", AKIS + AKET
+//   principal  audit.principal@…  admin, title "Principal", AKIS
 //                                 (there is no separate "principal" role — see
 //                                 HANDOVER.md Part 6 §8; Principal = an admin
 //                                 account with both centers granted)
@@ -33,7 +33,7 @@
 
 import { existsSync } from "node:fs";
 import {
-  admin, fail, AKIS_CENTER_ID, AKET_CENTER_ID, ACCOUNTS_FILE, BASELINE_FILE,
+  admin, fail, AKIS_CENTER_ID, ACCOUNTS_FILE, BASELINE_FILE,
   generatePassword, makeSsrClient, totpCode, takeSnapshot, writeJson,
 } from "./audit-common.mjs";
 
@@ -52,7 +52,7 @@ console.log("  rows per table:", Object.fromEntries(Object.entries(baseline.tabl
 // --- Accounts ---------------------------------------------------------------
 const SPEC = [
   { key: "admin", role: "admin", name: "Audit Admin", title: "Administrator", mfa: true },
-  { key: "principal", role: "admin", name: "Audit Principal", title: "Principal", mfa: true, aket: true },
+  { key: "principal", role: "admin", name: "Audit Principal", title: "Principal", mfa: true },
   { key: "teacher", role: "teacher", name: "Audit Teacher", emp: "AUDIT-T1" },
   { key: "teacher2", role: "teacher", name: "Audit Teacher Two", emp: "AUDIT-T2" },
   { key: "student", role: "student", name: "Audit Student", enr: "AUDIT-S1", cls: "A" },
@@ -81,10 +81,7 @@ for (const s of SPEC) {
   const { error: pErr } = await admin.from("profiles").update(profilePatch).eq("id", data.user.id);
   if (pErr) fail(`profile update ${email}`, pErr);
 
-  if (s.aket) {
-    const { error: aErr } = await admin.from("profile_center_access").upsert({ profile_id: data.user.id, center_id: AKET_CENTER_ID }, { onConflict: "profile_id,center_id" });
-    if (aErr) fail(`AKET grant ${email}`, aErr);
-  }
+  // No AKET grant any more: the web app serves AKIS only (HANDOVER Part 37).
 }
 
 // --- Classes, subjects, teachers/students rows --------------------------------

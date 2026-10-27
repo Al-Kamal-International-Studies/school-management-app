@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Sans_Arabic, Source_Serif_4 } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
-import { NativeAppBootstrap } from "@/components/NativeAppBootstrap";
 import { OfflineBanner } from "@/components/offline/OfflineBanner";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -84,7 +83,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </LocaleProvider>
         </ThemeProvider>
         <PwaRegister />
-        <NativeAppBootstrap />
       </body>
     </html>
   );

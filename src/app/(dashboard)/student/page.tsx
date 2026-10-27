@@ -24,7 +24,6 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Section, ListCard, ListRows, ListRowLink, ListEmpty } from "@/components/ui/List";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
-import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
 
 // Where each upcoming-item kind's own list page lives — assignments and
 // exams/quizzes are separate pages for a student, so the destination
@@ -69,22 +68,6 @@ export default async function StudentDashboardPage() {
 
   return (
     <div className="space-y-7">
-      {/* Real offline behavior for Apple's Guideline 4.2 review — see the
-          identical setup + comment in (dashboard)/parent/page.tsx. */}
-      <CacheDashboardForOffline
-        userId={profile!.id}
-        role="student"
-        summary={{
-          displayName: profile!.full_name,
-          subtitle: [
-            classRow ? `${classRow.name} - ${classRow.section}` : dict.studentDashboard.noClassAssignedShort,
-            `${dict.studentDashboard.enrollmentHash}${student?.enrollment_number ?? ""}`,
-          ].join(" · "),
-          overallScore: latest ? latest.averageScore : null,
-          attendanceRate: attendanceNow,
-          announcements: announcements.map((a) => ({ title: a.title, date: new Date(a.created_at).toLocaleDateString() })),
-        }}
-      />
       <PageHeader
         eyebrow={formatSchoolDate(new Date(), locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         title={`${dict.common.welcome}, ${profile!.full_name}`}

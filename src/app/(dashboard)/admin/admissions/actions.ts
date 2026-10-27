@@ -6,14 +6,14 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { getAccessibleCenters } from "@/lib/centers/getAccessibleCenters";
+import { hasAkisAccess } from "@/lib/centers/hasAkisAccess";
 import { logAuditEvent } from "@/lib/audit/log";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
 import { generatePassword } from "@/lib/security/generatePassword";
 import { generateAdmissionPdf, type AdmissionCenter } from "@/lib/admissions/generatePdf";
 import { sendEmail } from "@/lib/email/send";
 import { setAccountBanned } from "@/lib/auth/accountAccess";
-import { AKIS_CENTER_ID, AKET_CENTER_ID, type Admission } from "@/lib/types/database.types";
+import { AKIS_CENTER_ID, type Admission } from "@/lib/types/database.types";
 
 export interface ActionState {
   error?: string;
@@ -28,8 +28,6 @@ const optionalEmail = (message: string) =>
     .refine((v) => !v || z.string().email().safeParse(v).success, message);
 
 const admissionSchema = z.object({
-  center: z.enum(["AKIS", "AKET"], { message: "Choose a center." }),
-
   student_full_name: z.string().min(2, "Student full name is required."),
   student_gender: z.enum(["male", "female"], { message: "Choose the student's gender." }),
   student_dob: optional(),
@@ -58,19 +56,7 @@ const admissionSchema = z.object({
   medical_allergies_detail: optional(),
 
   enrolment_grade: optional(),
-  package_name: optional(),
   enrolment_class_id: optional(),
-
-  // Autism intake fields — collected only when is_autistic is checked (see
-  // AdmissionForm.tsx). Deliberately not a clinical determination; see
-  // 0040_admissions_autism_and_class.sql's header comment.
-  autism_diagnosis_date: optional(),
-  autism_diagnosed_by: optional(),
-  autism_current_support: optional(),
-  autism_communication_ability: optional(),
-  autism_sensory_notes: optional(),
-  autism_behavioral_notes: optional(),
-  autism_parent_notes: optional(),
 });
 
 /**
@@ -87,18 +73,17 @@ function readCheckbox(formData: FormData, name: string): boolean {
 /**
  * Center scoping for admissions (audit finding AD-2, HANDOVER Part 33): the
  * mutating actions below use the service-role client, which bypasses RLS, so
- * "may this admin touch this center / this admission?" is checked explicitly.
- * An AKIS-only admin used to be able to create AKET admissions (and AKET
- * accounts) and open / retry / delete any center's admissions by id.
+ * "may this admin touch this admission?" is checked explicitly. Single
+ * institution now (AKIS, HANDOVER Part 37): the admin must hold an AKIS grant.
  */
-async function canUseCenter(profileId: string, centerId: string): Promise<boolean> {
-  return (await getAccessibleCenters(profileId)).some((c) => c.id === centerId);
+async function canUseCenter(profileId: string): Promise<boolean> {
+  return hasAkisAccess(profileId);
 }
 
 /** Read through the caller's OWN RLS-scoped client — admissions RLS is center-scoped (migration 0043). */
 async function canAccessAdmission(admissionId: string): Promise<boolean> {
   const supabase = await createClient();
-  const { data } = await supabase.from("admissions").select("id").eq("id", admissionId).maybeSingle();
+  const { data } = await supabase.from("admissions").select("id").eq("id", admissionId).eq("center_id", AKIS_CENTER_ID).maybeSingle();
   return !!data;
 }
 
@@ -123,25 +108,14 @@ export async function createAdmissionAction(_prevState: ActionState, formData: F
 
   if (!consentAccepted) return { error: "The informed consent acknowledgment is required." };
   if (!paymentPolicyAccepted) return { error: "The payment policy acknowledgment is required." };
-  if (data.center === "AKIS" && !additionalPoliciesAccepted) {
-    return { error: "The additional policies acknowledgment is required for AKIS." };
+  if (!additionalPoliciesAccepted) {
+    return { error: "The additional policies acknowledgment is required." };
   }
 
-  // Autism Section is AKET-only (0033_autism_section.sql's confirmed product
-  // decision, mirrored as a DB check constraint in
-  // 0040_admissions_autism_and_class.sql) — AdmissionForm.tsx already hides
-  // the toggle entirely for AKIS, but the server action must not trust that;
-  // if a spoofed/replayed AKIS submission somehow sets it, fail cleanly
-  // here rather than letting the insert hit the DB constraint and turn into
-  // an opaque "Could not save the admission" error.
-  const isAutistic = data.center === "AKET" && readCheckbox(formData, "is_autistic");
-  if (readCheckbox(formData, "is_autistic") && data.center === "AKIS") {
-    return { error: "The Autism Section is only available for AKET admissions." };
-  }
 
   const admin = createAdminClient();
-  const centerId = data.center === "AKIS" ? AKIS_CENTER_ID : AKET_CENTER_ID;
-  if (!(await canUseCenter(me.id, centerId))) return { error: "You don't have access to that center." };
+  const centerId = AKIS_CENTER_ID;
+  if (!(await canUseCenter(me.id))) return { error: "You don't have access to admissions." };
 
   // Step 2 of the spec: the raw submission is saved FIRST, durably, before
   // any PDF generation / account creation / email is even attempted — see
@@ -184,19 +158,22 @@ export async function createAdmissionAction(_prevState: ActionState, formData: F
       medical_allergies_detail: data.medical_allergies_detail ?? null,
       consent_accepted: consentAccepted,
       payment_policy_accepted: paymentPolicyAccepted,
-      additional_policies_accepted: data.center === "AKIS" ? additionalPoliciesAccepted : null,
-      enrolment_grade: data.center === "AKIS" ? (data.enrolment_grade ?? null) : null,
-      package_name: data.center === "AKET" ? (data.package_name ?? null) : null,
+      additional_policies_accepted: additionalPoliciesAccepted,
+      enrolment_grade: data.enrolment_grade ?? null,
+      // package_name and the autism_* intake columns were AKET-only (the
+      // 0040 check constraint allows is_autistic only for AKET); with AKET
+      // removed (HANDOVER Part 37) they are always empty.
+      package_name: null,
       enrolment_class_id: data.enrolment_class_id ?? null,
-      is_autistic: isAutistic,
-      autism_diagnosed_before: isAutistic && readCheckbox(formData, "autism_diagnosed_before"),
-      autism_diagnosis_date: isAutistic ? (data.autism_diagnosis_date ?? null) : null,
-      autism_diagnosed_by: isAutistic ? (data.autism_diagnosed_by ?? null) : null,
-      autism_current_support: isAutistic ? (data.autism_current_support ?? null) : null,
-      autism_communication_ability: isAutistic ? (data.autism_communication_ability ?? null) : null,
-      autism_sensory_notes: isAutistic ? (data.autism_sensory_notes ?? null) : null,
-      autism_behavioral_notes: isAutistic ? (data.autism_behavioral_notes ?? null) : null,
-      autism_parent_notes: isAutistic ? (data.autism_parent_notes ?? null) : null,
+      is_autistic: false,
+      autism_diagnosed_before: false,
+      autism_diagnosis_date: null,
+      autism_diagnosed_by: null,
+      autism_current_support: null,
+      autism_communication_ability: null,
+      autism_sensory_notes: null,
+      autism_behavioral_notes: null,
+      autism_parent_notes: null,
       created_by: me.id,
     })
     .select("id")
@@ -290,22 +267,18 @@ export async function updateAdmissionAction(admissionId: string, _prevState: Act
 
   if (!consentAccepted) return { error: "The informed consent acknowledgment is required." };
   if (!paymentPolicyAccepted) return { error: "The payment policy acknowledgment is required." };
-  if (data.center === "AKIS" && !additionalPoliciesAccepted) {
-    return { error: "The additional policies acknowledgment is required for AKIS." };
+  if (!additionalPoliciesAccepted) {
+    return { error: "The additional policies acknowledgment is required." };
   }
 
-  const isAutistic = data.center === "AKET" && readCheckbox(formData, "is_autistic");
-  if (readCheckbox(formData, "is_autistic") && data.center === "AKIS") {
-    return { error: "The Autism Section is only available for AKET admissions." };
-  }
 
   if (!(await canAccessAdmission(admissionId))) return { error: "Admission not found." };
   const admin = createAdminClient();
   const { data: existing } = await admin.from("admissions").select("id").eq("id", admissionId).single();
   if (!existing) return { error: "Admission not found." };
 
-  const centerId = data.center === "AKIS" ? AKIS_CENTER_ID : AKET_CENTER_ID;
-  if (!(await canUseCenter(me.id, centerId))) return { error: "You don't have access to that center." };
+  const centerId = AKIS_CENTER_ID;
+  if (!(await canUseCenter(me.id))) return { error: "You don't have access to admissions." };
 
   const { error: updateError } = await admin
     .from("admissions")
@@ -341,19 +314,22 @@ export async function updateAdmissionAction(admissionId: string, _prevState: Act
       medical_allergies_detail: data.medical_allergies_detail ?? null,
       consent_accepted: consentAccepted,
       payment_policy_accepted: paymentPolicyAccepted,
-      additional_policies_accepted: data.center === "AKIS" ? additionalPoliciesAccepted : null,
-      enrolment_grade: data.center === "AKIS" ? (data.enrolment_grade ?? null) : null,
-      package_name: data.center === "AKET" ? (data.package_name ?? null) : null,
+      additional_policies_accepted: additionalPoliciesAccepted,
+      enrolment_grade: data.enrolment_grade ?? null,
+      // package_name and the autism_* intake columns were AKET-only (the
+      // 0040 check constraint allows is_autistic only for AKET); with AKET
+      // removed (HANDOVER Part 37) they are always empty.
+      package_name: null,
       enrolment_class_id: data.enrolment_class_id ?? null,
-      is_autistic: isAutistic,
-      autism_diagnosed_before: isAutistic && readCheckbox(formData, "autism_diagnosed_before"),
-      autism_diagnosis_date: isAutistic ? (data.autism_diagnosis_date ?? null) : null,
-      autism_diagnosed_by: isAutistic ? (data.autism_diagnosed_by ?? null) : null,
-      autism_current_support: isAutistic ? (data.autism_current_support ?? null) : null,
-      autism_communication_ability: isAutistic ? (data.autism_communication_ability ?? null) : null,
-      autism_sensory_notes: isAutistic ? (data.autism_sensory_notes ?? null) : null,
-      autism_behavioral_notes: isAutistic ? (data.autism_behavioral_notes ?? null) : null,
-      autism_parent_notes: isAutistic ? (data.autism_parent_notes ?? null) : null,
+      is_autistic: false,
+      autism_diagnosed_before: false,
+      autism_diagnosis_date: null,
+      autism_diagnosed_by: null,
+      autism_current_support: null,
+      autism_communication_ability: null,
+      autism_sensory_notes: null,
+      autism_behavioral_notes: null,
+      autism_parent_notes: null,
     })
     .eq("id", admissionId);
 
@@ -462,8 +438,8 @@ export async function deleteAdmissionAction(admissionId: string): Promise<{ erro
   return {};
 }
 
-function centerOf(admission: Admission): AdmissionCenter {
-  return admission.center_id === AKIS_CENTER_ID ? "akis" : "aket";
+function centerOf(_admission: Admission): AdmissionCenter {
+  return "akis";
 }
 
 function assembleAddress(admission: Admission): string | null {
@@ -479,7 +455,7 @@ function cleanToken(token: string): string {
 }
 
 function domainFor(center: AdmissionCenter): string {
-  return center === "akis" ? "alkamalinternational.com" : "alkamaleducation.com";
+  return "alkamalinternational.com";
 }
 
 /**
@@ -593,7 +569,7 @@ async function synthesizeStudentEmail(
  * scripts/normalize-student-ids.mjs for the one-time backfill that brought
  * every existing row onto this format):
  *
- *   <AKIS|AKET>-<admission year>-<4-digit sequence, zero-padded>
+ *   AKIS-<admission year>-<4-digit sequence, zero-padded>
  *
  * e.g. AKIS-2026-0001. The sequence is per center+year (not global, not
  * reset by class/grade — a grade change or center transfer must never
@@ -608,7 +584,7 @@ async function generateEnrollmentNumber(
   center: AdmissionCenter,
   admissionDate: Date
 ): Promise<string> {
-  const centerLabel = center === "akis" ? "AKIS" : "AKET";
+  const centerLabel = "AKIS";
   const year = admissionDate.getFullYear();
   const prefix = `${centerLabel}-${year}-`;
 
@@ -646,7 +622,7 @@ function welcomeEmailBody(opts: {
   parentLoginEmail: string;
   parentPassword: string | null;
 }) {
-  const schoolName = opts.center === "akis" ? "Al Kamal International Studies" : "Al Kamal Education Technology";
+  const schoolName = "Al Kamal International Studies";
   // Names/emails are admin-typed free text and go into an HTML email: escape them
   // (audit finding AD-7). The plain-text body below needs no escaping.
   const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

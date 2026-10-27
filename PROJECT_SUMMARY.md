@@ -7,7 +7,7 @@
 
 ## 1. What This Is
 
-A full role-based school management system built for **Al Kamal International Studies** (AKIS) and its sister center (AKET). It covers Admin, Teacher, Student, and Parent roles, each with their own dashboard, plus a public admissions flow. It's a real, live production app — not a prototype — currently deployed and in active use.
+A full role-based school management system built for **Al Kamal International Studies** (AKIS). It covers Admin, Teacher, Student, and Parent roles, each with their own dashboard, plus a public admissions flow. It's a real, live production app — not a prototype — currently deployed and in active use.
 
 ## 2. How It Was Built
 
@@ -24,7 +24,6 @@ The project keeps a single running handover document (`HANDOVER.md`, outside thi
 | Database / Backend | **Supabase** (hosted Postgres + Auth + Storage), secured with Row Level Security (RLS) on every table |
 | Validation | Zod (all Server Action inputs validated) |
 | Auth | Supabase Auth (email/password) + **WebAuthn** (Face ID / fingerprint / Windows Hello passkeys) + MFA + account lockout + device cap |
-| Mobile | **Capacitor**, wrapping the app for native Android & iOS builds (App Store / Play Store-ready), with native push notifications |
 | Offline support | Service worker + cached dashboards, so core screens still work without a connection |
 | PDF/Documents | `pdf-lib` and `mupdf` for generating ID cards and admission PDFs |
 | i18n | Full English + Arabic coverage across the entire app |
@@ -34,7 +33,7 @@ The project keeps a single running handover document (`HANDOVER.md`, outside thi
 
 - **Supabase Postgres**, fully relational, with Row Level Security enforced at the database level (not just hidden in the UI) — even a missed role-check in the UI can't leak cross-role data.
 - **42 migrations** applied to date, totaling roughly **3,150 lines of SQL** (schema + RLS policies).
-- Core tables cover: user profiles/roles, classes & subjects, enrollments, timetables, attendance/grades groundwork, messaging & class chat, documents, audit logs, admissions (including an autism-support intake workflow), multi-center (AKIS/AKET) data separation, notifications, and native push tokens.
+- Core tables cover: user profiles/roles, classes & subjects, enrollments, timetables, attendance/grades groundwork, messaging & class chat, documents, audit logs, admissions, notifications, and web push subscriptions. (The database keeps its centers model; the app is scoped to AKIS.)
 
 ## 5. Lines of Code
 
@@ -44,7 +43,7 @@ The project keeps a single running handover document (`HANDOVER.md`, outside thi
 | Database (SQL migrations) | **~3,150 lines** |
 | **Combined hand-written total** | **~32,000 lines** |
 
-*(This excludes `node_modules` and the native `android/`/`ios/` Capacitor scaffolding, which are generated/vendor code, not hand-written.)*
+*(This excludes `node_modules`, which is vendor code, not hand-written.)*
 
 ## 6. Major Features
 
@@ -55,11 +54,10 @@ The project keeps a single running handover document (`HANDOVER.md`, outside thi
 - **Admissions system** — public intake form, including a dedicated Autism Section workflow, PDF generation, and automatic account/roster creation.
 - **ID cards** — generated on demand (never stored), downloadable as PDF or image, for every role.
 - **Document center** with audit logging.
-- **Notifications** — both a push-notification system (web + native mobile) and an in-app notification bell.
+- **Notifications** — both a browser push-notification system and an in-app notification bell.
 - **Guided onboarding tour**, versioned so returning users only see what's new.
-- **Multi-center support** — AKIS and AKET run in the same app with a center switcher and data isolation.
 - **Security hardening** — MFA, WebAuthn passkeys, device-limit enforcement ("remember me" capped at 3 devices), account lockout after repeated failures, forced password change on first login, full audit trail.
-- **Installable app** — originally a PWA, later wrapped natively with Capacitor for real Android/iOS app store distribution, including offline caching and native push.
+- **Web app, installable as a PWA** — runs in the browser on any device and can be added to the home screen; not distributed through the App Store or Google Play.
 - **Full Arabic/English localization**, including in the chatbot and guided tour.
 
 ## 7. Status

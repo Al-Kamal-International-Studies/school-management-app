@@ -2,19 +2,31 @@
 
 import { LogOut } from "lucide-react";
 import { signOutAction } from "@/app/logout/actions";
-import { clearAllOfflineCache } from "@/lib/offline/offlineCache";
+
+// Prefix of the localStorage dashboard snapshots the (since removed) App
+// Store offline cache wrote. Nothing writes these any more, but a shared
+// computer may still hold one from before — sign-out keeps deleting them so
+// a previous user's summary never lingers for whoever signs in next.
+const LEGACY_OFFLINE_PREFIX = "akis-offline:";
+
+function clearLegacyOfflineSnapshots() {
+  try {
+    for (const key of Object.keys(window.localStorage)) {
+      if (key.startsWith(LEGACY_OFFLINE_PREFIX)) window.localStorage.removeItem(key);
+    }
+  } catch {
+    // storage disabled / private mode — nothing to clear
+  }
+}
 
 /**
- * Same form/action as before, just wrapped in a client component so
- * signing out can also clear the offline dashboard cache (see
- * lib/offline/offlineCache.ts) — a shared/public device must never keep a
- * previous user's cached summary around for whoever signs in next. Runs
- * synchronously before the form's normal submission continues; doesn't
- * block or delay sign-out.
+ * Same form/action as before, wrapped in a client component only so the
+ * legacy snapshot cleanup above runs synchronously before the form submits;
+ * it never blocks or delays sign-out.
  */
 export function SignOutForm({ label }: { label: string }) {
   return (
-    <form action={signOutAction} onSubmit={() => clearAllOfflineCache()}>
+    <form action={signOutAction} onSubmit={clearLegacyOfflineSnapshots}>
       <button
         type="submit"
         aria-label={label}

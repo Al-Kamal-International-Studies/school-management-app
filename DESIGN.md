@@ -34,8 +34,8 @@ child's standing for parents, counts and pending items for management).
 
 ## Colour
 
-- **Ink:** navy (`navy-*`, re-themed per center via CSS variables — AKIS navy,
-  AKET steel-teal). Primary buttons, links, selection on light surfaces.
+- **Ink:** navy (`navy-*`, defined once as CSS variables in globals.css).
+  Primary buttons, links, selection on light surfaces.
 - **Greys:** slate, one cool family.
 - **Accent:** gold, only on the dark brand surfaces — the sidebar's selected
   rule, the sign-in tagline and the guided tour. Never a button, gradient or

@@ -5,8 +5,7 @@ import path from "node:path";
 import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
 import { makeFontSafe } from "@/lib/pdf/safeFont";
 import { PALETTE, wrapText } from "@/lib/admissions/generatePdf";
-import { knownCenterFor } from "@/lib/centers/knownCenters";
-import { AKIS_CENTER_ID, AKET_CENTER_ID } from "@/lib/types/database.types";
+import { AKIS_CENTER } from "@/lib/centers/knownCenters";
 import {
   CARD_WIDTH,
   CARD_HEIGHT,
@@ -81,9 +80,8 @@ export async function generateIdCardPdf(data: IdCardData, photo: IdCardPhoto | n
   const serifBold = makeFontSafe(await doc.embedFont(StandardFonts.TimesRomanBold));
 
   const palette = PALETTE[data.center];
-  const centerLabel = data.center === "akis" ? "AKIS" : "AKET";
-  const centerId = data.center === "akis" ? AKIS_CENTER_ID : AKET_CENTER_ID;
-  const schoolName = knownCenterFor(centerId).name;
+  const centerLabel = AKIS_CENTER.short_code;
+  const schoolName = AKIS_CENTER.name;
 
   async function loadBrandPng(file: string): Promise<PDFImage | null> {
     try {
@@ -106,7 +104,7 @@ export async function generateIdCardPdf(data: IdCardData, photo: IdCardPhoto | n
     color: palette.accent500,
   });
 
-  const headerLogoFile = data.center === "akis" ? "crest-white.png" : "aket-seal.png";
+  const headerLogoFile = "crest-white.png";
   const headerLogo = await loadBrandPng(headerLogoFile);
 
   let textX = PADDING;

@@ -8,16 +8,10 @@ const config: Config = {
       colors: {
         // Deep navy — primary brand color (Al Kamal International Studies).
         // Every step resolves through a CSS custom property (globals.css's
-        // `:root` block), not a literal hex — that's what lets a single
-        // compiled class like `.text-navy-800` render AKIS's navy on one
-        // page and AKET's steel-blue on another, purely from a `data-center`
-        // attribute upstream in the DOM, with no per-component `aket:`
-        // variant needed anywhere. `<alpha-value>` is Tailwind's own
-        // placeholder token (not a variable I define) — it lets opacity
-        // modifiers like `bg-navy-800/60` keep working exactly as before.
-        // See globals.css for the actual AKIS/AKET values and
-        // HANDOVER.md-style reasoning; values here must stay in sync with
-        // the CSS variable *names* (not values) defined there.
+        // `:root` block), not a literal hex, so the whole palette lives in
+        // one place. `<alpha-value>` is Tailwind's own placeholder token —
+        // it keeps opacity modifiers like `bg-navy-800/60` working. Values
+        // here must stay in sync with the CSS variable *names* defined there.
         navy: {
           50: "rgb(var(--color-navy-50) / <alpha-value>)",
           100: "rgb(var(--color-navy-100) / <alpha-value>)",
@@ -32,8 +26,7 @@ const config: Config = {
           950: "rgb(var(--color-navy-950) / <alpha-value>)",
         },
         // Warm gold — accent color, used sparingly for premium touches.
-        // Same CSS-variable indirection as navy above (AKET renders this
-        // token family as an amber/orange accent instead).
+        // Same CSS-variable indirection as navy above.
         gold: {
           50: "rgb(var(--color-gold-50) / <alpha-value>)",
           100: "rgb(var(--color-gold-100) / <alpha-value>)",
@@ -107,9 +100,7 @@ const config: Config = {
         // navy-950/800/700 directly — AKIS's existing gradient uses
         // bespoke stops (#123a5e, #1c4d78) that don't exactly match any
         // named scale step, and "AKIS stays pixel-exact" is a hard
-        // requirement here. AKET's stops are chosen scale steps (see
-        // globals.css) tuned so white text and the active-nav-item accent
-        // icon both clear WCAG contrast against the lightest stop.
+        // requirement here.
         //
         // Redesign (DESIGN.md, "one named gradient"): navy-gradient is now
         // a quiet vertical "brand depth" — nearly solid navy, lifting only

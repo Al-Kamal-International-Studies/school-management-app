@@ -1,7 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
-import { headers, cookies } from "next/headers";
+import { headers } from "next/headers";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -9,8 +9,8 @@ import { dashboardPathForRole } from "@/lib/auth";
 import { getDeviceIdCookie, setDeviceCookie, labelFromUserAgent, locationFromHeaders, MAX_DEVICES } from "@/lib/auth/deviceCookie";
 import { recordRateLimitAttempt } from "@/lib/security/rateLimit";
 import { safeNext } from "@/lib/auth/safeNext";
-import { getLoginCenterId, hasExplicitLoginCenterSelection } from "@/lib/centers/loginCenterCookie";
-import { ACTIVE_CENTER_COOKIE } from "@/lib/centers/constants";
+import { hasAkisAccess } from "@/lib/centers/hasAkisAccess";
+import { AKIS_CENTER_ID } from "@/lib/types/database.types";
 import type { Profile } from "@/lib/types/database.types";
 
 /**
@@ -69,69 +69,14 @@ async function ensureDeviceRegistered(userId: string): Promise<"ok" | "limit_rea
 }
 
 /**
- * Confirms this profile actually has a profile_center_access grant for the
- * center the visitor selected pre-login (src/lib/centers/loginCenterCookie.ts)
- * — the real enforcement for "emails accounts created AKIS should NOT be
- * allowed to log into AKET" (and symmetrically for AKET-only accounts). This
- * runs against the fixed AKIS/AKET ids the picker can only ever produce
- * (loginCenterCookie.ts validates the raw cookie value before returning it),
- * so a single-center account passes this trivially whenever the picker is
- * left on (or explicitly set to) its one home center, and only ever fails
- * when the visitor is on the *other* center from the one this account
- * belongs to — exactly the "no matter what" symmetry the task asked for,
- * including the plain "never touched the picker" case, since
- * getLoginCenterId() itself already defaults to AKIS rather than "no
- * center" or "any center."
- *
- * Checked via the admin (service-role) client rather than the request's own
- * session-bound client: RLS on profile_center_access would in fact allow a
- * self-read here (`profile_id = auth.uid()`, see 0027_centers.sql), but
- * using the admin client keeps this check uniform with every other
- * login-time check in this file (several of which run before a session
- * exists at all) rather than depending on that specific RLS policy staying
- * shaped the way it is today.
- *
- * On success, also bridges the verified pre-login selection into the
- * POST-login "active center" cookie (activeCenterCookie.ts /
- * CenterSwitcher.tsx) — but ONLY when the visitor actually interacted with
- * the /login picker (hasExplicitLoginCenterSelection()), not merely
- * defaulted onto AKIS because they never touched it. Reasoning: for the
- * overwhelming majority of accounts (single-center) this is a no-op either
- * way — getActiveCenterId() only even reads that cookie when
- * getAccessibleCenters() returns more than one row, i.e. only for the
- * Director/Principal accounts today (see (dashboard)/layout.tsx). But for
- * exactly those multi-center accounts, unconditionally overwriting on every
- * login would be a real regression: if Muhammad was last browsing AKET via
- * the post-login CenterSwitcher, logged out, and logs back in on a browser
- * that happens to have no login_center_id cookie yet (e.g. this is the
- * first login after this feature shipped), an unconditional overwrite would
- * silently reset him to AKIS on every subsequent login until he touches the
- * new /login picker at least once — clobbering a preference he set through
- * a completely different, already-working control. Gating on "was this an
- * explicit choice" means: an account that never engages with the new picker
- * keeps behaving exactly as it did before this feature existed, while an
- * account that DOES use the picker gets the obviously-correct behavior of
- * landing on the center it just chose to sign in to.
+ * Confirms this profile holds an AKIS access grant — the only institution
+ * this app serves (AKET was removed, HANDOVER Part 37). Accounts that only
+ * ever belonged to AKET fail here and get the same generic "incorrect email
+ * or password" error as any other failed sign-in, so the response never
+ * reveals that the account exists.
  */
 async function verifyLoginCenter(profileId: string): Promise<string | null> {
-  const selectedCenterId = await getLoginCenterId();
-
-  const admin = createAdminClient();
-  const { data: grant } = await admin
-    .from("profile_center_access")
-    .select("id")
-    .eq("profile_id", profileId)
-    .eq("center_id", selectedCenterId)
-    .maybeSingle();
-
-  if (!grant) return null;
-
-  if (await hasExplicitLoginCenterSelection()) {
-    const cookieStore = await cookies();
-    cookieStore.set(ACTIVE_CENTER_COOKIE, selectedCenterId, { path: "/", maxAge: 31536000, sameSite: "lax" });
-  }
-
-  return selectedCenterId;
+  return (await hasAkisAccess(profileId)) ? AKIS_CENTER_ID : null;
 }
 
 /**

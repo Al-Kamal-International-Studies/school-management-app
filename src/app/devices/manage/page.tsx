@@ -6,7 +6,6 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { DeviceManageList } from "./DeviceManageList";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
-import { knownCenterFor } from "@/lib/centers/knownCenters";
 
 /**
  * Reached via requireRole()'s requireDeviceApproved() gate (lib/auth.ts) —
@@ -36,10 +35,9 @@ export default async function DevicesManagePage() {
   }
 
   const dict = await getDictionary(await getLocale());
-  const center = knownCenterFor(profile.center_id);
 
   return (
-    <AuthShell center={center}>
+    <AuthShell>
       <div className="mb-8">
         <h1 className="page-title">{dict.devices.manageTitle}</h1>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-navy-400">{dict.devices.manageMessage}</p>

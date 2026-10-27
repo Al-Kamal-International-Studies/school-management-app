@@ -24,15 +24,9 @@ import type { Dictionary } from "@/lib/i18n/types";
 
 /** Same hex values as PALETTE in lib/admissions/generatePdf.ts (kept as a
  * small duplicate here rather than importing pdf-lib Color objects into a
- * component that renders CSS — deliberately NOT the ambient
- * `data-center`-driven CSS variables globals.css sets up (Part 6), since
- * those reflect the VIEWER's own active center, not necessarily the
- * center of the student whose card is being shown (e.g. a multi-center
- * admin viewing an AKET student's card while their own active branding is
- * AKIS) — this card's colors must always match its own subject. */
-const CENTER_COLORS: Record<"akis" | "aket", { primary900: string; primary700: string; accent500: string; accent700: string; onBandSubtitle: string }> = {
+ * component that renders CSS), so the on-screen card matches the PDF. */
+const CENTER_COLORS: Record<"akis", { primary900: string; primary700: string; accent500: string; accent700: string; onBandSubtitle: string }> = {
   akis: { primary900: "#0F2131", primary700: "#1C3A56", accent500: "#D4AF37", accent700: "#946B0A", onBandSubtitle: "#F0DFA8" },
-  aket: { primary900: "#03282C", primary700: "#0A474D", accent500: "#F5905A", accent700: "#D96D2C", onBandSubtitle: "#FBD3BC" },
 };
 
 /** Font size in points (the same unit generateIdCard.ts's pdf-lib calls
@@ -81,9 +75,9 @@ export function IdCardView({
   dict: Dictionary;
 }) {
   const colors = CENTER_COLORS[data.center];
-  const centerLabel = data.center === "akis" ? "AKIS" : "AKET";
-  const schoolName = data.center === "akis" ? "Al Kamal International Studies" : "Al Kamal Education Technology";
-  const logoSrc = data.center === "akis" ? "/brand/crest-white.png" : "/brand/aket-seal.png";
+  const centerLabel = "AKIS";
+  const schoolName = "Al Kamal International Studies";
+  const logoSrc = "/brand/crest-white.png";
 
   return (
     <div className="space-y-6">

@@ -5,34 +5,24 @@ import { CenterLogo } from "./CenterLogo";
 import { AuthBackground } from "./AuthBackground";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useTheme } from "@/lib/theme/ThemeProvider";
-import { DEFAULT_KNOWN_CENTER, type KnownCenter } from "@/lib/centers/knownCenters";
+import { AKIS_CENTER } from "@/lib/centers/knownCenters";
 import type { ReactNode } from "react";
 
-/** authBranding.akis/authBranding.aket keys derive from short_code — this
- * keeps that mapping in one explicit place instead of a `.toLowerCase()`
- * cast, which TypeScript can't narrow to the literal union on its own. */
-function brandKeyFor(shortCode: KnownCenter["short_code"]): "akis" | "aket" {
-  return shortCode === "AKET" ? "aket" : "akis";
-}
-
 /**
- * `center` reflects whichever institution the visitor is currently signing
- * in to/acting under — the pre-login choice on /login and /forgot-password
- * (src/lib/centers/loginCenterCookie.ts), or the already-known account's own
- * center on /devices/manage and /force-password-change (both reached with a
- * profile already resolved). Optional, defaulting to AKIS, so the other
- * AuthShell call sites that predate this feature (mfa/setup, mfa/verify,
- * welcome/*) keep their exact current (AKIS) branding untouched.
+ * Shell for every sign-in-family screen (login, forgot-password, MFA,
+ * passkey setup, device management, forced password change). Always AKIS
+ * branding — the only institution this app serves (HANDOVER Part 37).
  *
  * Redesign (DESIGN.md): one brand surface — the quiet vertical
  * navy-gradient plus the crest's star lattice fading out from the top
  * (AuthBackground) — beside a plain form panel. The drifting glow blobs,
  * walking robot mascots and sign-in confetti were removed.
  */
-export function AuthShell({ children, center = DEFAULT_KNOWN_CENTER }: { children: ReactNode; center?: KnownCenter }) {
+export function AuthShell({ children }: { children: ReactNode }) {
   const { dict } = useLocale();
   const { theme } = useTheme();
-  const brand = dict.authBranding[brandKeyFor(center.short_code)];
+  const center = AKIS_CENTER;
+  const brand = dict.authBranding.akis;
   const FEATURES = [
     { icon: GraduationCap, text: brand.feature1 },
     { icon: ShieldCheck, text: brand.feature2 },

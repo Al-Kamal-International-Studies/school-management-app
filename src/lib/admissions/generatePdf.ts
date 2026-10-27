@@ -7,7 +7,9 @@ import { makeFontSafe } from "@/lib/pdf/safeFont";
 import type { Admission } from "@/lib/types/database.types";
 
 export type AdmissionRecord = Admission;
-export type AdmissionCenter = "akis" | "aket";
+/** Single institution (AKIS) — AKET was removed (HANDOVER Part 37). Kept as
+ *  a type so the PDF/ID-card call sites read the same as before. */
+export type AdmissionCenter = "akis";
 
 // ----------------------------------------------------------------------------
 // Verbatim source content (transcribed from the two real paper forms — see
@@ -21,16 +23,11 @@ export type AdmissionCenter = "akis" | "aket";
 
 const SCHOOL_NAME: Record<AdmissionCenter, string> = {
   akis: "Al Kamal International Studies",
-  aket: "Al Kamal Education Technology",
 };
 
 const DECLARATION_BULLETS: Record<AdmissionCenter, string[]> = {
   akis: [
     "I hereby apply for admission to the institute for the named student and verify that all the above information is correct and true.",
-    "I will be responsible for the student's financial obligation.",
-  ],
-  aket: [
-    "I hereby apply for the admission of the named student to the institute and verify that all the above information is correct and true.",
     "I will be responsible for the student's financial obligation.",
   ],
 };
@@ -50,23 +47,10 @@ const CONSENT_BULLETS: Record<AdmissionCenter, string[]> = {
     "I give my permission for my child to participate in all water activities included in the Institute's program.",
     "The Institute and its staff are not responsible for the loss of student's personal belongings (jewellery, accessories, etc.)",
   ],
-  aket: [
-    "The information provided above regarding my child's health is true and correct.",
-    "I will inform you immediately if there are any changes to the information provided above.",
-    "If my child behaves in an appropriate manner (including damaging equipment being rowdy etc.) they will be excluded from the classes until their behavior is deemed appropriate.",
-    "I understand that if my child is sick (fever, cold, cough, etc.), Al Kamal Education Technology have right not to accept the child in the class, for the sake of safety of other students.",
-    "I understand that my child will only be given water or drink that are clearly identified as belonging to him.",
-    "I will not hold Al Kamal Education Technology, its employees for any injury, Loss or damage suffered to my child.",
-    "I understand that Al Kamal Education Technology has reserved the right to reject, alter the services at any time.",
-    "I hereby give my permission for my child's picture to be used by Al Kamal Education Technology, for promotional and internal Publications purposes.",
-    "I understand that the Al Kamal Education Technology includes activities in or near water. I give my permission for my child to participate in all water activities included in the Al Kamal Education Technology.",
-    "I understand that Al Kamal Education Technology and its staff are not responsible for the loss of our Children's Personal Belongings (jewelry, accessories etc.)",
-  ],
 };
 
 const DISCLAIMER: Record<AdmissionCenter, string> = {
   akis: "In signing this form, I indemnify Al Kamal International Studies, its employees, and its contractors from all legal actions, injury, loss, damage, penalty, or costs arising from my child's attendance at the Institute.",
-  aket: "In signing this form, I indemnify Al Kamal Education Technology, its employees and contractors from all legal actions, injury, loss damage, penalty or costs arising from my child's attendance at the Al Kamal Education Technology.",
 };
 
 interface PolicySubsection {
@@ -107,35 +91,8 @@ const PAYMENT_POLICIES: Record<AdmissionCenter, PolicySubsection[]> = {
       body: "Parents who pay the full annual fee within 10 days of registration will receive a 5% discount.",
     },
   ],
-  aket: [
-    {
-      heading: "Non-Refundable Deposit Policy",
-      body: "By signing this form, I acknowledge and agree that all payments are non-refundable, non-freezable and non-transferable.",
-    },
-    {
-      heading: "Payment Deadline and Penalties",
-      body: "All fees must be paid by the 1st of each month. A late fee of AED 50 will be charged for payments received after the due date. Continuous non-payment for two consecutive months may result in the termination of the child's enrolment.",
-    },
-    {
-      heading: "Post-Dated Cheque Policy",
-      body: "Post-dated cheques will be deposited on the date agreed upon at the time of registration. Parents are responsible for ensuring sufficient funds are available on that date. Bounced cheques will incur a penalty fee of AED 100.",
-    },
-    {
-      heading: "Payment Plan Agreement",
-      body: "Parents on a payment plan must follow the agreed schedule. Any deviation without prior notice may result in extra charges or cancellation of the plan.",
-    },
-    {
-      heading: "Legal Agreement for Payment",
-      body: "A legal agreement outlining the payment terms, deadlines, and penalties for late or non-payment must be signed at the time of registration. This agreement serves as a commitment to adhere to the payment schedule.",
-    },
-    {
-      heading: "Discounts for Early Payment",
-      body: "Parents who pay the full fee within 10 days of registration will receive a 5% discount on the total fee.",
-    },
-  ],
 };
 
-// AKIS only — AKET's source form has no Additional Policies page.
 const ADDITIONAL_POLICIES: PolicySubsection[] = [
   {
     heading: "Attendance Policy",
@@ -201,7 +158,7 @@ const FOOTER_RULE = rgb(0.85, 0.85, 0.85);
 const WHITE = rgb(1, 1, 1);
 
 /** Per-center brand palette, sourced verbatim from src/app/globals.css's
- * `:root` (AKIS) and `[data-center="aket"]` (AKET) custom properties.
+ * `:root` custom properties (AKIS).
  * Exported for reuse by other generated PDFs that need the same brand
  * colors (see lib/idcard/generateIdCard.ts) — kept as one source of truth
  * rather than a second hardcoded copy drifting out of sync. */
@@ -241,14 +198,6 @@ export const PALETTE: Record<AdmissionCenter, CenterPalette> = {
     accent700: rgb255(148, 107, 10),
     tint: tint(15, 33, 49, 0.07),
     onBandSubtitle: paleOn(212, 175, 55, 0.85),
-  },
-  aket: {
-    primary900: rgb255(3, 40, 44),
-    primary700: rgb255(10, 71, 77),
-    accent500: rgb255(245, 144, 90),
-    accent700: rgb255(217, 109, 44),
-    tint: tint(3, 40, 44, 0.07),
-    onBandSubtitle: paleOn(245, 144, 90, 0.85),
   },
 };
 
@@ -586,10 +535,7 @@ export async function generateAdmissionPdf(admission: AdmissionRecord, center: A
   // navy-line crest is invisible against it, so the white-line variant is
   // used here specifically (crest-navy.png is still the right choice
   // anywhere the crest sits on a light background, e.g. the web app itself).
-  // AKET's seal already has enough of its own internal contrast (a lighter
-  // blue border + cream text) against AKET's dark teal band, so it's
-  // unchanged.
-  const logoFile = center === "akis" ? "crest-white.png" : "aket-seal.png";
+  const logoFile = "crest-white.png";
   let logo: PDFImage | null = null;
   try {
     const bytes = await readFile(path.join(process.cwd(), "public", "brand", logoFile));
@@ -660,9 +606,6 @@ export async function generateAdmissionPdf(admission: AdmissionRecord, center: A
   writer.bulletList(DECLARATION_BULLETS[center]);
 
   writer.signatureRow(["Date", "Parent / Guardian Signature"]);
-  if (center === "aket") {
-    writer.signatureRow(["Manager's signature"]);
-  }
 
   // ---------------------------------------------------------------------
   // Medical History
@@ -684,12 +627,7 @@ export async function generateAdmissionPdf(admission: AdmissionRecord, center: A
 
   writer.spacer(6);
   writer.paragraph(`2. Does your child have any allergies?  ${admission.medical_allergies ? "YES" : "NO"}`, { bold: true });
-  if (center === "aket") {
-    writer.field(
-      "If yes, please explain what causes of allergy have been identified…",
-      admission.medical_allergies_detail
-    );
-  } else if (admission.medical_allergies_detail) {
+  if (admission.medical_allergies_detail) {
     writer.paragraph(admission.medical_allergies_detail);
   }
 
@@ -706,18 +644,10 @@ export async function generateAdmissionPdf(admission: AdmissionRecord, center: A
 
   writer.signatureRow(["Date", "PARENT / GUARDIAN SIGNATURE"]);
 
-  if (center === "akis") {
-    writer.fieldRow([
-      { label: "Registration Date:", value: admission.registration_date },
-      { label: "Enrolment Grade:", value: admission.enrolment_grade },
-    ]);
-  } else {
-    writer.subsectionHeader("To be filled by Al Kamal Education Technology staff");
-    writer.fieldRow([
-      { label: "REGISTRATION DATE", value: admission.registration_date },
-      { label: "PACKAGE/S", value: admission.package_name },
-    ]);
-  }
+  writer.fieldRow([
+    { label: "Registration Date:", value: admission.registration_date },
+    { label: "Enrolment Grade:", value: admission.enrolment_grade },
+  ]);
 
   // ---------------------------------------------------------------------
   // Payment Policies and Agreements
@@ -726,34 +656,24 @@ export async function generateAdmissionPdf(admission: AdmissionRecord, center: A
   writer.sectionHeader("PAYMENT POLICIES AND AGREEMENTS");
   policySection(writer, PAYMENT_POLICIES[center]);
 
-  if (center === "akis") {
-    writer.fieldRow([
-      { label: "Parent/Guardian Name:", value: guardianDisplayName(admission) },
-      { label: "Date:", value: null },
-    ]);
-    writer.signatureRow(["Parent/Guardian Signature", "Principal Signature"]);
-  } else {
-    writer.fieldRow([
-      { label: "Student Name:", value: admission.student_full_name },
-      { label: "Date:", value: null },
-    ]);
-    writer.signatureRow(["Parent/Guardian's Signature", "Principal's Signature"]);
-  }
+  writer.fieldRow([
+    { label: "Parent/Guardian Name:", value: guardianDisplayName(admission) },
+    { label: "Date:", value: null },
+  ]);
+  writer.signatureRow(["Parent/Guardian Signature", "Principal Signature"]);
 
   // ---------------------------------------------------------------------
-  // Additional Policies — AKIS only
+  // Additional Policies
   // ---------------------------------------------------------------------
-  if (center === "akis") {
-    writer.newPage(false);
-    writer.sectionHeader("ADDITIONAL POLICIES");
-    policySection(writer, ADDITIONAL_POLICIES);
+  writer.newPage(false);
+  writer.sectionHeader("ADDITIONAL POLICIES");
+  policySection(writer, ADDITIONAL_POLICIES);
 
-    writer.fieldRow([
-      { label: "Parent/Guardian Name:", value: guardianDisplayName(admission) },
-      { label: "Date:", value: null },
-    ]);
-    writer.signatureRow(["Parent/Guardian Signature", "Principal Signature"]);
-  }
+  writer.fieldRow([
+    { label: "Parent/Guardian Name:", value: guardianDisplayName(admission) },
+    { label: "Date:", value: null },
+  ]);
+  writer.signatureRow(["Parent/Guardian Signature", "Principal Signature"]);
 
   drawFooters(doc, font, center);
 

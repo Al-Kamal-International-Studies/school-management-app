@@ -1,7 +1,7 @@
 import "server-only";
 
 /**
- * Same charset/logic as scripts/bulk-onboard-aket.mjs's own generatePassword
+ * Same charset/logic as the onboarding scripts' own generatePassword
  * (excludes visually-ambiguous characters — no 0/O/1/l/I). Duplicated here
  * rather than having the .mjs scripts import from src/lib (they run via
  * plain `node`, outside the Next.js build, so pulling in a "server-only"

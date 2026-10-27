@@ -5,7 +5,6 @@ import { ForcePasswordChangeForm } from "./ForcePasswordChangeForm";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { MIN_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH_ADMIN } from "@/lib/security/password";
-import { knownCenterFor } from "@/lib/centers/knownCenters";
 
 /**
  * Mandatory password change after signing in with a temp/admin-set
@@ -21,10 +20,9 @@ export default async function ForcePasswordChangePage() {
 
   const dict = await getDictionary(await getLocale());
   const minLength = profile.role === "admin" ? MIN_PASSWORD_LENGTH_ADMIN : MIN_PASSWORD_LENGTH;
-  const center = knownCenterFor(profile.center_id);
 
   return (
-    <AuthShell center={center}>
+    <AuthShell>
       <div className="mb-8">
         <h1 className="page-title">{dict.forcePasswordChange.title}</h1>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-navy-400">{dict.forcePasswordChange.message}</p>

@@ -10,7 +10,6 @@ import { formatTime } from "@/lib/utils";
 import { schoolWeekdayDb, formatSchoolDate } from "@/lib/dates";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
-import { CacheDashboardForOffline } from "@/components/offline/CacheDashboardForOffline";
 
 export default async function TeacherDashboardPage() {
   const profile = await getCurrentProfile();
@@ -37,23 +36,6 @@ export default async function TeacherDashboardPage() {
 
   return (
     <div className="space-y-7">
-      {/* Real offline behavior for Apple's Guideline 4.2 review — see the
-          identical setup + comment in (dashboard)/parent/page.tsx. Teachers
-          have no single "overall score"/"attendance rate" of their own
-          (those concepts are per-student), so both are left null — the
-          offline card in app/offline/page.tsx already hides those tiles
-          when null. */}
-      <CacheDashboardForOffline
-        userId={profile!.id}
-        role="teacher"
-        summary={{
-          displayName: profile!.full_name,
-          subtitle: `${distinctClasses.size} ${dict.nav.myClasses} · ${totalStudents} ${dict.adminClasses.students}`,
-          overallScore: null,
-          attendanceRate: null,
-          announcements: announcements.map((a) => ({ title: a.title, date: new Date(a.created_at).toLocaleDateString() })),
-        }}
-      />
       <PageHeader
         eyebrow={formatSchoolDate(new Date(), locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         title={`${dict.common.welcome}, ${profile!.full_name}`}

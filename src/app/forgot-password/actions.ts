@@ -1,6 +1,8 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasAkisAccess } from "@/lib/centers/hasAkisAccess";
+import { AKIS_CENTER_ID } from "@/lib/types/database.types";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/security/rateLimit";
 import { sendPushToUsers } from "@/lib/push/send";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -56,14 +58,22 @@ export async function requestPasswordResetAction(
       .is("archived_at", null)
       .maybeSingle();
 
-    if (profile) {
+    // Only accounts that can use this app (AKIS, HANDOVER Part 37) get a
+    // request — the response is identical either way, so this reveals nothing.
+    if (profile && (await hasAkisAccess(profile.id))) {
       await admin.from("password_reset_requests").insert({ email });
 
       // Best-effort: notify any admin with push enabled. Never blocks the
       // response — a notification failure shouldn't make this action look
       // like it failed to the (unauthenticated) submitter.
-      const { data: admins } = await admin.from("profiles").select("id").eq("role", "admin").is("archived_at", null);
-      if (admins && admins.length > 0) {
+      const { data: allAdmins } = await admin.from("profiles").select("id").eq("role", "admin").is("archived_at", null);
+      const adminIds = (allAdmins ?? []).map((a) => a.id);
+      const { data: akisAdminGrants } =
+        adminIds.length > 0
+          ? await admin.from("profile_center_access").select("profile_id").eq("center_id", AKIS_CENTER_ID).in("profile_id", adminIds)
+          : { data: [] as { profile_id: string }[] };
+      const admins = (akisAdminGrants ?? []).map((g) => ({ id: g.profile_id }));
+      if (admins.length > 0) {
         const dict = await getDictionary(await getLocale());
         await sendPushToUsers(
           admins.map((a) => a.id),

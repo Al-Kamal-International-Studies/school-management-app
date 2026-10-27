@@ -3,7 +3,6 @@ import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { VerifyTotpForm } from "@/components/mfa/VerifyTotpForm";
-import { knownCenterFor } from "@/lib/centers/knownCenters";
 
 /**
  * MFA challenge step for an admin whose session hasn't verified their
@@ -25,13 +24,9 @@ export default async function MfaVerifyPage() {
   const factorId = factors?.totp?.[0]?.id;
   if (!factorId) redirect("/mfa/setup");
 
-  // MFA happens post-authentication, so (unlike /login) the real profile —
-  // and its real center — is already known here. Same pattern
-  // /devices/manage and /force-password-change already use.
-  const center = knownCenterFor(profile.center_id);
 
   return (
-    <AuthShell center={center}>
+    <AuthShell>
       <div className="mb-8">
         <h1 className="page-title">Verify it's you</h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">

@@ -100,7 +100,6 @@ const en = {
     auditLog: "Audit Log",
     messages: "Messages",
     classChat: "Class Chat",
-    autismSection: "Autism Section",
     tutorial: "Tutorial",
     passwordResetRequests: "Password Resets",
     collapseSidebar: "Collapse sidebar",
@@ -116,6 +115,7 @@ const en = {
     signingIn: "Signing in…",
     footer: "Accounts are created by your school administrator. Contact them if you need access.",
     deactivated: "This account has been deactivated. Please contact your administrator.",
+    noAccess: "This account doesn't have access to Al Kamal International Studies. Please contact your administrator.",
     showPassword: "Show password",
     hidePassword: "Hide password",
     rememberMe: "Remember me on this device",
@@ -202,16 +202,6 @@ const en = {
       feature2: "Role-based access, secured end to end",
       feature3: "Built for a modern, connected campus",
     },
-    aket: {
-      tagline: "Knowledge is Light",
-      headline: "Where technology and teaching come together to prepare every learner for what's next.",
-      feature1: "Digital-first classes, grading, and attendance",
-      feature2: "Role-based access, secured end to end",
-      feature3: "Built for a connected, technology-driven campus",
-    },
-  },
-  centerPicker: {
-    label: "Signing in to",
   },
   settings: {
     title: "Settings",
@@ -458,46 +448,6 @@ const en = {
     send: "Send",
     teacherBadge: "Teacher",
   },
-  autismSection: {
-    title: "Autism Section",
-    subtitle: "Daily video updates for your assigned students.",
-    noAssignedStudents: "No assigned students yet.",
-    noAssignedStudentsDescription: "Once the administrator assigns you a student, they'll appear here.",
-    latestVideo: "Latest video",
-    noVideosYet: "No videos yet.",
-    videoHistory: "Video History",
-    uploadVideo: "Upload a video",
-    videoTitleLabel: "Title (optional)",
-    videoTitlePlaceholder: "e.g. Morning circle time",
-    chooseFile: "Video file",
-    videoDropHint: "Drag and drop a video here, or click to browse",
-    uploadHint: "MP4, MOV, or WebM, up to 150MB.",
-    fileTooLarge: "Video must be under 150MB.",
-    wrongFileType: "Use an MP4, MOV, or WebM video.",
-    upload: "Upload",
-    uploading: "Uploading…",
-    messageParent: "Message {name}",
-    noParentLinked: "No parent linked to this student yet.",
-    comments: "Comments",
-    noComments: "No comments yet.",
-    addCommentPlaceholder: "Write a comment…",
-    postComment: "Post",
-    adminViewOnly: "Admins can view this thread but can't post in it.",
-    uploadedBy: "Uploaded by {name}",
-    widgetTitle: "Autism Program",
-    watchFull: "Open full video",
-    adminTitle: "Autism Section",
-    adminSubtitle: "Manage teacher assignments and review every video across the program.",
-    assignments: "Assignments",
-    chooseTeacher: "Choose a teacher…",
-    chooseStudent: "Choose a student…",
-    noAssignmentsYet: "No assignments yet.",
-    remove: "Remove",
-    removeConfirm: "Remove this assignment? Past videos and comments will remain visible to everyone who could already see them.",
-    allVideos: "All Videos",
-    student: "Student",
-    teacher: "Teacher",
-  },
   parent: {
     title: "My Children",
     noChildren: "No children linked to your account yet. Contact the school administrator.",
@@ -651,9 +601,6 @@ const en = {
 
     newTitle: "New admission",
     newSubtitle: "Fill out the full registration form below. A PDF, student account, and parent account are created automatically on submit.",
-    chooseCenter: "Center",
-    centerAkis: "AKIS — Al Kamal International Studies",
-    centerAket: "AKET — Al Kamal Education Technology",
 
     sectionStudent: "Student information",
     studentFullName: "Student full name",
@@ -697,30 +644,13 @@ const en = {
     sectionPayment: "Payment policy",
     paymentPolicyAccepted: "I acknowledge and agree to the payment policy.",
 
-    sectionAdditional: "Additional policies (AKIS only)",
+    sectionAdditional: "Additional policies",
     additionalPoliciesAccepted: "I confirm I have read, understood, and agreed to the additional institute policies.",
 
     enrolmentGrade: "Enrolment grade",
-    packageName: "Package",
     enrolmentClass: "Level / Grade (class placement)",
     enrolmentClassUnassigned: "Not placed yet — assign manually later",
 
-    sectionAutism: "Autism Section",
-    isAutisticQuestion: "Is this child autistic, or being enrolled into the Autism Program?",
-    autismSectionHint:
-      "Checking this gives the family access to the Autism Section once their account is created. The exact type and severity are determined later by an in-person evaluation with our Autism Teacher — the fields below are just background to help prepare for that.",
-    autismDiagnosedBefore: "This child has been diagnosed with autism before",
-    autismDiagnosisDate: "Diagnosis date (if known)",
-    autismDiagnosedBy: "Diagnosed by (doctor / clinic / hospital)",
-    autismCurrentSupport: "Current therapies or support",
-    autismCurrentSupportHint: "Any therapies, interventions, or support the child currently receives.",
-    autismCommunicationAbility: "How does your child communicate?",
-    autismCommunicationAbilityHint: "e.g. verbal, non-verbal, limited words, sign language.",
-    autismSensoryNotes: "Sensory sensitivities or triggers",
-    autismSensoryNotesHint: "e.g. sounds, textures, lights, crowds.",
-    autismBehavioralNotes: "Behavioral patterns, routines, or triggers",
-    autismParentNotes: "Anything else you'd like our Autism Teacher to know",
-    autismParentNotesHint: "Optional — shared with the team ahead of the in-person evaluation.",
 
     submit: "Submit admission",
     submitting: "Submitting…",
@@ -819,39 +749,6 @@ const en = {
   studentDashboard: {
     noClassAssignedShort: "No class assigned yet",
     enrollmentHash: "Enrollment #",
-  },
-  welcomeRobot: {
-    // Speech-bubble greeting, same for every role — the quote right after
-    // it is what carries the role-specific tone.
-    greeting: "Hi there!",
-    studentQuotes: [
-      "Every expert was once a beginner.",
-      "Small steps today, big wins tomorrow.",
-      "Curiosity is your superpower.",
-      "A mistake just means you're trying.",
-      "Read more, worry less.",
-    ],
-    teacherQuotes: [
-      "You shape more futures than you know.",
-      "A good question outlives a good answer.",
-      "Teaching is lighting a spark, one class at a time.",
-      "Every student remembers one great teacher — be theirs.",
-      "Patience today, brilliance tomorrow.",
-    ],
-    parentQuotes: [
-      "Your patience is their foundation.",
-      "Small moments build big confidence.",
-      "You're their first, favorite teacher.",
-      "Every question they ask is a door opening.",
-      "Love and consistency — the best curriculum.",
-    ],
-    adminQuotes: [
-      "Great schools are built one steady decision at a time.",
-      "Behind every strong school is a steady hand.",
-      "Community first, always.",
-      "Small improvements, compounded, change everything.",
-      "Leadership is quiet service, day after day.",
-    ],
   },
   profilePage: {
     title: "My profile",
@@ -968,10 +865,6 @@ const en = {
           title: "Audit log",
           body: "A record of sensitive actions across the app — account changes, password resets, and more.",
         },
-        autismSection: {
-          title: "Autism Section",
-          body: "New: manage teacher-student assignments for the Autism program and review every video and comment thread across it.",
-        },
         admissions: {
           title: "Admissions",
           body: "New: digitize a paper registration in one form — it generates the official PDF and creates both the student and parent accounts for you.",
@@ -989,10 +882,6 @@ const en = {
         classChat: {
           title: "Class Chat",
           body: "New: one chat per subject you teach. Post an update or a link — like a Google Meet link for a live class — and your students can reply.",
-        },
-        autismSection: {
-          title: "Autism Section",
-          body: "New: upload a daily video for each student assigned to you, message their parent directly, and reply in the video's comment thread.",
         },
         timetable: {
           title: "My timetable",
@@ -1066,10 +955,6 @@ const en = {
           title: "Your child's dashboard",
           body: "Progress, attendance, grades, and upcoming work for your child, all in one place. Switch children up top if you have more than one.",
         },
-        autismSection: {
-          title: "Autism Program",
-          body: "New: your child's latest video update from their teacher shows up right here — watch it and leave a comment.",
-        },
         calendar: {
           title: "Calendar",
           body: "School events and important dates.",
@@ -1088,10 +973,6 @@ const en = {
         },
       },
     },
-  },
-  centerSwitcher: {
-    switchCenter: "Switch center",
-    switchTo: "Switch to",
   },
 };
 

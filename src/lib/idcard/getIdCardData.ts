@@ -2,7 +2,6 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { academicYearLabel } from "@/lib/academicYear";
-import { AKET_CENTER_ID } from "@/lib/types/database.types";
 import type { AdmissionCenter } from "@/lib/admissions/generatePdf";
 
 export interface IdCardData {
@@ -50,7 +49,7 @@ export async function getIdCardData(studentId: string): Promise<IdCardData | nul
 
   return {
     studentId,
-    center: profile.center_id === AKET_CENTER_ID ? "aket" : "akis",
+    center: "akis",
     fullName: profile.full_name,
     enrollmentNumber: student.enrollment_number,
     className,

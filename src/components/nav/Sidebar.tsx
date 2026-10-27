@@ -30,19 +30,18 @@ import {
   Compass,
   ChevronLeft,
   X,
-  HeartHandshake,
   UserPlus,
   IdCard,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CenterLogo, CenterMark } from "@/components/auth/CenterLogo";
-import { knownCenterFor } from "@/lib/centers/knownCenters";
+import { AKIS_CENTER } from "@/lib/centers/knownCenters";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { dirForLocale } from "@/lib/i18n/locales";
 import { useTour } from "@/lib/tour/TourProvider";
 import type { Dictionary } from "@/lib/i18n/types";
-import { AKET_CENTER_ID, type UserRole } from "@/lib/types/database.types";
+import type { UserRole } from "@/lib/types/database.types";
 
 // Persists the desktop-only collapsed/expanded rail preference across
 // sessions. Deliberately a plain localStorage flag (not the cookie+
@@ -100,18 +99,6 @@ interface NavItem {
   href: string;
   labelKey: keyof Dictionary["nav"];
   icon: LucideIcon;
-  /** Set only for an item that must be hidden unless the account's active
-   * center is this one — currently just the Autism Section links, which
-   * only make sense for AKET (see AGENTS.md/HANDOVER.md's AKET-only
-   * framing of the feature). Undefined means "visible in every center",
-   * the default for every pre-existing item. */
-  centerRestricted?: string;
-  /** Set only on the parent role's Autism Section link. In addition to the
-   * center check above, a parent must actually have a child flagged
-   * autistic at admission time (students.is_autistic) — otherwise every
-   * AKET parent saw "Autism Program" regardless of whether their own child
-   * was enrolled in it. See lib/autism/hasAutismAccess.ts. */
-  autismGated?: boolean;
 }
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
@@ -129,7 +116,6 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { href: "/admin/events", labelKey: "calendar", icon: CalendarDays },
     { href: "/admin/documents", labelKey: "documents", icon: FolderOpen },
     { href: "/admin/announcements", labelKey: "announcements", icon: Megaphone },
-    { href: "/admin/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID },
     { href: "/messages", labelKey: "messages", icon: MessagesSquare },
     { href: "/admin/feedback", labelKey: "feedback", icon: MessageSquareText },
     { href: "/admin/audit-log", labelKey: "auditLog", icon: History },
@@ -138,7 +124,6 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { href: "/teacher", labelKey: "myClasses", icon: BookOpen },
     { href: "/teacher/id-cards", labelKey: "idCards", icon: IdCard },
     { href: "/class-chat", labelKey: "classChat", icon: Hash },
-    { href: "/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID },
     { href: "/teacher/timetable", labelKey: "myTimetable", icon: CalendarClock },
     { href: "/teacher/timetable-builder", labelKey: "timetable", icon: CalendarClock },
     { href: "/teacher/attendance", labelKey: "attendance", icon: CalendarCheck },
@@ -172,7 +157,6 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   parent: [
     { href: "/parent", labelKey: "dashboard", icon: LayoutDashboard },
     { href: "/parent/id-card", labelKey: "idCard", icon: IdCard },
-    { href: "/autism", labelKey: "autismSection", icon: HeartHandshake, centerRestricted: AKET_CENTER_ID, autismGated: true },
     { href: "/calendar", labelKey: "calendar", icon: CalendarDays },
     { href: "/documents", labelKey: "documents", icon: FolderOpen },
     { href: "/messages", labelKey: "messages", icon: MessagesSquare },
@@ -183,34 +167,20 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
 
 export function Sidebar({
   role,
-  activeCenterId,
-  hasAutismAccess,
   mobileOpen,
   onClose,
 }: {
   role: UserRole;
-  activeCenterId: string;
-  /** See DashboardShell's own doc comment — always true for non-parent
-   * roles, so this never restricts admin/teacher/student. */
-  hasAutismAccess: boolean;
   mobileOpen: boolean;
   onClose: () => void;
 }) {
   const pathname = usePathname();
   const { dict, locale } = useLocale();
   const isRtl = dirForLocale(locale) === "rtl";
-  // centerRestricted items (currently just Autism Section) only show up
-  // when the account's active center actually matches — same
-  // activeCenterId prop DashboardShell already threads down for the
-  // branding/CenterSwitcher, no new plumbing needed. autismGated items
-  // additionally require hasAutismAccess (parent role only, see NavItem's
-  // own doc comment).
-  const items = NAV_ITEMS[role].filter(
-    (item) => (!item.centerRestricted || item.centerRestricted === activeCenterId) && (!item.autismGated || hasAutismAccess)
-  );
+  const items = NAV_ITEMS[role];
   const { startTour } = useTour();
 
-  const activeCenterName = knownCenterFor(activeCenterId).name;
+  const activeCenterName = AKIS_CENTER.name;
   useEffect(() => {
     // Longest matching href wins, so /admin/users/[id] reads as "Users", not "Overview".
     const active = [...items]
@@ -228,14 +198,9 @@ export function Sidebar({
     const observer = new MutationObserver(apply);
     observer.observe(document.head, { childList: true, characterData: true, subtree: true });
     return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- items is derived from role/center/autism access, all listed
-  }, [pathname, role, activeCenterId, hasAutismAccess, dict, activeCenterName]);
-  // Which center's branding to show — the account's actual active center
-  // (resolved by (dashboard)/layout.tsx from profile.center_id or, for a
-  // multi-center account, the active_center_id cookie), not a hardcoded
-  // AKIS assumption. See CenterLogo.tsx for the same resolution AuthShell
-  // already applies pre-login.
-  const center = knownCenterFor(activeCenterId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- items is derived from role, listed
+  }, [pathname, role, dict, activeCenterName]);
+  const center = AKIS_CENTER;
 
   // Desktop-only icon-rail collapse. Server and first client (hydration)
   // render always see "expanded" via getCollapsedServerSnapshot, so there's
