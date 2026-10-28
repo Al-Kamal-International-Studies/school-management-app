@@ -1,0 +1,15 @@
+# Vercel CLI deploys upload this folder; never send secrets or local data.
+.env
+.env.local
+.env.*.local
+*.pem
+AKIS Accounts - *
+scripts/output/
+audit-report/
+tutorial-video/
+ml/.venv/
+**/__pycache__/
+.pytest_cache/
+node_modules/
+.next/
+.claude/

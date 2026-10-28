@@ -45,3 +45,7 @@ AKIS Accounts - *
 ml/.venv/
 __pycache__/
 .pytest_cache/
+
+# Vercel CLI project link
+.vercel
+
