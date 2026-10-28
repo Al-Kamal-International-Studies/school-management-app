@@ -1,36 +1,18 @@
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
+import { z } from "zod";
 import { requireSession } from "@/lib/auth";
-import { getChannel } from "../queries";
-import { ChannelThread } from "./ChannelThread";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { FadeUp } from "@/components/motion/FadeUp";
-import { getDictionary } from "@/lib/i18n/getDictionary";
-import { getLocale } from "@/lib/i18n/getLocale";
+import { createClient } from "@/lib/supabase/server";
 
+/**
+ * Old Class Chat links (notifications, bookmarks) pointed at a
+ * class_subject_teachers id. Each one now has a subject group in Messages
+ * (HANDOVER Part 42); send the user there.
+ */
 export default async function ClassChatChannelPage({ params }: { params: Promise<{ channelId: string }> }) {
-  const me = await requireSession();
-  if (!me) return null;
-  const dict = await getDictionary(await getLocale());
-
+  await requireSession();
   const { channelId } = await params;
-  const detail = await getChannel(channelId, me);
-  if (!detail) notFound();
-
-  return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <FadeUp>
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="page-title-compact">{detail.subjectName}</h1>
-          <Badge tone="slate">{detail.className}</Badge>
-        </div>
-        <p className="mt-1 text-sm text-slate-500 dark:text-navy-400">{dict.classChat.taughtBy.replace("{teacher}", detail.teacherName)}</p>
-      </FadeUp>
-      <FadeUp delay={0.05}>
-        <Card>
-          <ChannelThread channelId={channelId} myId={me.id} isTeacher={detail.isTeacher} messages={detail.messages} />
-        </Card>
-      </FadeUp>
-    </div>
-  );
+  if (!z.guid().safeParse(channelId).success) redirect("/messages");
+  const supabase = await createClient();
+  const { data: chat } = await supabase.from("chats").select("id").eq("cst_id", channelId).maybeSingle();
+  redirect(chat ? `/messages/${chat.id}` : "/messages");
 }

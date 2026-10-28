@@ -1,0 +1,162 @@
+train 12325  validation 2175  held-out test 2200 (1033 unique)
+features 17701  block >= 0.65  review >= 0.45  model needs >= 5 words
+validation (model, block) recall  97.0%  precision  99.8%  false alarms  0.16%  (tp 873 fp 2 fn 27 tn 1273)
+
+HELD-OUT TEST (templates, grooming phrasings and bad words never seen in training)
+word list only         recall  52.3%  precision 100.0%  false alarms  0.00%  (tp 523 fp 0 fn 477 tn 1200)
+model only             recall  40.6%  precision 100.0%  false alarms  0.00%  (tp 406 fp 0 fn 594 tn 1200)
+word list + model      recall  79.0%  precision 100.0%  false alarms  0.00%  (tp 790 fp 0 fn 210 tn 1200)
+  unique lines         recall  84.3%  precision 100.0%  false alarms  0.00%  (tp 584 fp 0 fn 109 tn 340)
+
+EVERYDAY CHAT (short messages, none in training; must be ~0 blocked)
+blocked                recall   0.0%  precision   0.0%  false alarms  0.00%  (tp 0 fp 0 fn 0 tn 70)
+blocked or flagged     recall   0.0%  precision   0.0%  false alarms  0.00%  (tp 0 fp 0 fn 0 tn 70)
+
+HAND-WRITTEN SETS #2 + #3 (near-identical safe/unsafe pairs; used to pick the bands)
+blocked                recall  48.6%  precision  90.0%  false alarms  6.06%  (tp 18 fp 2 fn 19 tn 31)
+blocked or flagged     recall  70.3%  precision  89.7%  false alarms  9.09%  (tp 26 fp 3 fn 11 tn 30)
+set #3 detail (BLOCKED = refused at the block band):
+  allowed [unsafe] is there someone next to you right now?
+  BLOCKED [unsafe] promise me you won't show these messages to anyone
+  BLOCKED [unsafe] i'd like a picture of you before you sleep
+  BLOCKED [unsafe] you have such a lovely figure
+  BLOCKED [unsafe] let's keep our friendship hidden
+  BLOCKED [unsafe] you can stay over at my house, your parents don't have to know
+  BLOCKED [unsafe] what are you doing in your bedroom?
+  BLOCKED [unsafe] i'll give you an A if you come see me alone
+  BLOCKED [unsafe] clear your chat history after this
+  BLOCKED [unsafe] nobody understands you like me
+  allowed [unsafe] هل في حد جنبك الحين؟
+  BLOCKED [unsafe] اوعديني ما توري الرسايل لحد
+  BLOCKED [unsafe] ابغى صورة لك قبل ما تنامي
+  allowed [unsafe] جسمك حلو
+  allowed [unsafe] خلي صداقتنا سرية
+  allowed [unsafe] تعال نام عندي واهلك ما يدروا
+  allowed [safe] Is there someone in your group who needs help?
+  allowed [safe] Promise me you will finish the project by Friday
+  allowed [safe] I'd like a picture of your science poster
+  BLOCKED [safe] You have such lovely handwriting
+  allowed [safe] Let's keep the classroom tidy
+  allowed [safe] You can stay after school for extra help in the library
+  allowed [safe] What are you doing for your art project?
+  BLOCKED [safe] I'll give you an A if you keep working this hard
+  allowed [safe] Clear your desk after the test
+  allowed [safe] Nobody understood question 4
+  allowed [safe] هل في حد في مجموعتك يحتاج مساعدة؟
+  allowed [safe] اوعدني تخلص المشروع يوم الخميس
+  allowed [safe] ابغى صورة للوحة العلوم
+  allowed [safe] خطك حلو ما شاء الله
+  allowed [safe] خلي الفصل نظيف
+  allowed [safe] تقدر تبقى بعد الدوام في المكتبة للمراجعة
+
+missed unsafe lines (109):
+  - شو هالـابن الكلب
+  - شو هالـشرج
+  - شو هالـبز
+  - R.i.m.m.i.n.g r.i.m.m.i.n.g
+  - شو هالـانيك
+  - شو هالـحلمه
+  - شو هالـخنثي
+  - b-d-s-m b-d-s-m
+  - شو هالـكسامك
+  - Ur a b.i.g. .k.n.o.c.k.e.r.s lmao
+  - شو هالـجماع
+  - s-t-r-a-p-p-a-d-o s-t-r-a-p-p-a-d-o
+  - Whit* power whit* power
+  - This class is 3jacula7i0n
+  - b_o_o_b_s b_o_o_b_s
+  - ur a tub g*rl lmao
+  - S_e_x s_e_x
+  - ur a p u b e s lmao
+  - Ur a 3cchi lmao
+  - Btw got a girlfriend??
+  - hey اشتقتلك يا حلوة?
+  - got a girlfriend?
+  - ok. تعالي لحالك
+  - ok. شو عم تلبسي
+  - خلي الموضوع بيني وبينك وما تحكي لأمك
+  - صوري حالك وابعتيلي
+  - i want you so bad 😊
+  - صوري حالك وابعتيلي?
+  - got a girlfriend? ok?
+  - اشتقتلك يا حلوة ok?
+  - ok. take your clothes off ok?
+  - تعالي لحالك لا تتأخري
+  - ok. خلي الموضوع بيني وبينك وما تحكي لأمك 😊
+  - بقتلك اذا حكيتي
+  - hey بقتلك اذا حكيتي?
+  - btw اشتقتلك يا حلوة 😊
+  - بقتلك اذا حكيتي 😊
+  - HEY GOT A GIRLFRIEND?
+  - hey go kill urself
+  - تعالي لحالك
+  - ok. go kill urself?
+  - شو عم تلبسي
+  - شو عم تلبسي lol
+  - تعالي لحالك 😊
+  - صوري حالك وابعتيلي please
+  - btw شو عم تلبسي?
+  - GO KILL URSELF
+  - اشتقتلك يا حلوة 😊
+  - شو عم تلبسي ok?
+  - btw تعالي لحالك?
+  - تعالي لحالك please
+  - السلام عليكم got a girlfriend?
+  - Hey go kill urself 😊
+  - اشتقتلك يا حلوة lol
+  - hey got a girlfriend? 😊
+  - تعالي لحالك?
+  - خلي الموضوع بيني وبينك وما تحكي لأمك ok?
+  - GO KILL URSELF OK?
+  - hey اشتقتلك يا حلوة
+  - take your clothes off
+  - ok. شو عم تلبسي?
+  - btw تعالي لحالك 😊
+  - GOT A GIRLFRIEND? OK?
+  - صوري حالك وابعتيلي lol
+  - بقتلك اذا حكيتي please
+  - i want you so bad?
+  - شو عم تلبسي 😊
+  - btw تعالي لحالك
+  - في احد معك هلق؟?
+  - Got a girlfriend? لا تتأخري
+  - تعالي لحالك lol
+  - hey بقتلك اذا حكيتي
+  - btw got a girlfriend? ok?
+  - hey صوري حالك وابعتيلي
+  - btw صوري حالك وابعتيلي?
+  - hey got a girlfriend??
+  - hey بقتلك اذا حكيتي 😊
+  - في احد معك هلق؟
+  - btw شو عم تلبسي 😊
+  - ok. في احد معك هلق؟ ok?
+  - Btw got a girlfriend?
+  - خلي الموضوع بيني وبينك وما تحكي لأمك 😊
+  - ok. صوري حالك وابعتيلي
+  - ok. بقتلك اذا حكيتي 😊
+  - ok. تعالي لحالك lol
+  - hey شو عم تلبسي
+  - ok. شو عم تلبسي 😊
+  - hi miss, تعالي لحالك
+  - YOU DESERVE TO DIE?
+  - خلي الموضوع بيني وبينك وما تحكي لأمك?
+  - بقتلك اذا حكيتي lol
+  - you deserve to die
+  - btw تعالي لحالك lol
+  - ok. تعالي لحالك ok?
+  - hey تعالي لحالك
+  - صوري حالك وابعتيلي 😊
+  - اشتقتلك يا حلوة
+  - بقتلك اذا حكيتي?
+  - hi miss, تعالي لحالك 😊
+  - السلام عليكم تعالي لحالك 😊
+  - hey got a girlfriend? please
+  - I want you so bad
+  - صوري حالك وابعتيلي ok?
+  - got a girlfriend? please
+  - في احد معك هلق؟ 😊
+  - hey got a girlfriend? lol
+  - btw تعالي لحالك please
+  - hey صوري حالك وابعتيلي 😊
+  - hey صوري حالك وابعتيلي?
+false alarms on safe lines (0):

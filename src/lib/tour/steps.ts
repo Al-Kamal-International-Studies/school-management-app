@@ -83,7 +83,7 @@ export const TOUR_STEPS: Record<UserRole, TourStep[]> = {
   teacher: [
     welcomeStep("teacher"),
     step("myClasses", { kind: "element", selector: '[data-tour="page-title"]' }, (d) => d.tour.steps.teacher.myClasses),
-    step("classChat", { kind: "nav", href: "/class-chat" }, (d) => d.tour.steps.teacher.classChat, 2),
+    step("classChat", { kind: "nav", href: "/messages" }, (d) => d.tour.steps.teacher.classChat, 2),
     step("timetable", { kind: "nav", href: "/teacher/timetable" }, (d) => d.tour.steps.teacher.timetable),
     step("attendance", { kind: "nav", href: "/teacher/attendance" }, (d) => d.tour.steps.teacher.attendance),
     step("assignments", { kind: "nav", href: "/teacher/assignments" }, (d) => d.tour.steps.teacher.assignments),
@@ -95,7 +95,7 @@ export const TOUR_STEPS: Record<UserRole, TourStep[]> = {
   student: [
     welcomeStep("student"),
     step("dashboard", { kind: "element", selector: '[data-tour="page-title"]' }, (d) => d.tour.steps.student.dashboard),
-    step("classChat", { kind: "nav", href: "/class-chat" }, (d) => d.tour.steps.student.classChat, 2),
+    step("classChat", { kind: "nav", href: "/messages" }, (d) => d.tour.steps.student.classChat, 2),
     step("timetable", { kind: "nav", href: "/student/timetable" }, (d) => d.tour.steps.student.timetable),
     step("attendance", { kind: "nav", href: "/student/attendance" }, (d) => d.tour.steps.student.attendance),
     step("assignments", { kind: "nav", href: "/student/assignments" }, (d) => d.tour.steps.student.assignments),

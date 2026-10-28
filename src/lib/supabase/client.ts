@@ -10,6 +10,10 @@ import type { Database } from "@/lib/types/database.types";
 export function createClient() {
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    // Realtime heartbeat in a Web Worker: browsers throttle timers in
+    // background tabs, which let the chat socket time out and miss messages
+    // (found in QA, HANDOVER Part 42). Workers aren't throttled.
+    { realtime: { worker: true } }
   );
 }

@@ -167,7 +167,7 @@ export const TABLES = [
   "dm_conversations", "dm_messages", "push_subscriptions", "parent_students", "rate_limit_events",
   "password_reset_requests", "user_devices", "webauthn_credentials", "centers", "profile_center_access",
   "subject_chat_messages", "notifications", "autism_assignments", "autism_videos", "autism_video_comments",
-  "admissions", "outbound_emails", "native_push_tokens",
+  "admissions", "outbound_emails", "native_push_tokens", "chats", "chat_messages", "message_flags",
 ];
 export const BUCKETS = ["avatars", "documents", "autism-videos", "admissions-pdfs"];
 

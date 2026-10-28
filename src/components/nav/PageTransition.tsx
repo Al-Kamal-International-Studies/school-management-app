@@ -33,12 +33,16 @@ import type { ReactNode } from "react";
  */
 export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  // Messages keeps one key across chats: remounting on every chat switch threw
+  // away the live chat list and re-showed stale cached data (QA, HANDOVER
+  // Part 42). Each open chat resets itself (ChatThread is keyed by chat id).
+  const key = pathname.startsWith("/messages") ? "/messages" : pathname;
 
   return (
     // The only entrance animation on an authenticated page (DESIGN.md: one
     // animation per change). Content inside the page no longer staggers in
     // on top of this — see FadeUp.tsx.
-    <div key={pathname} className="animate-fade-in">
+    <div key={key} className="animate-fade-in">
       {children}
     </div>
   );

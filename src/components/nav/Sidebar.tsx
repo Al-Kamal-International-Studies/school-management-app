@@ -25,7 +25,8 @@ import {
   FolderOpen,
   History,
   MessagesSquare,
-  Hash,
+  ShieldAlert,
+  Eye,
   KeyRound,
   Compass,
   ChevronLeft,
@@ -117,13 +118,13 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { href: "/admin/documents", labelKey: "documents", icon: FolderOpen },
     { href: "/admin/announcements", labelKey: "announcements", icon: Megaphone },
     { href: "/messages", labelKey: "messages", icon: MessagesSquare },
+    { href: "/admin/message-safety", labelKey: "messageSafety", icon: ShieldAlert },
     { href: "/admin/feedback", labelKey: "feedback", icon: MessageSquareText },
     { href: "/admin/audit-log", labelKey: "auditLog", icon: History },
   ],
   teacher: [
     { href: "/teacher", labelKey: "myClasses", icon: BookOpen },
     { href: "/teacher/id-cards", labelKey: "idCards", icon: IdCard },
-    { href: "/class-chat", labelKey: "classChat", icon: Hash },
     { href: "/teacher/timetable", labelKey: "myTimetable", icon: CalendarClock },
     { href: "/teacher/timetable-builder", labelKey: "timetable", icon: CalendarClock },
     { href: "/teacher/attendance", labelKey: "attendance", icon: CalendarCheck },
@@ -141,7 +142,6 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   student: [
     { href: "/student", labelKey: "dashboard", icon: LayoutDashboard },
     { href: "/student/id-card", labelKey: "idCard", icon: IdCard },
-    { href: "/class-chat", labelKey: "classChat", icon: Hash },
     { href: "/student/timetable", labelKey: "myTimetable", icon: CalendarClock },
     { href: "/student/attendance", labelKey: "attendance", icon: CalendarCheck },
     { href: "/student/assignments", labelKey: "assignments", icon: FileText },
@@ -165,19 +165,26 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
 };
 
+const OVERSIGHT_ITEM: NavItem = { href: "/admin/chat-oversight", labelKey: "chatOversight", icon: Eye };
+
 export function Sidebar({
   role,
+  canOverseeChats = false,
   mobileOpen,
   onClose,
 }: {
   role: UserRole;
+  /** muhammad@ only (0047 chat_overseers): adds Chat oversight */
+  canOverseeChats?: boolean;
   mobileOpen: boolean;
   onClose: () => void;
 }) {
   const pathname = usePathname();
   const { dict, locale } = useLocale();
   const isRtl = dirForLocale(locale) === "rtl";
-  const items = NAV_ITEMS[role];
+  const items = canOverseeChats
+    ? NAV_ITEMS[role].flatMap((i) => (i.href === "/admin/message-safety" ? [i, OVERSIGHT_ITEM] : [i]))
+    : NAV_ITEMS[role];
   const { startTour } = useTour();
 
   const activeCenterName = AKIS_CENTER.name;

@@ -40,3 +40,8 @@ scripts/output/
 
 # Account lists exported for the school office (contain student/parent details)
 AKIS Accounts - *
+
+# ML training env (see ml/README.md)
+ml/.venv/
+__pycache__/
+.pytest_cache/

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 import { initials } from "@/lib/utils";
 import { NotificationBell } from "@/components/nav/NotificationBell";
+import { MessagesButton } from "@/components/nav/MessagesButton";
 import { SignOutForm } from "@/components/nav/SignOutForm";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { displayTitle } from "@/lib/i18n/labels";
@@ -30,6 +31,7 @@ export function Topbar({
       </button>
       <div className="hidden lg:block" />
       <div className="flex items-center gap-1.5 sm:gap-3">
+        <MessagesButton />
         <NotificationBell notifications={notifications} />
         <Link
           href="/profile"

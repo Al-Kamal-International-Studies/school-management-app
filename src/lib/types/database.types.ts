@@ -393,6 +393,73 @@ export type SubjectChatMessage = {
   created_at: string;
 };
 
+// Added by 0046_messaging_v2.sql (HANDOVER Part 42). One inbox for direct
+// chats and subject groups; dm_* and subject_chat_messages are retired.
+export type ChatKind = "direct" | "group";
+
+export type Chat = {
+  id: string;
+  kind: ChatKind;
+  user_a: string | null;
+  user_b: string | null;
+  cst_id: string | null;
+  created_by: string | null;
+  last_message_at: string | null;
+  last_message_preview: string | null;
+  last_sender_id: string | null;
+  created_at: string;
+};
+
+export type ChatMessage = {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  content: string;
+  client_id: string;
+  created_at: string;
+};
+
+export type ChatReceipt = {
+  chat_id: string;
+  user_id: string;
+  delivered_up_to: string | null;
+  read_up_to: string | null;
+};
+
+export type MessageFlag = {
+  id: string;
+  sender_id: string | null;
+  chat_id: string | null;
+  message_id: string | null;
+  action: "blocked" | "flagged";
+  content: string;
+  reasons: string[];
+  score: number | null;
+  created_at: string;
+  verdict: "harmful" | "ok" | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+};
+
+export type MyChatRow = {
+  chat_id: string;
+  kind: ChatKind;
+  cst_id: string | null;
+  other_id: string | null;
+  last_message_at: string | null;
+  last_message_preview: string | null;
+  last_sender_id: string | null;
+  unread: number;
+};
+
+export type ContactRow = {
+  id: string;
+  full_name: string;
+  role: UserRole;
+  avatar_url: string | null;
+  context: string | null;
+};
+
 // Added by 0032_tour_versioning_and_notifications.sql. The Topbar bell's
 // inbox — one row per notification, across every producer in the app (see
 // src/lib/notifications/notify.ts). `url` is where clicking the
@@ -751,6 +818,20 @@ export type Database = {
         Update: Partial<Admission>;
         Relationships: [];
       };
+      chats: { Row: Chat; Insert: Partial<Chat> & { kind: ChatKind }; Update: Partial<Chat>; Relationships: [] };
+      chat_messages: {
+        Row: ChatMessage;
+        Insert: Partial<ChatMessage> & { chat_id: string; sender_id: string; content: string; client_id: string };
+        Update: Partial<ChatMessage>;
+        Relationships: [];
+      };
+      chat_receipts: { Row: ChatReceipt; Insert: Partial<ChatReceipt> & { chat_id: string; user_id: string }; Update: Partial<ChatReceipt>; Relationships: [] };
+      message_flags: {
+        Row: MessageFlag;
+        Insert: Partial<MessageFlag> & { action: MessageFlag["action"]; content: string };
+        Update: Partial<MessageFlag>;
+        Relationships: [];
+      };
       outbound_emails: {
         Row: OutboundEmail;
         Insert: Partial<OutboundEmail> & { to_email: string; subject: string; body_html: string; body_text: string };
@@ -759,6 +840,16 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      my_chats: { Args: Record<string, never>; Returns: MyChatRow[] };
+      my_unread_total: { Args: Record<string, never>; Returns: number };
+      my_contacts: { Args: Record<string, never>; Returns: ContactRow[] };
+      mark_all_delivered: { Args: Record<string, never>; Returns: undefined };
+      mark_chat_read: { Args: { p_chat_id: string; p_up_to: string }; Returns: undefined };
+      is_chat_overseer: { Args: { p_user: string }; Returns: boolean };
+      can_send_in_chat: { Args: { p_chat_id: string; p_user: string }; Returns: boolean };
+      open_direct_chat: { Args: { p_me: string; p_other: string }; Returns: string | null };
+      send_chat_message: { Args: { p_sender: string; p_chat_id: string; p_content: string; p_client_id: string }; Returns: ChatMessage };
+    };
   };
 };

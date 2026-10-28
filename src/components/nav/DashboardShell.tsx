@@ -7,6 +7,7 @@ import { Topbar } from "@/components/nav/Topbar";
 import { PageTransition } from "@/components/nav/PageTransition";
 import { TourProvider } from "@/lib/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
+import { ChatRealtimeProvider } from "@/components/chat/ChatRealtimeProvider";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { Notification, Profile } from "@/lib/types/database.types";
 import type { ReactNode } from "react";
@@ -14,10 +15,14 @@ import type { ReactNode } from "react";
 export function DashboardShell({
   profile,
   notifications,
+  unreadMessages,
+  canOverseeChats,
   children,
 }: {
   profile: Profile;
   notifications: Notification[];
+  unreadMessages: number;
+  canOverseeChats: boolean;
   children: ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -35,6 +40,7 @@ export function DashboardShell({
   }
 
   return (
+    <ChatRealtimeProvider myId={profile.id} initialUnread={unreadMessages}>
     <TourProvider profile={profile} onNavStepChange={setMobileOpen}>
       <>
         {/* Visually hidden until focused — lets a keyboard user jump past the
@@ -50,6 +56,7 @@ export function DashboardShell({
         <div className="flex min-h-screen bg-slate-50 dark:bg-navy-950">
           <Sidebar
             role={profile.role}
+            canOverseeChats={canOverseeChats}
             mobileOpen={mobileOpen}
             onClose={() => setMobileOpen(false)}
           />
@@ -74,5 +81,6 @@ export function DashboardShell({
         <TourOverlay />
       </>
     </TourProvider>
+    </ChatRealtimeProvider>
   );
 }

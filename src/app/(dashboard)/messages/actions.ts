@@ -1,92 +1,40 @@
 "use server";
 
 import { z } from "zod";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notifyUser } from "@/lib/notifications/notify";
-
-export interface ActionState {
-  error?: string;
-}
+import { listInbox, PAGE_SIZE, toUiMessages } from "@/lib/chat/queries";
+import type { InboxItem, UiMessage } from "@/lib/chat/types";
 
 /**
- * Finds or creates the conversation with `otherUserId`, then redirects to
- * it. RLS (can_message()) is the real gate on whether this pairing is
- * allowed — this just always inserts participant ids in a consistent order
- * so the same pair never produces two conversation rows.
+ * Finds or creates the direct chat with `otherUserId` and returns its id.
+ * open_direct_chat() (service role only) is the real gate: it returns null
+ * unless can_start_chat() allows this pair (HANDOVER Part 42's rules).
  */
-export async function startConversationAction(otherUserId: string) {
+export async function openChatAction(otherUserId: string): Promise<{ chatId?: string; error?: string }> {
   const me = await requireSession();
-  if (!me) redirect("/login");
-
-  const sorted = [me!.id, otherUserId].sort();
-  const a = sorted[0]!;
-  const b = sorted[1]!;
-  const supabase = await createClient();
-
-  const { data: existing } = await supabase
-    .from("dm_conversations")
-    .select("id")
-    .eq("participant_a", a)
-    .eq("participant_b", b)
-    .maybeSingle();
-
-  if (existing) redirect(`/messages/${existing.id}`);
-
-  const { data: created, error } = await supabase
-    .from("dm_conversations")
-    .insert({ participant_a: a, participant_b: b })
-    .select("id")
-    .single();
-  if (error || !created) redirect("/messages");
-
-  redirect(`/messages/${created.id}`);
+  if (!z.guid().safeParse(otherUserId).success) return { error: "invalid" };
+  const { data, error } = await createAdminClient().rpc("open_direct_chat", { p_me: me.id, p_other: otherUserId });
+  if (error || !data) return { error: "not_allowed" };
+  return { chatId: data };
 }
 
-const messageSchema = z.object({
-  conversation_id: z.string().guid(),
-  content: z.string().trim().min(1).max(2000),
-});
-
-export async function sendDmMessageAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const me = await requireSession();
-  if (!me) return { error: "You must be signed in." };
-
-  const parsed = messageSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid message." };
-
+/** Older history for the thread's "Load earlier messages" (RLS-scoped, filtered for display). */
+export async function loadMessagesAction(chatId: string, opts: { before?: string; after?: string }): Promise<{ messages: UiMessage[]; hasMore: boolean }> {
+  await requireSession();
+  if (!z.guid().safeParse(chatId).success) return { messages: [], hasMore: false };
   const supabase = await createClient();
+  let q = supabase.from("chat_messages").select("*").eq("chat_id", chatId);
+  if (opts.before) q = q.lt("created_at", opts.before).order("created_at", { ascending: false }).limit(PAGE_SIZE);
+  else if (opts.after) q = q.gt("created_at", opts.after).order("created_at", { ascending: true }).limit(500);
+  const { data } = await q;
+  const rows = opts.before ? [...(data ?? [])].reverse() : data ?? [];
+  return { messages: toUiMessages(rows), hasMore: !!opts.before && rows.length === PAGE_SIZE };
+}
 
-  const { data: conversation } = await supabase
-    .from("dm_conversations")
-    .select("*")
-    .eq("id", parsed.data.conversation_id)
-    .single();
-  if (!conversation || (conversation.participant_a !== me.id && conversation.participant_b !== me.id)) {
-    return { error: "Conversation not found." };
-  }
-
-  const { error } = await supabase
-    .from("dm_messages")
-    .insert({ conversation_id: parsed.data.conversation_id, sender_id: me.id, content: parsed.data.content });
-  if (error) return { error: error.message };
-
-  // dm_conversations has no UPDATE policy for users (RLS silently matched 0 rows, so the
-  // conversation list never re-ordered by recent activity). The caller was verified as a
-  // participant above, so bumping updated_at through the service role is safe.
-  await createAdminClient().from("dm_conversations").update({ updated_at: new Date().toISOString() }).eq("id", parsed.data.conversation_id);
-
-  const recipientId = conversation.participant_a === me.id ? conversation.participant_b : conversation.participant_a;
-  await notifyUser(recipientId, {
-    type: "message",
-    title: `New message from ${me.full_name}`,
-    body: parsed.data.content.slice(0, 120),
-    url: `/messages/${parsed.data.conversation_id}`,
-  });
-
-  revalidatePath(`/messages/${parsed.data.conversation_id}`);
-  return {};
+/** Fresh inbox, e.g. when a message arrives in a chat this page hasn't seen yet. */
+export async function refreshInboxAction(): Promise<InboxItem[]> {
+  await requireSession();
+  return listInbox();
 }

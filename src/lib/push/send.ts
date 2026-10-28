@@ -17,6 +17,8 @@ export interface PushPayload {
   title: string;
   body: string;
   url?: string;
+  /** same tag = replaces the earlier notification (one per chat, like WhatsApp) */
+  tag?: string;
 }
 
 /**

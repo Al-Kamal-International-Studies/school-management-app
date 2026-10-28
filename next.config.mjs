@@ -1,5 +1,9 @@
 const isDev = process.env.NODE_ENV === "development";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+// Supabase Realtime (live chat, HANDOVER Part 42) is a WebSocket to the same
+// host; connect-src needs the wss:// origin spelled out. Its heartbeat runs in
+// a blob: Web Worker (lib/supabase/client.ts), hence worker-src blob:.
+const supabaseWs = supabaseUrl.replace(/^https:/, "wss:");
 
 // Content-Security-Policy — see docs/SECURITY.md F9.
 //
@@ -39,7 +43,8 @@ const cspHeader = `
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data:${supabaseUrl ? ` ${supabaseUrl}` : ""};
   font-src 'self';
-  connect-src 'self'${supabaseUrl ? ` ${supabaseUrl}` : ""};
+  worker-src 'self' blob:;
+  connect-src 'self'${supabaseUrl ? ` ${supabaseUrl} ${supabaseWs}` : ""};
   object-src 'none';
   base-uri 'self';
   form-action 'self';

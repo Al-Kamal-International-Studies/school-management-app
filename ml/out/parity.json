@@ -1,0 +1,1313 @@
+[
+ {
+  "text": "My brother will pick me up at 4:30pm",
+  "normalized": "my brother will pick me up at 4 30pm",
+  "score": 0.33970428459227625,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Morning ms sahar, is there class monday?",
+  "normalized": "morning ms sahar is there class monday",
+  "score": 0.014939234819778695,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "شو هالـحلمه",
+  "normalized": "شو هالحلمه",
+  "score": 0.07906390579323823,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "good work today. تعالي لحالك lol",
+  "normalized": "good work today تعالي لحالك lol",
+  "score": 0.9672859711993883,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "THE QUIZ LINK: HTTPS://TEAMS.MICROSOFT.COM/L/MEETUP-JOIN/19%3AMEETING_NJQ",
+  "normalized": "the quiz link https teams microsoft com l meetup join 19 3ameeting njq",
+  "score": 0.03222328027803069,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "أرسلت الواجب على المنصة",
+  "normalized": "ارسلت الواجب علي المنصه",
+  "score": 0.05440799533876963,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "hey احذفي الرسايل لا تتأخري",
+  "normalized": "hey احذفي الرسايل لا تتاخري",
+  "score": 0.8942687620545167,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "Everyone please be on time next week",
+  "normalized": "everyone please be on time next week",
+  "score": 0.20075098746185957,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "مساء الخير أستاذ أحمد، هل في حصة الثلاثاء؟",
+  "normalized": "مساء الخير استاذ احمد هل في حصه الثلاثاء",
+  "score": 0.018326597409349235,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "مساء الخير معلمتي، هل في حصة الأحد؟",
+  "normalized": "مساء الخير معلمتي هل في حصه الاحد",
+  "score": 0.03149042675783244,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "السلام عليكم you deserve to die",
+  "normalized": "السلام عليكم you deserve to die",
+  "score": 0.951406514112096,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "السلام عليكم في احد معك هلق؟ ok?",
+  "normalized": "السلام عليكم في احد معك هلق ok",
+  "score": 0.8951992166568241,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Remove this conversation when we're done 😊",
+  "normalized": "remove this conversation when we re done",
+  "score": 0.25375201514984075,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "I scored 12/20 in Quran alhamdulillah",
+  "normalized": "i scored 12 20 in quran alhamdulillah",
+  "score": 0.07546723938008039,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "مساء الخير معلمتي، هل في حصة الثلاثاء؟",
+  "normalized": "مساء الخير معلمتي هل في حصه الثلاثاء",
+  "score": 0.029344029791795307,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "الاجتماع الساعة 10am إن شاء الله",
+  "normalized": "الاجتماع الساعه 10am ان شاء الله",
+  "score": 0.0066489702162902545,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "remove this conversation when we're done لا تتأخري",
+  "normalized": "remove this conversation when we re done لا تتاخري",
+  "score": 0.6370393471370653,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "انتي ابن الكلب والله",
+  "normalized": "انتي ابن الكلب والله",
+  "score": 0.6092226216974981,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "Please turn your camera on so i can see you are present",
+  "normalized": "please turn your camera on so i can see you are present",
+  "score": 0.16175738474656487,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Assignment 18 is massive, can we have more time?",
+  "normalized": "assignment 18 is massive can we have more time",
+  "score": 0.10457242230258142,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Can i use a calculator in the islamic studies test?",
+  "normalized": "can i use a calculator in the islamic studies test",
+  "score": 0.07647473002338614,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "الاجتماع الساعة 10am إن شاء الله",
+  "normalized": "الاجتماع الساعه 10am ان شاء الله",
+  "score": 0.0066489702162902545,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي خنثي والله",
+  "normalized": "انتي خنثي والله",
+  "score": 0.4325363221967391,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "ممكن رابط حصة التربية الإسلامية؟",
+  "normalized": "ممكن رابط حصه التربيه الاسلاميه",
+  "score": 0.02651366350288294,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "أرسلت الواجب على المنصة",
+  "normalized": "ارسلت الواجب علي المنصه",
+  "score": 0.05440799533876963,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "good work today. take your clothes off لا تتأخري",
+  "normalized": "good work today take your clothes off لا تتاخري",
+  "score": 0.9457660831897584,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي حلمه والله",
+  "normalized": "انتي حلمه والله",
+  "score": 0.263670192648892,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "السلام عليكم you seem older than your age, very mature lol",
+  "normalized": "السلام عليكم you seem older than your age very mature lol",
+  "score": 0.8847866525892477,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "btw صوري حالك وابعتيلي lol",
+  "normalized": "btw صوري حالك وابعتيلي lol",
+  "score": 0.9951836033969932,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "صوري حالك وابعتيلي please",
+  "normalized": "صوري حالك وابعتيلي please",
+  "score": 0.9709328981767265,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "أرسلت الواجب على المنصة",
+  "normalized": "ارسلت الواجب علي المنصه",
+  "score": 0.05440799533876963,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "شو هالـكسامك",
+  "normalized": "شو هالكسامك",
+  "score": 0.2905469700305206,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "ممكن رابط حصة الإنجليزي؟",
+  "normalized": "ممكن رابط حصه الانجليزي",
+  "score": 0.039859469051311124,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "The Middlesex assessment is on Thursday",
+  "normalized": "the middlesex assessment is on thursday",
+  "score": 0.03758005363415297,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Please turn your camera on so I can see you are present",
+  "normalized": "please turn your camera on so i can see you are present",
+  "score": 0.16175738474656487,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "خلي الموضوع بيني وبينك وما تحكي لأمك?",
+  "normalized": "خلي الموضوع بيني وبينك وما تحكي لامك",
+  "score": 0.6132155375685711,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Morning ms sahar, is there class tomorrow?",
+  "normalized": "morning ms sahar is there class tomorrow",
+  "score": 0.014192385822874475,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Mr fatima said the test moved to sunday",
+  "normalized": "mr fatima said the test moved to sunday",
+  "score": 0.015921855004156243,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "hi miss, you're sexy lol",
+  "normalized": "hi miss you re sexy lol",
+  "score": 0.9591698475605721,
+  "lexicon": [
+   "word",
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "السلام عليكم تعالي لحالك lol",
+  "normalized": "السلام عليكم تعالي لحالك lol",
+  "score": 0.9804252248359256,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "hey في احد معك هلق؟?",
+  "normalized": "hey في احد معك هلق",
+  "score": 0.7439316966403301,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "go away p a n t y",
+  "normalized": "go away panty",
+  "score": 0.41519468546331506,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "شو هالـخنثي",
+  "normalized": "شو هالخنثي",
+  "score": 0.22584107508616647,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "hey اشتقتلك يا حلوة lol",
+  "normalized": "hey اشتقتلك يا حلوه lol",
+  "score": 0.9632837604259159,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "بقتلك اذا حكيتي 😊",
+  "normalized": "بقتلك اذا حكيتي",
+  "score": 0.8776393967782311,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "الاجتماع الساعة 9:30 am إن شاء الله",
+  "normalized": "الاجتماع الساعه 9 30 am ان شاء الله",
+  "score": 0.007091709025144192,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "شو هالـابن الكلب",
+  "normalized": "شو هالابن الكلب",
+  "score": 0.4288005010416199,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "خذ صورة لورقة العمل وارفعها",
+  "normalized": "خذ صوره لورقه العمل وارفعها",
+  "score": 0.051700378595667146,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "الاجتماع الساعة 11:15 إن شاء الله",
+  "normalized": "الاجتماع الساعه 11 15 ان شاء الله",
+  "score": 0.006560847965965657,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "I'm home with a fever, sorry for missing class",
+  "normalized": "i m home with a fever sorry for missing class",
+  "score": 0.1418905074455786,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "hey sexxxxx reply",
+  "normalized": "hey sexx reply",
+  "score": 0.550235531950293,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "My parents said I can join the trip",
+  "normalized": "my parents said i can join the trip",
+  "score": 0.03584267088195146,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Is the meeting still at 4:30pm?",
+  "normalized": "is the meeting still at 4 30pm",
+  "score": 0.05241777673941485,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "مساء الخير أستاذة، هل في حصة الأحد؟",
+  "normalized": "مساء الخير استاذه هل في حصه الاحد",
+  "score": 0.02453846135366767,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "أنا ذاكرت وحدي في غرفتي",
+  "normalized": "انا ذاكرت وحدي في غرفتي",
+  "score": 0.1761632388866458,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "درجتي 11 من عشرين الحمد لله",
+  "normalized": "درجتي 11 من عشرين الحمد لله",
+  "score": 0.044446788899864774,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "أرسلت الواجب على المنصة",
+  "normalized": "ارسلت الواجب علي المنصه",
+  "score": 0.05440799533876963,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "hi miss, you seem older than your age, very mature 😊",
+  "normalized": "hi miss you seem older than your age very mature",
+  "score": 0.6942011595075993,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "you're sexy",
+  "normalized": "you re sexy",
+  "score": 0.9399558438607033,
+  "lexicon": [
+   "word",
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "Please check the attachment for chapter 11",
+  "normalized": "please check the attachment for chapter 11",
+  "score": 0.11405583798032518,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي شرموط والله",
+  "normalized": "انتي شرموط والله",
+  "score": 0.5234591403848905,
+  "lexicon": [
+   "word",
+   "substring"
+  ],
+  "concern": false
+ },
+ {
+  "text": "Please don't share the exam answers with other classes",
+  "normalized": "please don t share the exam answers with other classes",
+  "score": 0.039945771749664044,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "تعالي لحالك",
+  "normalized": "تعالي لحالك",
+  "score": 0.9108215983638622,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "درجتي 13 من عشرين الحمد لله",
+  "normalized": "درجتي 13 من عشرين الحمد لله",
+  "score": 0.053961016821900236,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Assignment 4 is massive, can we have more time?",
+  "normalized": "assignment 4 is massive can we have more time",
+  "score": 0.11028348864575312,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي بز والله",
+  "normalized": "انتي بز والله",
+  "score": 0.43023217184583823,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "good work today. تعالي لحالك",
+  "normalized": "good work today تعالي لحالك",
+  "score": 0.9508042931176074,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "i'll hurt you if you tell anyone lol",
+  "normalized": "i ll hurt you if you tell anyone lol",
+  "score": 0.9444045564109256,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "جزاك الله خيرا أستاذ أحمد",
+  "normalized": "جزاك الله خيرا استاذ احمد",
+  "score": 0.0100679073014598,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "أرسلت الواجب على المنصة",
+  "normalized": "ارسلت الواجب علي المنصه",
+  "score": 0.05440799533876963,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Mr talal said the test moved to next week",
+  "normalized": "mr talal said the test moved to next week",
+  "score": 0.020343875876888164,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي خنثي والله",
+  "normalized": "انتي خنثي والله",
+  "score": 0.4325363221967391,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "شو هالـابن الكلب",
+  "normalized": "شو هالابن الكلب",
+  "score": 0.4288005010416199,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "مساء الخير معلمتي، هل في حصة غدا؟",
+  "normalized": "مساء الخير معلمتي هل في حصه غدا",
+  "score": 0.04073586863591996,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Good work today. you deserve to die lol",
+  "normalized": "good work today you deserve to die lol",
+  "score": 0.9502785452163528,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "MORNING MISS FATIMA, IS THERE CLASS SUNDAY?",
+  "normalized": "morning miss fatima is there class sunday",
+  "score": 0.03273368076437041,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "الاجتماع الساعة 8:00 إن شاء الله",
+  "normalized": "الاجتماع الساعه 8 00 ان شاء الله",
+  "score": 0.007581580537643226,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "go away n*ek",
+  "normalized": "go away nek",
+  "score": 0.2506566576597799,
+  "lexicon": [
+   "masked"
+  ],
+  "concern": false
+ },
+ {
+  "text": "أنا ذاكرت وحدي في غرفتي",
+  "normalized": "انا ذاكرت وحدي في غرفتي",
+  "score": 0.1761632388866458,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "ممكن رابط حصة التربية الإسلامية؟",
+  "normalized": "ممكن رابط حصه التربيه الاسلاميه",
+  "score": 0.02651366350288294,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "WE WILL WATCH A DOCUMENTARY ABOUT THE TITANIC",
+  "normalized": "we will watch a documentary about the titanic",
+  "score": 0.1901737957956435,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "بقتلك اذا حكيتي",
+  "normalized": "بقتلك اذا حكيتي",
+  "score": 0.8776393967782311,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Thank you for your patience everyone",
+  "normalized": "thank you for your patience everyone",
+  "score": 0.11239509494480365,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Good night teacher, see you tomorrow",
+  "normalized": "good night teacher see you tomorrow",
+  "score": 0.13028468523630082,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "HEY GOT A GIRLFRIEND?",
+  "normalized": "hey got a girlfriend",
+  "score": 0.902663228813207,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "We will watch a documentary about the titanic",
+  "normalized": "we will watch a documentary about the titanic",
+  "score": 0.1901737957956435,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Thank you for your patience everyone",
+  "normalized": "thank you for your patience everyone",
+  "score": 0.11239509494480365,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "خذ صورة لورقة العمل وارفعها",
+  "normalized": "خذ صوره لورقه العمل وارفعها",
+  "score": 0.051700378595667146,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "مساء الخير أستاذ أحمد، هل في حصة غدا؟",
+  "normalized": "مساء الخير استاذ احمد هل في حصه غدا",
+  "score": 0.023789574658175976,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي جماع والله",
+  "normalized": "انتي جماع والله",
+  "score": 0.2828897157583579,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "انتي ابن الكلب والله",
+  "normalized": "انتي ابن الكلب والله",
+  "score": 0.6092226216974981,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "انتي بز والله",
+  "normalized": "انتي بز والله",
+  "score": 0.43023217184583823,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "I studied alone in my room for 3 hours",
+  "normalized": "i studied alone in my room for 3 hours",
+  "score": 0.4047558795993764,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي شرج والله",
+  "normalized": "انتي شرج والله",
+  "score": 0.3210535365898816,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "good work today. احذفي الرسايل 😊",
+  "normalized": "good work today احذفي الرسايل",
+  "score": 0.7797201405376243,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "Hi miss, don't mention our chats to your mum",
+  "normalized": "hi miss don t mention our chats to your mum",
+  "score": 0.7533143296447788,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "انتي شرج والله",
+  "normalized": "انتي شرج والله",
+  "score": 0.3210535365898816,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "The Middlesex assessment is on Wednesday",
+  "normalized": "the middlesex assessment is on wednesday",
+  "score": 0.028838031675748138,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Ok. don't mention our chats to your mum",
+  "normalized": "ok don t mention our chats to your mum",
+  "score": 0.7098629346595046,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "درجتي 10 من عشرين الحمد لله",
+  "normalized": "درجتي 10 من عشرين الحمد لله",
+  "score": 0.05052651931394112,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Btw let's meet somewhere quiet, just the two of us",
+  "normalized": "btw let s meet somewhere quiet just the two of us",
+  "score": 0.6503849620148752,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "أنا ذاكرت وحدي في غرفتي",
+  "normalized": "انا ذاكرت وحدي في غرفتي",
+  "score": 0.1761632388866458,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "good work today. اشتقتلك يا حلوة لا تتأخري",
+  "normalized": "good work today اشتقتلك يا حلوه لا تتاخري",
+  "score": 0.9881241571116514,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "درجتي 3 من عشرين الحمد لله",
+  "normalized": "درجتي 3 من عشرين الحمد لله",
+  "score": 0.05408525969371304,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "btw what're you wearing tonight لا تتأخري",
+  "normalized": "btw what re you wearing tonight لا تتاخري",
+  "score": 0.9801139473463168,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "شو هالـشرموط",
+  "normalized": "شو هالشرموط",
+  "score": 0.438233174301362,
+  "lexicon": [
+   "substring"
+  ],
+  "concern": false
+ },
+ {
+  "text": "Go away pole5moker",
+  "normalized": "go away polesmoker",
+  "score": 0.47726490355346585,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "I studied alone in my room for 14 hours",
+  "normalized": "i studied alone in my room for 14 hours",
+  "score": 0.37404556688509655,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي شرموط والله",
+  "normalized": "انتي شرموط والله",
+  "score": 0.5234591403848905,
+  "lexicon": [
+   "word",
+   "substring"
+  ],
+  "concern": false
+ },
+ {
+  "text": "this class is rimm1ng",
+  "normalized": "this class is rimming",
+  "score": 0.28502537246259974,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "خذ صورة لورقة العمل وارفعها",
+  "normalized": "خذ صوره لورقه العمل وارفعها",
+  "score": 0.051700378595667146,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Please don't share the exam answers with other classes",
+  "normalized": "please don t share the exam answers with other classes",
+  "score": 0.039945771749664044,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "شو هالـابن الكلب",
+  "normalized": "شو هالابن الكلب",
+  "score": 0.4288005010416199,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "السلام عليكم احذفي الرسايل لا تتأخري",
+  "normalized": "السلام عليكم احذفي الرسايل لا تتاخري",
+  "score": 0.9606373576482852,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "شو هالـشرموط",
+  "normalized": "شو هالشرموط",
+  "score": 0.438233174301362,
+  "lexicon": [
+   "substring"
+  ],
+  "concern": false
+ },
+ {
+  "text": "This class is 3jacula7i0n",
+  "normalized": "this class is 3jaculation",
+  "score": 0.360393675367578,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Is the meeting still at 4:30pm?",
+  "normalized": "is the meeting still at 4 30pm",
+  "score": 0.05241777673941485,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "ok. شو عم تلبسي please",
+  "normalized": "ok شو عم تلبسي please",
+  "score": 0.8360874925197014,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Please don't share the exam answers with other classes",
+  "normalized": "please don t share the exam answers with other classes",
+  "score": 0.039945771749664044,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Good night ma'am, see you Friday",
+  "normalized": "good night ma am see you friday",
+  "score": 0.07826914210772971,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "ممكن رابط حصة القرآن؟",
+  "normalized": "ممكن رابط حصه القران",
+  "score": 0.038764313484001334,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "hey COPROPHILIA reply",
+  "normalized": "hey coprophilia reply",
+  "score": 0.6758456152297951,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "I scored 15/20 in Maths alhamdulillah",
+  "normalized": "i scored 15 20 in maths alhamdulillah",
+  "score": 0.0829161991344452,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "اشتقتلك يا حلوة lol",
+  "normalized": "اشتقتلك يا حلوه lol",
+  "score": 0.9522377419391773,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي حلمه والله",
+  "normalized": "انتي حلمه والله",
+  "score": 0.263670192648892,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "this class is nud35",
+  "normalized": "this class is nudes",
+  "score": 0.5340490785111726,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "Mr omar said the test moved to tuesday",
+  "normalized": "mr omar said the test moved to tuesday",
+  "score": 0.014673534408529587,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "b_o_o_b_s b_o_o_b_s",
+  "normalized": "boobsboobs",
+  "score": 0.3364509117370979,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Please turn your camera on so I can see you are present",
+  "normalized": "please turn your camera on so i can see you are present",
+  "score": 0.16175738474656487,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "ur a ONLYFANS lmao",
+  "normalized": "ur a onlyfans lmao",
+  "score": 0.3668857817525994,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "مساء الخير معلمتي، هل في حصة الثلاثاء؟",
+  "normalized": "مساء الخير معلمتي هل في حصه الثلاثاء",
+  "score": 0.029344029791795307,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "smuuuuut smuuuuut",
+  "normalized": "smuut smuut",
+  "score": 0.2815409520282979,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "UR A DILDDDO LMAO",
+  "normalized": "ur a dilddo lmao",
+  "score": 0.4668231031440152,
+  "lexicon": [
+   "word",
+   "substring"
+  ],
+  "concern": false
+ },
+ {
+  "text": "أنا ذاكرت وحدي في غرفتي",
+  "normalized": "انا ذاكرت وحدي في غرفتي",
+  "score": 0.1761632388866458,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "The class photo will be taken on Tuesday",
+  "normalized": "the class photo will be taken on tuesday",
+  "score": 0.013936070766123842,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Is the meeting still at 8:00?",
+  "normalized": "is the meeting still at 8 00",
+  "score": 0.05609815210185465,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "انتي جماع والله",
+  "normalized": "انتي جماع والله",
+  "score": 0.2828897157583579,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "Hey let's meet somewhere quiet, just the two of us لا تتأخري",
+  "normalized": "hey let s meet somewhere quiet just the two of us لا تتاخري",
+  "score": 0.7661157518123337,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "جزاك الله خيرا معلمتي",
+  "normalized": "جزاك الله خيرا معلمتي",
+  "score": 0.019369401899548912,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "أرسلت الواجب على المنصة",
+  "normalized": "ارسلت الواجب علي المنصه",
+  "score": 0.05440799533876963,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "THIS CLASS IS B*OWYOURLOAD",
+  "normalized": "this class is bowyourload",
+  "score": 0.4313254581036634,
+  "lexicon": [
+   "masked"
+  ],
+  "concern": false
+ },
+ {
+  "text": "أرسلت الواجب على المنصة",
+  "normalized": "ارسلت الواجب علي المنصه",
+  "score": 0.05440799533876963,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "take your clothes off",
+  "normalized": "take your clothes off",
+  "score": 0.6221372689215443,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "درجتي 12 من عشرين الحمد لله",
+  "normalized": "درجتي 12 من عشرين الحمد لله",
+  "score": 0.05107822799004065,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "الاجتماع الساعة 9:30 am إن شاء الله",
+  "normalized": "الاجتماع الساعه 9 30 am ان شاء الله",
+  "score": 0.007091709025144192,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "santorum santorum",
+  "normalized": "santorum santorum",
+  "score": 0.43582202751675314,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "شو هالـبز",
+  "normalized": "شو هالبز",
+  "score": 0.3465101398026878,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "مساء الخير أستاذ، هل في حصة الأربعاء؟",
+  "normalized": "مساء الخير استاذ هل في حصه الاربعاء",
+  "score": 0.024587549460622127,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "good work today. تعالي لحالك لا تتأخري",
+  "normalized": "good work today تعالي لحالك لا تتاخري",
+  "score": 0.9832730003279183,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "مساء الخير مس سحر، هل في حصة الاثنين؟",
+  "normalized": "مساء الخير مس سحر هل في حصه الاثنين",
+  "score": 0.03378212420005941,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "",
+  "normalized": "",
+  "score": 0.2688189497692719,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "   ",
+  "normalized": "",
+  "score": 0.2688189497692719,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "Hello Miss Sahar 👋",
+  "normalized": "hello miss sahar",
+  "score": 0.07439265613777052,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "S.E.X",
+  "normalized": "sex",
+  "score": 0.5139030820339219,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "انتَ لوحدك؟",
+  "normalized": "انت لوحدك",
+  "score": 0.9665107333640265,
+  "lexicon": [
+   "phrase"
+  ],
+  "concern": false
+ },
+ {
+  "text": "fück",
+  "normalized": "fuck",
+  "score": 0.4613435215240874,
+  "lexicon": [
+   "word",
+   "substring"
+  ],
+  "concern": false
+ },
+ {
+  "text": "ｆｕｃｋ",
+  "normalized": "fuck",
+  "score": 0.4613435215240874,
+  "lexicon": [
+   "word",
+   "substring"
+  ],
+  "concern": false
+ },
+ {
+  "text": "meet.google.com/abc-defg-hij",
+  "normalized": "meet google com abc defg hij",
+  "score": 0.1864911253621886,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "pen15",
+  "normalized": "penis",
+  "score": 0.23200753927573836,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "nud35 now",
+  "normalized": "nudes now",
+  "score": 0.5898238436322165,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "10am",
+  "normalized": "10am",
+  "score": 0.11311501365525586,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "covid19",
+  "normalized": "covid19",
+  "score": 0.20064631471837868,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "a4 paper",
+  "normalized": "aa paper",
+  "score": 0.6602115116961365,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "grade3!",
+  "normalized": "gradeei",
+  "score": 0.14753847623010138,
+  "lexicon": [],
+  "concern": false
+ },
+ {
+  "text": "blu3 w4ffl3",
+  "normalized": "blue waffle",
+  "score": 0.6675988021637997,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "c*nt",
+  "normalized": "cnt",
+  "score": 0.35615288357316455,
+  "lexicon": [
+   "masked"
+  ],
+  "concern": false
+ },
+ {
+  "text": "w-e-t- -d-r-e-a-m",
+  "normalized": "wetdream",
+  "score": 0.20378636045311183,
+  "lexicon": [
+   "word"
+  ],
+  "concern": false
+ },
+ {
+  "text": "I want to kill myself",
+  "normalized": "i want to kill myself",
+  "score": 0.9547036642366564,
+  "lexicon": [],
+  "concern": true
+ },
+ {
+  "text": "i dont want to live anymore",
+  "normalized": "i dont want to live anymore",
+  "score": 0.9190772949694272,
+  "lexicon": [],
+  "concern": true
+ },
+ {
+  "text": "بدي موت",
+  "normalized": "بدي موت",
+  "score": 0.9253480600559749,
+  "lexicon": [],
+  "concern": true
+ },
+ {
+  "text": "انتحار",
+  "normalized": "انتحار",
+  "score": 0.7572432606320466,
+  "lexicon": [],
+  "concern": true
+ },
+ {
+  "text": "the poet committed suicide in 1890",
+  "normalized": "the poet committed suicide in 1890",
+  "score": 0.04806774404850159,
+  "lexicon": [],
+  "concern": true
+ }
+]

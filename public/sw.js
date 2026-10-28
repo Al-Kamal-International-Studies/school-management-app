@@ -94,11 +94,17 @@ self.addEventListener("push", (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "Al Kamal International Studies", {
-      body: payload.body,
-      icon: "/icons/icon-192.png",
-      badge: "/icons/favicon-32.png",
-      data: { url: payload.url || "/" },
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      // Chat messages already arrive live in an open, focused app (Realtime);
+      // a popup on top of that is noise.
+      if (payload.tag && clients.some((c) => c.focused && c.visibilityState === "visible")) return;
+      return self.registration.showNotification(payload.title || "Al Kamal International Studies", {
+        body: payload.body,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/favicon-32.png",
+        data: { url: payload.url || "/" },
+        ...(payload.tag ? { tag: payload.tag, renotify: true } : {}),
+      });
     })
   );
 });
@@ -109,7 +115,10 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: "window" }).then((clients) => {
       for (const client of clients) {
-        if (client.url.includes(self.location.origin) && "focus" in client) return client.focus();
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          // open the chat/page the notification is about, not just the tab
+          return client.focus().then((c) => (c && "navigate" in c && url !== "/" ? c.navigate(url) : c));
+        }
       }
       return self.clients.openWindow(url);
     })
