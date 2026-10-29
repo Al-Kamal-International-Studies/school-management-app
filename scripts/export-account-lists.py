@@ -282,12 +282,17 @@ def main() -> None:
     ])
     print(f"updated lists: {len(all_rows)} users, {len(t_rows)} teachers, {len(s_rows)} students, {len(p_rows)} parents")
 
-    # ---- Student logins (only with a password supplied for this run)
+    # ---- Login sheets (only with a password supplied for this run)
     password = os.environ.get("AKIS_STUDENT_PASSWORD")
-    if not password:
+    if password:
+        write_student_logins(students, student_class, class_teachers, password)
+    else:
         print("AKIS_STUDENT_PASSWORD not set: Student Logins not written")
-        return
-    write_student_logins(students, student_class, class_teachers, password)
+    staff_password = os.environ.get("AKIS_STAFF_PASSWORD")
+    if staff_password:
+        write_staff_logins(by_role["teacher"], d, teaches, staff_password)
+    else:
+        print("AKIS_STAFF_PASSWORD not set: Staff Logins not written")
 
 
 HOW_TO = [
@@ -357,6 +362,83 @@ def write_student_logins(students, student_class, class_teachers, password: str)
     story.append(t)
     build_pdf(ROOT / "AKIS Accounts - Student Logins.pdf", "Student logins", story, pagesize=A4)
     print(f"student logins: {len(students)} students in {len(classes)} classes ({', '.join(classes)})")
+
+
+STAFF_HOW_TO = [
+    f"1. Open <b>{SITE}</b> in any browser, choose English or Arabic, and sign in with the username and password below.",
+    "2. <b>Change your password straight away</b> to one only you know: Settings → Change Password. "
+    "(If the app asks you to choose a new password at first sign-in, do it there.)",
+    "3. After a couple of days the app will suggest adding a passkey (Face ID, fingerprint or Windows Hello) "
+    "so you can sign in without typing a password. It is optional and takes a few seconds.",
+    "Three wrong passwords in a row lock the account for safety; the school office can unlock it.",
+]
+
+
+def short_class(label: str) -> str:
+    # "Primary Stage 1 | Grade 1 A" -> "Grade 1 A"
+    return label.split("|")[-1].strip()
+
+
+def write_staff_logins(teachers: list, d: dict, teaches: dict, password: str) -> None:
+    def summary(tid: str) -> tuple[str, str]:
+        subs, cls = set(), set()
+        for item in teaches.get(tid, []):
+            subject, _, cl = item.rpartition(" (")
+            subs.add(subject)
+            cls.add(short_class(cl.rstrip(")")))
+        return ", ".join(sorted(subs)) or "—", ", ".join(sorted(cls, key=class_sort_key)) or "—"
+
+    rows = []
+    for i, p in enumerate(teachers):
+        subs, cls = summary(p["id"])
+        rows.append([i + 1, p["full_name"], d["teachers"].get(p["id"], {}).get("employee_id", "—"), p["email"], password, subs, cls])
+    hdr = ["#", "Teacher", "Employee ID", "Username", "Password", "Subjects", "Classes"]
+    notes = [n.replace("<b>", "").replace("</b>", "") for n in STAFF_HOW_TO]
+
+    wb = Workbook(); ws = wb.active; ws.title = "Teachers"
+    write_sheet(ws, f"{SCHOOL} — Staff logins (teachers)", f"{len(rows)} teachers · as of {TODAY} · Confidential: give each teacher only their own login", hdr, rows, notes)
+    wb.save(ROOT / "AKIS Accounts - Staff Logins.xlsx")
+
+    story = [Paragraph(SCHOOL, P_TITLE),
+             Paragraph(f"Staff logins (teachers) · {len(rows)} teachers · as of {TODAY} · Confidential: give each teacher only their own login", P_SUB),
+             *[Paragraph(n, P_NOTE) for n in STAFF_HOW_TO], Spacer(1, 5 * mm),
+             pdf_table(["#", "Teacher", "Employee ID", "Username", "Password", "Subjects", "Classes"],
+                       [[r[0], r[1], r[2], r[3], r[4], r[5], r[6]] for r in rows],
+                       [8 * mm, 40 * mm, 22 * mm, 75 * mm, 26 * mm, 50 * mm, 46 * mm], mono_cols=(3, 4)),
+             PageBreak(), Paragraph("Login cards", P_TITLE),
+             Paragraph("Cut along the dashed lines and give each teacher their own card.", P_SUB)]
+    cards = []
+    for p, r in zip(teachers, rows):
+        cards.append([
+            Paragraph(f"<font color='#0f2a4a'><b>{SCHOOL}</b></font>", P_CELL),
+            Paragraph(f"<font size='12'><b>{esc(p['full_name'])}</b></font><br/><font color='#64748b'>Teacher · Employee ID {esc(r[2])}</font>",
+                      ParagraphStyle("tn", parent=P_CELL, leading=15)),
+            Paragraph(f"Website: <b>{SITE}</b>", P_CELL),
+            Paragraph(f"Username:<br/><font name='Courier-Bold' size='8.5'>{esc(p['email'])}</font>", P_CELL),
+            Paragraph(f"Password: <font name='Courier-Bold' size='10'>{esc(password)}</font>", P_CELL),
+            Paragraph("<font color='#b91c1c' size='7.5'><b>Change it after signing in: Settings → Change Password.</b></font>", P_CELL),
+        ])
+    story.append(card_grid(cards))
+    build_pdf(ROOT / "AKIS Accounts - Staff Logins.pdf", "Staff logins", story, pagesize=landscape(A4))
+    print(f"staff logins: {len(rows)} teachers")
+
+
+def card_grid(cards: list) -> Table:
+    """Two cut-out cards per row with dashed cut lines."""
+    card_w, card_h = 88 * mm, 52 * mm
+    grid = []
+    for i in range(0, len(cards), 2):
+        pair = cards[i:i + 2]
+        grid.append([Table([[x] for x in c], colWidths=[card_w - 8 * mm]) for c in pair] + ([""] if len(pair) == 1 else []))
+    t = Table(grid, colWidths=[card_w + 4 * mm] * 2, rowHeights=[card_h] * len(grid))
+    t.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BOX", (0, 0), (-1, -1), 0.6, GREY, None, (3, 3)),
+        ("INNERGRID", (0, 0), (-1, -1), 0.6, GREY, None, (3, 3)),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    return t
 
 
 if __name__ == "__main__":
