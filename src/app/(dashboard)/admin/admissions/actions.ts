@@ -790,7 +790,8 @@ async function processAdmission(admissionId: string, actorId: string): Promise<v
     createdUserIds.push(studentCreated.user.id);
     await admin
       .from("profiles")
-      .update({ must_change_password: true, date_of_birth: admission.student_dob })
+      // students are never forced to change their password (HANDOVER Part 44)
+      .update({ must_change_password: false, date_of_birth: admission.student_dob })
       .eq("id", studentCreated.user.id);
 
     // 3. students row — placed directly into the class chosen on the intake

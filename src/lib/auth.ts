@@ -108,7 +108,11 @@ const enforceSecurityGates = cache(async (profile: Profile): Promise<void> => {
     await requireAdminMfaChallengeIfEnrolled();
   }
 
-  if (profile.must_change_password) {
+  // Students are never forced to change their password on sign-in: they get
+  // their login from a sheet via their teacher, and it must just work
+  // (Muhammad, 2026-10-29, HANDOVER Part 44). They can still change it in
+  // Settings.
+  if (profile.must_change_password && profile.role !== "student") {
     redirect("/force-password-change");
   }
 
@@ -266,18 +270,27 @@ export async function requireAdminMfaChallengeIfEnrolled(): Promise<void> {
  * requireDeviceApproved above.
  */
 const requirePasskeyPromptResolved = cache(async (profile: Profile): Promise<void> => {
-  if (profile.passkey_prompt_dismissed_at) return;
+  // Teachers only, and not on day one (Muhammad, 2026-10-29, HANDOVER Part
+  // 44): students, parents and admins are never interrupted (admins already
+  // have authenticator 2FA). Anyone can still add a passkey in Settings.
+  if (profile.role !== "teacher" || profile.passkey_prompt_dismissed_at) return;
 
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("webauthn_credentials")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", profile.id);
+  const [{ count }, { data: firstDevice }] = await Promise.all([
+    supabase.from("webauthn_credentials").select("id", { count: "exact", head: true }).eq("user_id", profile.id),
+    supabase.from("user_devices").select("first_seen_at").eq("user_id", profile.id).order("first_seen_at", { ascending: true }).limit(1).maybeSingle(),
+  ]);
+  if ((count ?? 0) > 0) return;
 
-  if ((count ?? 0) === 0) {
+  // "Using the app for a while" = their first device was registered at least
+  // PASSKEY_PROMPT_AFTER_HOURS ago.
+  const since = firstDevice ? Date.now() - Date.parse(firstDevice.first_seen_at) : 0;
+  if (since >= PASSKEY_PROMPT_AFTER_HOURS * 3_600_000) {
     redirect("/setup-passkey");
   }
 });
+
+const PASSKEY_PROMPT_AFTER_HOURS = 48;
 
 export function dashboardPathForRole(role: UserRole): string {
   switch (role) {

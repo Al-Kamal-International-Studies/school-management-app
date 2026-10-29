@@ -92,13 +92,13 @@ export async function createUserAction(_prevState: ActionState, formData: FormDa
 
   // Profile row is created by the on_auth_user_created trigger; set phone,
   // date of birth, and must_change_password here since none of those are
-  // part of user_metadata. must_change_password is unconditional — every
-  // admin-created account gets a password the admin chose, not the person
-  // themselves, so they're always prompted to set their own on first login
-  // (requireRole()'s /force-password-change gate).
+  // part of user_metadata. Every admin-created account except a student's is
+  // prompted to set its own password on first login (requireRole()'s
+  // /force-password-change gate); students sign in with the password on the
+  // sheet their teacher gives them and are never forced (HANDOVER Part 44).
   await admin
     .from("profiles")
-    .update({ phone: data.phone || null, date_of_birth: data.date_of_birth || null, must_change_password: true })
+    .update({ phone: data.phone || null, date_of_birth: data.date_of_birth || null, must_change_password: data.role !== "student" })
     .eq("id", userId);
 
   if (data.role === "teacher") {
@@ -347,7 +347,8 @@ export async function adminSetUserPasswordAction(_prevState: ActionState, formDa
   const { error } = await admin.auth.admin.updateUserById(parsed.data.id, { password: passwordCheck.data });
   if (error) return { error: error.message };
 
-  await admin.from("profiles").update({ must_change_password: true }).eq("id", parsed.data.id);
+  // students are never forced to change it (HANDOVER Part 44)
+  await admin.from("profiles").update({ must_change_password: target.role !== "student" }).eq("id", parsed.data.id);
 
   await admin
     .from("password_reset_requests")
