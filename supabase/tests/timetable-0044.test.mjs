@@ -11,12 +11,17 @@ const t1 = await mk("t1@x", "teacher"), t2 = await mk("t2@x", "teacher"), adm = 
 for (const [t, n] of [[t1, "E1"], [t2, "E2"]]) await db.query(`insert into teachers(id, employee_id) values ($1,$2)`, [t, n]);
 const cls = async (n) => (await db.query(`insert into classes(name, section, academic_year, center_id) values ($1,'A','2026',$2) returning id`, [n, AKIS])).rows[0].id;
 const c1 = await cls("Grade 1"), c2 = await cls("Grade 2");
-const sub = (await db.query(`insert into subjects(name, code, center_id) values ('Maths','M',$1) returning id`, [AKIS]).catch(() => db.query(`insert into subjects(name) values ('Maths') returning id`))).rows[0].id;
+const subject = async (n) => (await db.query(`insert into subjects(name, code, center_id) values ($1,$1,$2) returning id`, [n, AKIS])).rows[0].id;
+// 0049: a period must match a real class/subject/teacher assignment, and a
+// class has one teacher per subject — so each teacher gets their own subject,
+// taught in both classes.
+const subOf = { [t1]: await subject("Maths"), [t2]: await subject("English") };
+for (const c of [c1, c2]) for (const t of [t1, t2]) await db.query(`insert into class_subject_teachers(class_id, subject_id, teacher_id) values ($1,$2,$3)`, [c, subOf[t], t]);
 
 let pass = 0, fail = 0;
 const check = (n, ok, x = "") => { ok ? pass++ : fail++; console.log(`${ok ? "PASS" : "FAIL"}  ${n}${ok ? "" : "  <<< " + x}`); };
 const add = (who, c, t, day, s, e) =>
-  asUser(db, who, `insert into timetable_entries(class_id, subject_id, teacher_id, day_of_week, start_time, end_time) values ('${c}','${sub}','${t}',${day},'${s}','${e}') returning id`);
+  asUser(db, who, `insert into timetable_entries(class_id, subject_id, teacher_id, day_of_week, start_time, end_time) values ('${c}','${subOf[t]}','${t}',${day},'${s}','${e}') returning id`);
 
 let r = await add(t1, c1, t1, 1, "08:00", "08:45");
 check("teacher adds a period", !r.error, JSON.stringify(r));

@@ -72,7 +72,7 @@ async function setup(upTo) {
     for (const chat of [dm, group].filter(Boolean)) {
       await asService(`select * from public.send_chat_message($1, $2, $3, $4)`, [u.teacher, chat, `${tag} private words`, `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}`]);
     }
-    return { u, cls, sub, dm, group };
+    return { u, cls, sub, dm, group, asg };
   }
 
   const akis = await world("akis", AKIS, true);
@@ -116,6 +116,33 @@ console.log("--- before 0048: the leaks this migration closes ---");
   check("before 0048 a demo teacher can delete the AKIS timetable", del.count === 1, JSON.stringify(del));
 }
 
+// The three cross-center writes Jack found in 0048 (fixed by 0049)
+const crossCenterWrites = async (env) => {
+  const { db, akis, demo } = env;
+  const out = {};
+  // DEMO class + AKIS teacher, at a time the AKIS teacher is free
+  let r = await asUser(db, demo.u.teacher, `insert into timetable_entries (class_id, subject_id, teacher_id, day_of_week, start_time, end_time) values ($1, $2, $3, 4, '10:00', '10:45')`, [demo.cls, demo.sub, akis.u.teacher]);
+  out.timetableAkisTeacher = !r.error;
+  r = await asUser(db, demo.u.teacher, `update timetable_entries set teacher_id = $1 where class_id = $2 and day_of_week = 1`, [akis.u.teacher, demo.cls]);
+  out.timetableRetarget = !r.error && r.count > 0;
+  r = await asUser(db, demo.u.parent, `insert into feedback (user_id, category, subject, message) values ($1, 'general', 'omitted center', 'm')`, [demo.u.parent]);
+  out.feedbackDefaultAkis = !r.error;
+  r = await asUser(db, demo.u.parent, `insert into feedback (user_id, category, subject, message, center_id) values ($1, 'general', 'explicit akis', 'm', $2)`, [demo.u.parent, AKIS]);
+  out.feedbackExplicitAkis = !r.error;
+  r = await asUser(db, demo.u.student, `update assignment_submissions set assignment_id = $1 where student_id = $2`, [akis.asg, demo.u.student]);
+  out.submissionMoved = !r.error && r.count > 0;
+  return out;
+};
+
+console.log("--- 0048 alone: Jack's three cross-center writes (fixed by 0049) ---");
+{
+  const env = await setup(48);
+  const w = await crossCenterWrites(env);
+  check("up to 0048 a demo teacher can book an AKIS teacher into a demo class", w.timetableAkisTeacher, JSON.stringify(w));
+  check("up to 0048 a demo parent's feedback can land in AKIS", w.feedbackDefaultAkis && w.feedbackExplicitAkis, JSON.stringify(w));
+  check("up to 0048 a demo student can move a submission onto an AKIS assignment", w.submissionMoved, JSON.stringify(w));
+}
+
 // ----------------------------------------------------------------- after 0048
 console.log("--- after 0048: demo accounts see no AKIS row in any table ---");
 const env = await setup(999);
@@ -147,7 +174,23 @@ check("demo teacher can't open a chat with an AKIS admin", !r.error && r.rows[0]
 r = await env.asService(`select public.open_direct_chat($1, $2) id`, [akis.u.admin, demo.u.student]);
 check("an AKIS admin can't open a chat with a demo student either", !r.error && r.rows[0].id === null, JSON.stringify(r));
 
+console.log("--- 0049: cross-center writes are refused ---");
+{
+  const w = await crossCenterWrites(env);
+  check("demo teacher can't book an AKIS teacher into a demo class", !w.timetableAkisTeacher, JSON.stringify(w));
+  check("demo teacher can't retarget a demo period to an AKIS teacher", !w.timetableRetarget, JSON.stringify(w));
+  check("demo feedback with no center can't default into AKIS", !w.feedbackDefaultAkis, JSON.stringify(w));
+  check("demo feedback can't name the AKIS center", !w.feedbackExplicitAkis, JSON.stringify(w));
+  check("demo student can't move a submission onto an AKIS assignment", !w.submissionMoved, JSON.stringify(w));
+  const akisSubs = await q(`select count(*)::int c from assignment_submissions where assignment_id = $1`, [akis.asg]);
+  check("the AKIS assignment still has only its own submission", akisSubs[0].c === 1, JSON.stringify(akisSubs));
+}
+
 console.log("--- demo accounts still work inside the demo ---");
+r = await asUser(db, demo.u.parent, `insert into feedback (user_id, category, subject, message, center_id) values ($1, 'general', 'demo', 'm', $2)`, [demo.u.parent, DEMO]);
+check("demo parent can send feedback to the demo center", !r.error, JSON.stringify(r));
+r = await asUser(db, demo.u.student, `update assignment_submissions set status = 'submitted', submitted_at = now() where student_id = $1 and assignment_id = $2`, [demo.u.student, demo.asg]);
+check("demo student can still resubmit their own homework", !r.error && r.count === 1, JSON.stringify(r));
 const contacts = async (who) => (await asUser(db, who, `select id from public.my_contacts()`)).rows.map((x) => x.id);
 let c = await contacts(demo.u.teacher);
 check("demo teacher's contacts = their demo student and parent only", c.length === 2 && c.includes(demo.u.student) && c.includes(demo.u.parent), JSON.stringify(c));
@@ -178,6 +221,12 @@ r = await env.asService(`select public.open_direct_chat($1, $2) id`, [akis.u.tea
 check("AKIS teacher can still open a chat with an AKIS admin", !r.error && !!r.rows?.[0]?.id, JSON.stringify(r));
 r = await asUser(db, akis.u.teacher, `insert into dm_conversations (participant_a, participant_b) values ($1, $2)`, [akis.u.teacher, akis.u.admin]);
 check("legacy DM between AKIS people still allowed", !r.error, JSON.stringify(r));
+r = await asUser(db, akis.u.parent, `insert into feedback (user_id, category, subject, message) values ($1, 'general', 'akis', 'm')`, [akis.u.parent]);
+check("AKIS feedback still works with the default center", !r.error, JSON.stringify(r));
+r = await asUser(db, akis.u.student, `update assignment_submissions set status = 'submitted' where student_id = $1 and assignment_id = $2`, [akis.u.student, akis.asg]);
+check("AKIS student can still resubmit their own homework", !r.error && r.count === 1, JSON.stringify(r));
+r = await asUser(db, akis.u.teacher, `update assignment_submissions set status = 'graded', grade = 9 where assignment_id = $1`, [akis.asg]);
+check("AKIS teacher can still grade a submission", !r.error && r.count === 1, JSON.stringify(r));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
