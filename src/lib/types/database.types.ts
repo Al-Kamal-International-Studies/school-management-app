@@ -7,6 +7,9 @@ export type UserRole = "admin" | "teacher" | "student" | "parent";
 // Added by 0027_centers.sql. Fixed, well-known ids — see that migration's
 // header comment for why they're not gen_random_uuid().
 export const AKIS_CENTER_ID = "00000000-0000-0000-0000-000000000001";
+// Added by 0048_demo_center.sql: made-up school for prospects' teacher /
+// student / parent logins, walled off from AKIS by RLS (HANDOVER Part 45).
+export const DEMO_CENTER_ID = "00000000-0000-0000-0000-000000000003";
 
 export type Center = {
   id: string;

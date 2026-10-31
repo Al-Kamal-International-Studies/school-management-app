@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { hasAkisAccess } from "@/lib/centers/hasAkisAccess";
+import { getAppCenterId } from "@/lib/centers/hasAkisAccess";
 import { WEBAUTHN_LOGIN_VERIFIED_COOKIE } from "@/lib/webauthn/config";
 import { MAX_FAILED_ATTEMPTS } from "@/lib/auth/lockout";
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       ? profile && profile.failed_login_attempts >= MAX_FAILED_ATTEMPTS
         ? "account_locked"
         : "account_deactivated"
-      : !(await hasAkisAccess(user.id))
+      : !(await getAppCenterId(user.id))
         ? "no_access"
         : null;
     if (error) {

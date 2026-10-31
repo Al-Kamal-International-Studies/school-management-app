@@ -9,8 +9,7 @@ import { dashboardPathForRole, requireAdminMfaChallengeIfEnrolled } from "@/lib/
 import { getDeviceIdCookie, setDeviceCookie, labelFromUserAgent, locationFromHeaders, MAX_DEVICES } from "@/lib/auth/deviceCookie";
 import { recordRateLimitAttempt } from "@/lib/security/rateLimit";
 import { safeNext } from "@/lib/auth/safeNext";
-import { hasAkisAccess } from "@/lib/centers/hasAkisAccess";
-import { AKIS_CENTER_ID } from "@/lib/types/database.types";
+import { getAppCenterId } from "@/lib/centers/hasAkisAccess";
 import type { Profile } from "@/lib/types/database.types";
 
 /**
@@ -70,13 +69,13 @@ async function ensureDeviceRegistered(userId: string): Promise<"ok" | "limit_rea
 
 /**
  * Confirms this profile holds an AKIS access grant — the only institution
- * this app serves (AKET was removed, HANDOVER Part 37). Accounts that only
- * ever belonged to AKET fail here and get the same generic "incorrect email
- * or password" error as any other failed sign-in, so the response never
- * reveals that the account exists.
+ * this app serves (AKET was removed, HANDOVER Part 37) — or is a non-admin
+ * demo account (Part 45). Accounts that only ever belonged to AKET fail here
+ * and get the same generic "incorrect email or password" error as any other
+ * failed sign-in, so the response never reveals that the account exists.
  */
 async function verifyLoginCenter(profileId: string): Promise<string | null> {
-  return (await hasAkisAccess(profileId)) ? AKIS_CENTER_ID : null;
+  return getAppCenterId(profileId);
 }
 
 /**

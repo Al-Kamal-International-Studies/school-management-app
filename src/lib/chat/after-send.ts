@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToUsers } from "@/lib/push/send";
 import { notifyUsers } from "@/lib/notifications/notify";
+import { getAppCenterId } from "@/lib/centers/hasAkisAccess";
 import type { ModerationResult } from "@/lib/moderation";
 import type { ChatMessage, Profile } from "@/lib/types/database.types";
 
@@ -69,7 +70,17 @@ export async function reportFlag({
     score: verdict.score,
   });
 
-  const { data: admins } = await admin.from("profiles").select("id").eq("role", "admin").eq("is_active", true).is("archived_at", null);
+  // Only the sender's own school's admins: a prospect testing the filter on a
+  // demo account must not alert the real AKIS admins (HANDOVER Part 45).
+  const centerId = await getAppCenterId(me.id);
+  const { data: grants } = await admin.from("profile_center_access").select("profile_id").eq("center_id", centerId ?? "");
+  const { data: admins } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("role", "admin")
+    .eq("is_active", true)
+    .is("archived_at", null)
+    .in("id", (grants ?? []).map((g) => g.profile_id));
   await notifyUsers(
     (admins ?? []).map((a) => a.id).filter((id) => id !== me.id),
     {
