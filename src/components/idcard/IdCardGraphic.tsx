@@ -22,7 +22,7 @@ import {
   pathToD,
   wavePolylines,
 } from "@/lib/idcard/layout";
-import { idCardSans, idCardSerif } from "./idCardFonts";
+import { idCardArabic, idCardSans, idCardSerif } from "./idCardFonts";
 
 /**
  * The student ID card as it is shown in the app — "Design B: Navy & Gold",
@@ -39,6 +39,12 @@ import { idCardSans, idCardSerif } from "./idCardFonts";
 
 const sans = idCardSans.style.fontFamily;
 const serif = idCardSerif.style.fontFamily;
+// Names: Montserrat for Latin letters, then Noto Sans Arabic for Arabic ones.
+// next/font appends its own generic fallback to each family string, so take
+// just the family name of each — otherwise "sans-serif" would sit before the
+// Arabic font in the list and Arabic would render in a system font instead.
+const familyOf = (font: { style: { fontFamily: string } }) => font.style.fontFamily.split(",")[0]!.trim();
+const names = `${familyOf(idCardSans)}, ${familyOf(idCardArabic)}, sans-serif`;
 
 const WAVES = wavePolylines().map((pts) => pts.map(([x, y]) => `${x},${y}`).join(" "));
 
@@ -51,11 +57,14 @@ export function IdCardGraphic({ model, avatarUrl, label }: { model: IdCardModel;
 
   return (
     <div
+      // The card is a fixed English layout: its coordinates assume text runs left to
+      // right, so it must not inherit the page's right-to-left direction in Arabic mode.
+      dir="ltr"
       className="relative w-full overflow-hidden shadow-card"
       // Corner radius 38 px of the 1011 × 638 card, expressed as % so it scales with the card.
       style={{ aspectRatio: `${CARD_W} / ${CARD_H}`, borderRadius: `${pct(CARD_RADIUS, CARD_W)} / ${pct(CARD_RADIUS, CARD_H)}` }}
     >
-      <svg viewBox={`0 0 ${CARD_W} ${CARD_H}`} role="img" aria-label={label} className="absolute inset-0 block h-full w-full" textRendering="geometricPrecision">
+      <svg viewBox={`0 0 ${CARD_W} ${CARD_H}`} role="img" aria-label={label} className="absolute inset-0 block h-full w-full" textRendering="geometricPrecision" direction="ltr">
         <defs>
           <linearGradient id="idcard-header-grad" x1={HEADER_GRADIENT.x1} y1={HEADER_GRADIENT.y1} x2={HEADER_GRADIENT.x2} y2={HEADER_GRADIENT.y2}>
             {HEADER_GRADIENT.stops.map((s) => (
@@ -139,7 +148,8 @@ export function IdCardGraphic({ model, avatarUrl, label }: { model: IdCardModel;
               <text x={FIELDS.labelX} y={f.baseline} fontSize={FIELDS.labelSize} fill={COLOR.goldInk}>
                 {f.label}
               </text>
-              <text x={FIELDS.valueX} y={f.baseline} fontSize={f.fontSize} fill={COLOR.navy900}>
+              {/* Each value reads in its own direction: Latin left to right, Arabic runs right to left (the browser's bidi). */}
+              <text x={FIELDS.valueX} y={f.baseline} fontSize={f.fontSize} fill={COLOR.navy900} fontFamily={names}>
                 {f.value}
               </text>
             </g>

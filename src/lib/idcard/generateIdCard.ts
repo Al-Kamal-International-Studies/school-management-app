@@ -6,6 +6,8 @@ import fontkit from "@pdf-lib/fontkit";
 import {
   PDFDocument,
   PDFName,
+  fill,
+  setFillingColor,
   PDFOperator,
   PDFRef,
   appendBezierCurve,
@@ -25,7 +27,7 @@ import {
 } from "pdf-lib";
 import type { Font } from "@pdf-lib/fontkit";
 import { buildIdCardModel, type IdCardModel } from "./cardModel";
-import { loadIdCardFonts } from "./fonts";
+import { loadIdCardFonts, splitRuns } from "./fonts";
 import {
   BARCODE,
   CARD_H,
@@ -169,32 +171,95 @@ function axialShading(doc: PDFDocument, coords: [number, number, number, number]
 }
 
 // -- text ------------------------------------------------------------------------
+/** A font as the PDF needs it: the embedded font plus its fontkit metrics. */
+interface Face {
+  pdf: PDFFont;
+  metrics: Font;
+}
+
+/** The outline commands of a fontkit glyph path (the typings don't list them). */
+type PathCommand = { command: "moveTo" | "lineTo" | "quadraticCurveTo" | "bezierCurveTo" | "closePath"; args: number[] };
+
 /**
- * One line of text drawn glyph by glyph, advancing by the font's own kerned
- * advances plus CSS-style letter-spacing. pdf-lib's drawText lays a whole
- * string out WITHOUT kerning, which makes it ~0.5% wider than the browser
- * draws the same font; this keeps the PDF/PNG in step with the on-page card.
+ * Fill one glyph outline. `ox, oy` is the glyph origin on the page in points
+ * and `k` the points per font unit; font coordinates run y-up, like PDF.
  */
-function drawRun(
-  page: PDFPage,
-  text: string,
-  xPx: number,
-  baselinePx: number,
-  sizePx: number,
-  font: PDFFont,
-  metrics: Font,
-  color: string,
-  letterSpacing = 0,
-) {
-  const chars = Array.from(text);
-  const run = metrics.layout(text);
-  const sameCount = run.positions.length === chars.length; // false only if a ligature merged glyphs
+function fillGlyph(page: PDFPage, commands: PathCommand[], ox: number, oy: number, k: number, color: string) {
+  const ops: PDFOperator[] = [pushGraphicsState(), setFillingColor(hex(color))];
+  let cx = 0;
+  let cy = 0;
+  for (const { command, args } of commands) {
+    if (command === "moveTo") {
+      ops.push(moveTo(ox + args[0]! * k, oy + args[1]! * k));
+      [cx, cy] = [args[0]!, args[1]!];
+    } else if (command === "lineTo") {
+      ops.push(lineTo(ox + args[0]! * k, oy + args[1]! * k));
+      [cx, cy] = [args[0]!, args[1]!];
+    } else if (command === "quadraticCurveTo") {
+      // PDF has only cubic curves: raise the quadratic (control q, end e) to a cubic.
+      const [qx, qy, ex, ey] = args as [number, number, number, number];
+      ops.push(
+        appendBezierCurve(
+          ox + (cx + (2 / 3) * (qx - cx)) * k,
+          oy + (cy + (2 / 3) * (qy - cy)) * k,
+          ox + (ex + (2 / 3) * (qx - ex)) * k,
+          oy + (ey + (2 / 3) * (qy - ey)) * k,
+          ox + ex * k,
+          oy + ey * k,
+        ),
+      );
+      [cx, cy] = [ex, ey];
+    } else if (command === "bezierCurveTo") {
+      const [x1, y1, x2, y2, ex, ey] = args as [number, number, number, number, number, number];
+      ops.push(appendBezierCurve(ox + x1 * k, oy + y1 * k, ox + x2 * k, oy + y2 * k, ox + ex * k, oy + ey * k));
+      [cx, cy] = [ex, ey];
+    } else {
+      ops.push(closePath());
+    }
+  }
+  ops.push(fill(), popGraphicsState());
+  page.pushOperators(...ops);
+}
+
+/**
+ * One line of text. Latin text is drawn glyph by glyph, advancing by the
+ * font's own kerned advances plus CSS-style letter-spacing — pdf-lib's
+ * drawText lays a whole string out WITHOUT kerning, which makes it ~0.5%
+ * wider than the browser draws the same font.
+ *
+ * Arabic runs (when an Arabic font is given) are shaped by fontkit — joined
+ * letter forms, in visual left-to-right order, so the run reads right to left
+ * inside the left-to-right line — and drawn as filled vector outlines. pdf-lib's
+ * own font embedding can't be used for them: its subsetter drops composite
+ * glyphs (the hamza on أ, initial forms) and its width table only knows
+ * glyphs that have a character code, which breaks the spacing of joined
+ * letters. The cost is that Arabic text in the PDF is not selectable.
+ */
+function drawRun(page: PDFPage, text: string, xPx: number, baselinePx: number, sizePx: number, face: Face, color: string, letterSpacing = 0, arabic?: Font) {
   let x = xPx;
-  chars.forEach((ch, i) => {
-    if (ch !== " ") page.drawText(ch, { x: X(x), y: Y(baselinePx), size: sizePx * PT_PER_PX, font, color: hex(color) });
-    const advance = sameCount ? (run.positions[i]!.xAdvance * sizePx) / metrics.unitsPerEm : font.widthOfTextAtSize(ch, sizePx * PT_PER_PX) / PT_PER_PX;
-    x += advance + letterSpacing;
-  });
+  for (const part of splitRuns(text, face.metrics, arabic ?? null)) {
+    if (part.face === "arabic" && arabic) {
+      const run = arabic.layout(part.text);
+      const k = (sizePx * PT_PER_PX) / arabic.unitsPerEm;
+      let pen = 0; // font units
+      run.glyphs.forEach((glyph, i) => {
+        const pos = run.positions[i]!;
+        const commands = (glyph.path as unknown as { commands: PathCommand[] }).commands;
+        fillGlyph(page, commands, X(x) + (pen + pos.xOffset) * k, Y(baselinePx) + pos.yOffset * k, k, color);
+        pen += pos.xAdvance;
+      });
+      x += (run.advanceWidth * sizePx) / arabic.unitsPerEm;
+      continue;
+    }
+    const chars = Array.from(part.text);
+    const run = face.metrics.layout(part.text);
+    const sameCount = run.positions.length === chars.length; // false only if a ligature merged glyphs
+    chars.forEach((ch, i) => {
+      if (ch !== " ") page.drawText(ch, { x: X(x), y: Y(baselinePx), size: sizePx * PT_PER_PX, font: face.pdf, color: hex(color) });
+      const advance = sameCount ? (run.positions[i]!.xAdvance * sizePx) / face.metrics.unitsPerEm : face.pdf.widthOfTextAtSize(ch, sizePx * PT_PER_PX) / PT_PER_PX;
+      x += advance + letterSpacing;
+    });
+  }
 }
 
 async function readBrandPng(file: string): Promise<Uint8Array | null> {
@@ -216,9 +281,9 @@ export async function generateIdCardPdf(data: IdCardData, photo: IdCardPhoto | n
 
   const page = doc.addPage([PAGE_W_PT, PAGE_H_PT]);
   // Subset embedding is required here: it re-encodes the WOFF files as plain TrueType.
-  const sans500 = await doc.embedFont(fonts.sans500.bytes, { subset: true });
-  const sans600 = await doc.embedFont(fonts.sans600.bytes, { subset: true });
-  const serif800 = await doc.embedFont(fonts.serif800.bytes, { subset: true });
+  const sans500: Face = { pdf: await doc.embedFont(fonts.sans500.bytes, { subset: true }), metrics: fonts.sans500.font };
+  const sans600: Face = { pdf: await doc.embedFont(fonts.sans600.bytes, { subset: true }), metrics: fonts.sans600.font };
+  const serif800: Face = { pdf: await doc.embedFont(fonts.serif800.bytes, { subset: true }), metrics: fonts.serif800.font };
 
   const crestBytes = await readBrandPng(CREST.file);
   const crest = crestBytes ? await doc.embedPng(crestBytes) : null;
@@ -281,8 +346,8 @@ export async function generateIdCardPdf(data: IdCardData, photo: IdCardPhoto | n
   // 3. Footer band, gold rule, footer texts (§6).
   page.drawRectangle({ x: 0, y: 0, width: PAGE_W_PT, height: PAGE_H_PT - X(FOOTER.y) , color: hex(COLOR.navy900) });
   page.drawRectangle({ x: 0, y: PAGE_H_PT - X(FOOTER.y + FOOTER.ruleH), width: PAGE_W_PT, height: X(FOOTER.ruleH), color: hex(COLOR.gold500) });
-  drawRun(page, model.footerLeft, FOOTER.leftX, FOOTER.baseline, FOOTER.fontSize, sans500, fonts.sans500.font, COLOR.white);
-  drawRun(page, model.footerRight.text, model.footerRight.x, FOOTER.baseline, FOOTER.fontSize, sans500, fonts.sans500.font, COLOR.white);
+  drawRun(page, model.footerLeft, FOOTER.leftX, FOOTER.baseline, FOOTER.fontSize, sans500, COLOR.white);
+  drawRun(page, model.footerRight.text, model.footerRight.x, FOOTER.baseline, FOOTER.fontSize, sans500, COLOR.white);
 
   // 4. Crest and school name (§7).
   if (crest) {
@@ -294,12 +359,12 @@ export async function generateIdCardPdf(data: IdCardData, photo: IdCardPhoto | n
     page.drawImage(crest, { x: X(x), y: Y(y + h), width: X(w), height: X(h) });
   }
   for (const line of SCHOOL_NAME.lines) {
-    drawRun(page, line.text, SCHOOL_NAME.x, line.baseline, SCHOOL_NAME.fontSize, sans600, fonts.sans600.font, COLOR.white);
+    drawRun(page, line.text, SCHOOL_NAME.x, line.baseline, SCHOOL_NAME.fontSize, sans600, COLOR.white);
   }
 
   // 5. Title (§8).
   for (const line of TITLE.lines) {
-    drawRun(page, line.text, TITLE.x, line.baseline, TITLE.fontSize, serif800, fonts.serif800.font, line.color, TITLE.letterSpacing);
+    drawRun(page, line.text, TITLE.x, line.baseline, TITLE.fontSize, serif800, line.color, TITLE.letterSpacing);
   }
 
   // 6. Photo rings and well (§9).
@@ -335,13 +400,13 @@ export async function generateIdCardPdf(data: IdCardData, photo: IdCardPhoto | n
 
   // 7. Data fields (§10).
   for (const f of model.fields) {
-    drawRun(page, f.label, FIELDS.labelX, f.baseline, FIELDS.labelSize, sans600, fonts.sans600.font, COLOR.goldInk);
-    drawRun(page, f.value, FIELDS.valueX, f.baseline, f.fontSize, sans600, fonts.sans600.font, COLOR.navy900);
+    drawRun(page, f.label, FIELDS.labelX, f.baseline, FIELDS.labelSize, sans600, COLOR.goldInk);
+    drawRun(page, f.value, FIELDS.valueX, f.baseline, f.fontSize, sans600, COLOR.navy900, 0, fonts.arabic600.font);
   }
 
   // 8. Barcode and its human-readable line (§11).
   drawBarcode(page, model);
-  drawRun(page, model.barcodeText.text, model.barcodeText.x, BARCODE.textBaseline, BARCODE.textSize, sans600, fonts.sans600.font, COLOR.slateInk, BARCODE.textLetterSpacing);
+  drawRun(page, model.barcodeText.text, model.barcodeText.x, BARCODE.textBaseline, BARCODE.textSize, sans600, COLOR.slateInk, BARCODE.textLetterSpacing);
 
   page.pushOperators(popGraphicsState());
   return doc.save();

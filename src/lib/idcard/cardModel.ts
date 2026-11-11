@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Font } from "@pdf-lib/fontkit";
 import { barRuns, code128BModules } from "./code128";
-import { drawable, loadIdCardFonts, textWidth } from "./fonts";
+import { RLM, drawable, loadIdCardFonts, mixedWidth, textWidth } from "./fonts";
 import {
   BARCODE,
   FIELDS,
@@ -39,33 +39,42 @@ export interface IdCardModel {
 
 /** Shrink the value 1 px at a time down to the minimum, then truncate with an
  * ellipsis — never wrap (spec §10.2). */
-function fitValue(font: Font, text: string): { text: string; fontSize: number } {
+function fitValue(latin: Font, arabic: Font, text: string): { text: string; fontSize: number } {
   for (let size = FIELDS.valueSize; size >= FIELDS.minValueSize; size--) {
-    if (textWidth(font, text, size) <= FIELD_MAX_VALUE_W) return { text, fontSize: size };
+    if (mixedWidth(latin, arabic, text, size) <= FIELD_MAX_VALUE_W) return { text, fontSize: size };
   }
   const size = FIELDS.minValueSize;
   const chars = Array.from(text);
-  while (chars.length > 2 && textWidth(font, chars.join("").trimEnd() + "…", size) > FIELD_MAX_VALUE_W) chars.pop();
-  return { text: chars.join("").trimEnd() + "…", fontSize: size };
+  // After Arabic text the "…" is followed by an RLM so it belongs to the Arabic
+  // run and lands at the end of the name (its left edge) rather than before it.
+  const withEllipsis = () => {
+    const kept = chars.join("").trimEnd();
+    const last = Array.from(kept).pop()!.codePointAt(0)!;
+    const endsInArabic = !latin.hasGlyphForCodePoint(last) && arabic.hasGlyphForCodePoint(last);
+    return kept + "…" + (endsInArabic ? RLM : "");
+  };
+  while (chars.length > 2 && mixedWidth(latin, arabic, withEllipsis(), size) > FIELD_MAX_VALUE_W) chars.pop();
+  return { text: withEllipsis(), fontSize: size };
 }
 
 export async function buildIdCardModel(data: IdCardData): Promise<IdCardModel> {
   const fonts = await loadIdCardFonts();
   const sans600 = fonts.sans600.font;
   const sans500 = fonts.sans500.font;
+  const arabic = fonts.arabic600.font;
 
-  const fullName = drawable(sans600, collapseSpaces(data.fullName)) || "—";
-  const studentId = drawable(sans600, collapseSpaces(data.enrollmentNumber)) || "—";
-  const classLabel = drawable(sans600, formatClassLabel(data.className, data.section));
+  const fullName = drawable(sans600, arabic, collapseSpaces(data.fullName)) || "—";
+  const studentId = drawable(sans600, arabic, collapseSpaces(data.enrollmentNumber)) || "—";
+  const classLabel = drawable(sans600, arabic, formatClassLabel(data.className, data.section));
   const dob = formatDob(data.dateOfBirth);
 
   const values = [fullName, classLabel, studentId, dob].map((v) => `: ${v}`);
   const fields = FIELDS.labels.map((label, i) => {
-    const fitted = fitValue(sans600, values[i]!);
+    const fitted = fitValue(sans600, arabic, values[i]!);
     return { label, value: fitted.text, fontSize: fitted.fontSize, baseline: FIELDS.baselines[i]! };
   });
 
-  const footerLeft = `Academic Year ${drawable(sans500, formatAcademicYear(data.academicYear))}`;
+  const footerLeft = `Academic Year ${drawable(sans500, null, formatAcademicYear(data.academicYear))}`;
   const footerRight = {
     text: FOOTER_RIGHT_TEXT,
     x: FOOTER.rightX - textWidth(sans500, FOOTER_RIGHT_TEXT, FOOTER.fontSize),

@@ -19,6 +19,14 @@ export const idCardSans = localFont({
   fallback: ["sans-serif"],
 });
 
+/** Carries a student's name when it is written in Arabic (Montserrat has no Arabic glyphs). */
+export const idCardArabic = localFont({
+  src: [{ path: "../../lib/idcard/fonts/noto-sans-arabic-arabic-600-normal.woff", weight: "600", style: "normal" }],
+  display: "block",
+  adjustFontFallback: false,
+  fallback: ["sans-serif"],
+});
+
 export const idCardSerif = localFont({
   src: [{ path: "../../lib/idcard/fonts/noto-serif-latin-800-normal.woff", weight: "800", style: "normal" }],
   display: "block",
