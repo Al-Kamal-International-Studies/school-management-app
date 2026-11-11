@@ -160,7 +160,7 @@ const WHITE = rgb(1, 1, 1);
 /** Per-center brand palette, sourced verbatim from src/app/globals.css's
  * `:root` custom properties (AKIS).
  * Exported for reuse by other generated PDFs that need the same brand
- * colors (see lib/idcard/generateIdCard.ts) — kept as one source of truth
+ * colors — kept as one source of truth
  * rather than a second hardcoded copy drifting out of sync. */
 export interface CenterPalette {
   primary900: Color;

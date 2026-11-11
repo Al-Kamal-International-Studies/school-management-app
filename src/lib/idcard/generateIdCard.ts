@@ -2,268 +2,361 @@ import "server-only";
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
-import { makeFontSafe } from "@/lib/pdf/safeFont";
-import { PALETTE, wrapText } from "@/lib/admissions/generatePdf";
-import { AKIS_CENTER } from "@/lib/centers/knownCenters";
+import fontkit from "@pdf-lib/fontkit";
 import {
-  CARD_WIDTH,
-  CARD_HEIGHT,
-  PADDING,
-  HEADER_HEIGHT,
-  HEADER_ACCENT_HEIGHT,
-  PHOTO_WIDTH,
-  PHOTO_HEIGHT,
-  PHOTO_Y,
-  CONTENT_TOP,
-  CONTENT_BOTTOM,
-  DETAILS_X,
-  DETAILS_WIDTH,
-  FOOTER_RULE_Y,
-  FOOTER_TEXT_Y,
+  PDFDocument,
+  PDFName,
+  PDFOperator,
+  PDFRef,
+  appendBezierCurve,
+  clip,
+  closePath,
+  concatTransformationMatrix,
+  endPath,
+  lineTo,
+  moveTo,
+  popGraphicsState,
+  pushGraphicsState,
+  rgb,
+  type Color,
+  type PDFFont,
+  type PDFImage,
+  type PDFPage,
+} from "pdf-lib";
+import type { Font } from "@pdf-lib/fontkit";
+import { buildIdCardModel, type IdCardModel } from "./cardModel";
+import { loadIdCardFonts } from "./fonts";
+import {
+  BARCODE,
+  CARD_H,
+  CARD_RADIUS,
+  CARD_W,
+  COLOR,
+  CREST,
+  FIELDS,
+  FOOTER,
+  HEADER_BBOX,
+  HEADER_EDGE_PATH,
+  HEADER_EDGE_WIDTH,
+  HEADER_GRADIENT,
+  HEADER_PATH,
+  PAGE_H_PT,
+  PAGE_W_PT,
+  PHOTO,
+  PT_PER_PX,
+  SCHOOL_NAME,
+  SILHOUETTE_HEAD,
+  SILHOUETTE_SHOULDERS,
+  TITLE,
+  WAVE_STROKE_OPACITY,
+  WAVE_STROKE_WIDTH,
+  pathToD,
+  wavePolylines,
+  type PathCmd,
 } from "./layout";
 import type { IdCardData } from "./getIdCardData";
 
 /**
- * A genuine, printable school ID card — sized to the real CR80 standard
- * (see layout.ts) rather than a normal document page, so it can be printed
- * 1:1 onto real card stock and not just viewed as a PDF. Landscape.
+ * The student ID card as a one-page, vector PDF sized to a real CR80 card
+ * (85.6 × 54 mm, landscape) — "Design B: Navy & Gold", implemented from
+ * AKIS_Student_ID_Card_Spec.md. Every coordinate is the spec's design pixel
+ * (layout.ts) multiplied by PT_PER_PX with y flipped, text is positioned by
+ * the spec's baselines, and the page is clipped to the 38 px rounded card
+ * outline so the corners stay unpainted.
  *
- * Deliberately generated fresh on every request (see the Route Handler at
- * app/api/id-card/[studentId]/route.ts), never pre-generated and stored
- * the way the admissions PDF is (see generatePdf.ts) — an admission form
- * is an immutable historical snapshot of one submission by design, but an
- * ID card must always reflect the student's CURRENT name/grade/photo. A
- * stored copy would need active invalidation on every profile edit, class
- * reassignment, or photo change to avoid going stale; generating on demand
- * from getIdCardData's live read sidesteps that entirely, at the cost of a
- * (cheap, sub-second) PDF build on every download instead of a Storage
- * fetch.
- *
- * Every structural measurement (card size, header height, photo box,
- * details column) comes from layout.ts, shared with
- * components/idcard/IdCardView.tsx's on-page preview — see that file's own
- * doc comment for why (Muhammad, chat, 2026-09-09: the downloaded PDF
- * didn't match the app's preview).
+ * Generated fresh on every request, never stored: an ID card must always
+ * show the student's CURRENT name, class and photo, and a stored copy would
+ * go stale on every profile edit (see the route handler in
+ * app/api/id-card/[studentId]/route.ts). The PNG download and the live
+ * on-page card (components/idcard/IdCardGraphic.tsx) draw from the same
+ * layout.ts + cardModel.ts, so the three cannot drift apart.
  */
-
-const WHITE = rgb(1, 1, 1);
-const INK = rgb(0.1, 0.11, 0.14);
-const MUTED = rgb(0.42, 0.44, 0.48);
 
 export interface IdCardPhoto {
   bytes: Uint8Array;
   format: "png" | "jpg";
 }
 
-function formatDob(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+// -- px → pt ------------------------------------------------------------------
+const X = (px: number) => px * PT_PER_PX;
+const Y = (px: number) => PAGE_H_PT - px * PT_PER_PX;
+
+function hex(color: string): Color {
+  const n = parseInt(color.slice(1), 16);
+  return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
 }
 
-function initialsOf(fullName: string): string {
-  return fullName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join("");
+// -- path / clip helpers --------------------------------------------------------
+function pathOps(cmds: PathCmd[]): PDFOperator[] {
+  return cmds.map((c) => {
+    switch (c[0]) {
+      case "M":
+        return moveTo(X(c[1]), Y(c[2]));
+      case "L":
+        return lineTo(X(c[1]), Y(c[2]));
+      case "C":
+        return appendBezierCurve(X(c[1]), Y(c[2]), X(c[3]), Y(c[4]), X(c[5]), Y(c[6]));
+      case "Z":
+        return closePath();
+    }
+  });
+}
+
+const KAPPA = 0.5522847498;
+function circleCmds(cx: number, cy: number, r: number): PathCmd[] {
+  const k = r * KAPPA;
+  return [
+    ["M", cx + r, cy],
+    ["C", cx + r, cy + k, cx + k, cy + r, cx, cy + r],
+    ["C", cx - k, cy + r, cx - r, cy + k, cx - r, cy],
+    ["C", cx - r, cy - k, cx - k, cy - r, cx, cy - r],
+    ["C", cx + k, cy - r, cx + r, cy - k, cx + r, cy],
+    ["Z"],
+  ];
+}
+
+function roundedCardCmds(): PathCmd[] {
+  const r = CARD_RADIUS;
+  const k = r * KAPPA;
+  const W = CARD_W;
+  const H = CARD_H;
+  return [
+    ["M", r, 0],
+    ["L", W - r, 0],
+    ["C", W - r + k, 0, W, r - k, W, r],
+    ["L", W, H - r],
+    ["C", W, H - r + k, W - r + k, H, W - r, H],
+    ["L", r, H],
+    ["C", r - k, H, 0, H - r + k, 0, H - r],
+    ["L", 0, r],
+    ["C", 0, r - k, r - k, 0, r, 0],
+    ["Z"],
+  ];
+}
+
+/** Run `draw` with the clip path `cmds` active. */
+function clipped(page: PDFPage, cmds: PathCmd[], draw: () => void) {
+  page.pushOperators(pushGraphicsState(), ...pathOps(cmds), clip(), endPath());
+  draw();
+  page.pushOperators(popGraphicsState());
+}
+
+// -- axial gradients (the PDF equivalent of SVG linearGradient) --------------------
+type Stop = { offset: number; color: string };
+
+function rgbArray(color: string): number[] {
+  const c = hex(color) as unknown as { red: number; green: number; blue: number };
+  return [c.red, c.green, c.blue];
+}
+
+function axialShading(doc: PDFDocument, coords: [number, number, number, number], stops: readonly Stop[]): PDFRef {
+  const ctx = doc.context;
+  const pieces = [];
+  for (let i = 0; i < stops.length - 1; i++) {
+    pieces.push(ctx.obj({ FunctionType: 2, Domain: [0, 1], C0: rgbArray(stops[i]!.color), C1: rgbArray(stops[i + 1]!.color), N: 1 }));
+  }
+  const fn =
+    pieces.length === 1
+      ? pieces[0]!
+      : ctx.obj({
+          FunctionType: 3,
+          Domain: [0, 1],
+          Functions: pieces,
+          Bounds: stops.slice(1, -1).map((s) => s.offset),
+          Encode: pieces.flatMap(() => [0, 1]),
+        });
+  return ctx.register(ctx.obj({ ShadingType: 2, ColorSpace: "DeviceRGB", Coords: coords, Function: fn, Extend: [true, true] }));
+}
+
+// -- text ------------------------------------------------------------------------
+/**
+ * One line of text drawn glyph by glyph, advancing by the font's own kerned
+ * advances plus CSS-style letter-spacing. pdf-lib's drawText lays a whole
+ * string out WITHOUT kerning, which makes it ~0.5% wider than the browser
+ * draws the same font; this keeps the PDF/PNG in step with the on-page card.
+ */
+function drawRun(
+  page: PDFPage,
+  text: string,
+  xPx: number,
+  baselinePx: number,
+  sizePx: number,
+  font: PDFFont,
+  metrics: Font,
+  color: string,
+  letterSpacing = 0,
+) {
+  const chars = Array.from(text);
+  const run = metrics.layout(text);
+  const sameCount = run.positions.length === chars.length; // false only if a ligature merged glyphs
+  let x = xPx;
+  chars.forEach((ch, i) => {
+    if (ch !== " ") page.drawText(ch, { x: X(x), y: Y(baselinePx), size: sizePx * PT_PER_PX, font, color: hex(color) });
+    const advance = sameCount ? (run.positions[i]!.xAdvance * sizePx) / metrics.unitsPerEm : font.widthOfTextAtSize(ch, sizePx * PT_PER_PX) / PT_PER_PX;
+    x += advance + letterSpacing;
+  });
+}
+
+async function readBrandPng(file: string): Promise<Uint8Array | null> {
+  try {
+    return new Uint8Array(await readFile(path.join(process.cwd(), "public", "brand", file)));
+  } catch {
+    return null;
+  }
 }
 
 export async function generateIdCardPdf(data: IdCardData, photo: IdCardPhoto | null): Promise<Uint8Array> {
+  const model = await buildIdCardModel(data);
+  const fonts = await loadIdCardFonts();
+
   const doc = await PDFDocument.create();
-  doc.setTitle(`${data.fullName} — Student ID — ${data.enrollmentNumber}`);
+  doc.registerFontkit(fontkit);
+  doc.setTitle(model.pdfTitle);
+  doc.setSubject("Al Kamal International Studies — student ID card");
 
-  const page = doc.addPage([CARD_WIDTH, CARD_HEIGHT]);
-  const font = makeFontSafe(await doc.embedFont(StandardFonts.Helvetica));
-  const bold = makeFontSafe(await doc.embedFont(StandardFonts.HelveticaBold));
-  const serifBold = makeFontSafe(await doc.embedFont(StandardFonts.TimesRomanBold));
+  const page = doc.addPage([PAGE_W_PT, PAGE_H_PT]);
+  // Subset embedding is required here: it re-encodes the WOFF files as plain TrueType.
+  const sans500 = await doc.embedFont(fonts.sans500.bytes, { subset: true });
+  const sans600 = await doc.embedFont(fonts.sans600.bytes, { subset: true });
+  const serif800 = await doc.embedFont(fonts.serif800.bytes, { subset: true });
 
-  const palette = PALETTE[data.center];
-  const centerLabel = AKIS_CENTER.short_code;
-  const schoolName = AKIS_CENTER.name;
-
-  async function loadBrandPng(file: string): Promise<PDFImage | null> {
-    try {
-      const bytes = await readFile(path.join(process.cwd(), "public", "brand", file));
-      return await doc.embedPng(bytes);
-    } catch {
-      return null;
-    }
-  }
-
-  // ---------------------------------------------------------------------
-  // Header band
-  // ---------------------------------------------------------------------
-  page.drawRectangle({ x: 0, y: CARD_HEIGHT - HEADER_HEIGHT, width: CARD_WIDTH, height: HEADER_HEIGHT, color: palette.primary900 });
-  page.drawRectangle({
-    x: 0,
-    y: CARD_HEIGHT - HEADER_HEIGHT - HEADER_ACCENT_HEIGHT,
-    width: CARD_WIDTH,
-    height: HEADER_ACCENT_HEIGHT,
-    color: palette.accent500,
-  });
-
-  const headerLogoFile = "crest-white.png";
-  const headerLogo = await loadBrandPng(headerLogoFile);
-
-  let textX = PADDING;
-  if (headerLogo) {
-    const logoSize = 20;
-    const scale = logoSize / headerLogo.height;
-    const logoWidth = headerLogo.width * scale;
-    page.drawImage(headerLogo, { x: PADDING, y: CARD_HEIGHT - HEADER_HEIGHT / 2 - logoSize / 2, width: logoWidth, height: logoSize });
-    textX = PADDING + logoWidth + 6;
-  }
-
-  page.drawText(schoolName, {
-    x: textX,
-    y: CARD_HEIGHT - HEADER_HEIGHT / 2 + 3,
-    size: 7.5,
-    font: serifBold,
-    color: WHITE,
-    maxWidth: CARD_WIDTH - textX - PADDING,
-  });
-  page.drawText("STUDENT ID CARD", {
-    x: textX,
-    y: CARD_HEIGHT - HEADER_HEIGHT / 2 - 8,
-    size: 5.5,
-    font: bold,
-    color: palette.onBandSubtitle,
-  });
-
-  // ---------------------------------------------------------------------
-  // Photo — a standard international passport-photo ratio (35:45mm),
-  // sized well short of the full content height and vertically centered
-  // within it (see layout.ts's own comment: an earlier version spanned
-  // the full height edge-to-edge and was reported as too large; the
-  // centered margin above/below now reads as intentional framing rather
-  // than the original bug, which was a photo that stopped abruptly
-  // partway down with a lopsided gap only at the bottom). Every photo
-  // uploaded through this app's own upload flow (IdCardPhotoUpload.tsx)
-  // is a square 512×512 PNG, so "contain" fit inside this taller box
-  // still centers cleanly with no cropping needed.
-  // ---------------------------------------------------------------------
-  page.drawRectangle({
-    x: PADDING,
-    y: PHOTO_Y,
-    width: PHOTO_WIDTH,
-    height: PHOTO_HEIGHT,
-    borderWidth: 1.25,
-    borderColor: palette.primary700,
-    color: rgb(0.96, 0.96, 0.97),
-  });
-  // A thin accent-colored divider between the photo and the details
-  // column — a small structural flourish, not just a plain gap. Matches
-  // the photo's own (centered, shorter-than-full) height, not the full
-  // content height, so it visually corresponds to the photo box itself.
-  page.drawRectangle({ x: PADDING + PHOTO_WIDTH + 4, y: PHOTO_Y, width: 1.5, height: PHOTO_HEIGHT, color: palette.accent500 });
+  const crestBytes = await readBrandPng(CREST.file);
+  const crest = crestBytes ? await doc.embedPng(crestBytes) : null;
 
   let embeddedPhoto: PDFImage | null = null;
   if (photo) {
     try {
       embeddedPhoto = photo.format === "png" ? await doc.embedPng(photo.bytes) : await doc.embedJpg(photo.bytes);
     } catch {
-      // Corrupt/unreadable bytes despite a matching content-type — fall
-      // back to the initials placeholder below rather than failing the
-      // whole download over one bad image.
-      embeddedPhoto = null;
+      embeddedPhoto = null; // unreadable bytes: fall back to the silhouette, never fail the download
     }
   }
 
-  if (embeddedPhoto) {
-    const scale = Math.min(PHOTO_WIDTH / embeddedPhoto.width, PHOTO_HEIGHT / embeddedPhoto.height);
-    const w = embeddedPhoto.width * scale;
-    const h = embeddedPhoto.height * scale;
-    page.drawImage(embeddedPhoto, { x: PADDING + (PHOTO_WIDTH - w) / 2, y: PHOTO_Y + (PHOTO_HEIGHT - h) / 2, width: w, height: h });
-  } else {
-    const label = initialsOf(data.fullName) || "?";
-    const size = 18;
-    const textWidth = bold.widthOfTextAtSize(label, size);
-    page.drawText(label, {
-      x: PADDING + (PHOTO_WIDTH - textWidth) / 2,
-      y: PHOTO_Y + PHOTO_HEIGHT / 2 - size / 3,
-      size,
-      font: bold,
-      color: palette.primary700,
+  const headerShading = axialShading(doc, [HEADER_GRADIENT.x1, HEADER_GRADIENT.y1, HEADER_GRADIENT.x2, HEADER_GRADIENT.y2], HEADER_GRADIENT.stops);
+  const ringShading = axialShading(
+    doc,
+    [PHOTO.cx - PHOTO.goldR, PHOTO.cy - PHOTO.goldR, PHOTO.cx + PHOTO.goldR, PHOTO.cy + PHOTO.goldR],
+    [
+      { offset: 0, color: COLOR.gold300 },
+      { offset: 1, color: COLOR.gold700 },
+    ],
+  );
+  page.node.Resources()!.set(PDFName.of("Shading"), doc.context.obj({ ShHeader: headerShading, ShRing: ringShading }));
+  const paintShading = (name: string) => PDFOperator.of("sh" as never, [PDFName.of(name)]);
+
+  // Whole card clipped to the rounded CR80 outline (§3).
+  page.pushOperators(pushGraphicsState(), ...pathOps(roundedCardCmds()), clip(), endPath());
+
+  // 1. Paper + wave lines (§3, §4). SVG-style paths: origin top-left, y down.
+  page.drawRectangle({ x: 0, y: 0, width: PAGE_W_PT, height: PAGE_H_PT, color: hex(COLOR.paper) });
+  for (const line of wavePolylines()) {
+    const d = "M" + line.map(([x, y]) => `${x} ${y}`).join(" L");
+    page.drawSvgPath(d, {
+      x: 0,
+      y: PAGE_H_PT,
+      scale: PT_PER_PX,
+      borderColor: hex(COLOR.gold500),
+      borderWidth: WAVE_STROKE_WIDTH,
+      borderOpacity: WAVE_STROKE_OPACITY,
     });
   }
 
-  // ---------------------------------------------------------------------
-  // Details column, right of the photo — spread across the SAME content
-  // height the photo now spans, with larger type than before so it
-  // actually fills the space rather than clustering at the top (the
-  // other half of Muhammad's feedback: "a lot of empty space on the right
-  // hand side").
-  // ---------------------------------------------------------------------
-  // A deliberate gap below the header band before the name starts — it
-  // used to sit right up against the header, reported as too close.
-  let y = CONTENT_TOP - 16;
+  // 2. Header: gradient fill, then the 4 px gold edge (§5).
+  clipped(page, HEADER_PATH, () => {
+    page.pushOperators(
+      pushGraphicsState(),
+      concatTransformationMatrix(PT_PER_PX * HEADER_BBOX.w, 0, 0, -PT_PER_PX * HEADER_BBOX.h, 0, PAGE_H_PT),
+      paintShading("ShHeader"),
+      popGraphicsState(),
+    );
+  });
+  page.drawSvgPath(pathToD(HEADER_EDGE_PATH), {
+    x: 0,
+    y: PAGE_H_PT,
+    scale: PT_PER_PX,
+    borderColor: hex(COLOR.gold500),
+    borderWidth: HEADER_EDGE_WIDTH,
+  });
 
-  // The name is the one field genuinely long enough in real data to wrap
-  // (e.g. "Firstname Middlename Familyname Middlename Familyname" — a real student
-  // in this school) — a *fixed* height reservation for it, as this used
-  // to have, silently overflowed into "GRADE / CLASS" whenever a name
-  // wrapped to 3 lines instead of the assumed 2. Fixed by shrinking the
-  // font (12pt down to 9pt) until it fits within 2 lines, and reserving
-  // exactly as much height as the chosen size's ACTUAL line count needs —
-  // never a guess. This is the real cause of Muhammad's "lettering out of
-  // place... a total mess" report (chat, 2026-09-09): confirmed live by
-  // rendering a long real name and watching it overlap the field below.
-  const NAME_LINE_HEIGHT = 11;
-  const nameSizes = [10, 9.5, 9, 8];
-  let nameLines = wrapText(data.fullName, bold, nameSizes[nameSizes.length - 1]!, DETAILS_WIDTH);
-  let nameSize = nameSizes[nameSizes.length - 1]!;
-  for (const trySize of nameSizes) {
-    const lines = wrapText(data.fullName, bold, trySize, DETAILS_WIDTH);
-    if (lines.length <= 2) {
-      nameSize = trySize;
-      nameLines = lines;
-      break;
+  // 3. Footer band, gold rule, footer texts (§6).
+  page.drawRectangle({ x: 0, y: 0, width: PAGE_W_PT, height: PAGE_H_PT - X(FOOTER.y) , color: hex(COLOR.navy900) });
+  page.drawRectangle({ x: 0, y: PAGE_H_PT - X(FOOTER.y + FOOTER.ruleH), width: PAGE_W_PT, height: X(FOOTER.ruleH), color: hex(COLOR.gold500) });
+  drawRun(page, model.footerLeft, FOOTER.leftX, FOOTER.baseline, FOOTER.fontSize, sans500, fonts.sans500.font, COLOR.white);
+  drawRun(page, model.footerRight.text, model.footerRight.x, FOOTER.baseline, FOOTER.fontSize, sans500, fonts.sans500.font, COLOR.white);
+
+  // 4. Crest and school name (§7).
+  if (crest) {
+    const scale = Math.min(CREST.w / crest.width, CREST.h / crest.height);
+    const w = crest.width * scale;
+    const h = crest.height * scale;
+    const x = CREST.x + (CREST.w - w) / 2;
+    const y = CREST.y + (CREST.h - h) / 2;
+    page.drawImage(crest, { x: X(x), y: Y(y + h), width: X(w), height: X(h) });
+  }
+  for (const line of SCHOOL_NAME.lines) {
+    drawRun(page, line.text, SCHOOL_NAME.x, line.baseline, SCHOOL_NAME.fontSize, sans600, fonts.sans600.font, COLOR.white);
+  }
+
+  // 5. Title (§8).
+  for (const line of TITLE.lines) {
+    drawRun(page, line.text, TITLE.x, line.baseline, TITLE.fontSize, serif800, fonts.serif800.font, line.color, TITLE.letterSpacing);
+  }
+
+  // 6. Photo rings and well (§9).
+  clipped(page, circleCmds(PHOTO.cx, PHOTO.cy, PHOTO.goldR), () => {
+    page.pushOperators(
+      pushGraphicsState(),
+      concatTransformationMatrix(PT_PER_PX, 0, 0, -PT_PER_PX, 0, PAGE_H_PT),
+      paintShading("ShRing"),
+      popGraphicsState(),
+    );
+  });
+  page.drawCircle({ x: X(PHOTO.cx), y: Y(PHOTO.cy), size: X(PHOTO.navyR), color: hex(COLOR.navy900) });
+  page.drawCircle({ x: X(PHOTO.cx), y: Y(PHOTO.cy), size: X(PHOTO.wellR), color: hex(COLOR.photoBg) });
+
+  clipped(page, circleCmds(PHOTO.cx, PHOTO.cy, PHOTO.wellR), () => {
+    if (embeddedPhoto) {
+      // object-fit: cover, object-position: 50% 30%
+      const box = PHOTO.wellR * 2;
+      const scale = Math.max(box / embeddedPhoto.width, box / embeddedPhoto.height);
+      const w = embeddedPhoto.width * scale;
+      const h = embeddedPhoto.height * scale;
+      const left = PHOTO.cx - PHOTO.wellR + (box - w) * 0.5;
+      const top = PHOTO.cy - PHOTO.wellR + (box - h) * PHOTO.focusY;
+      page.drawImage(embeddedPhoto, { x: X(left), y: Y(top + h), width: X(w), height: X(h) });
+    } else {
+      // No-photo silhouette, bottom-centred in the well (§9.2).
+      const ox = PHOTO.cx - PHOTO.silhouette.w / 2;
+      const oy = PHOTO.cy + PHOTO.wellR - PHOTO.silhouette.h;
+      page.drawCircle({ x: X(ox + SILHOUETTE_HEAD.cx), y: Y(oy + SILHOUETTE_HEAD.cy), size: X(SILHOUETTE_HEAD.r), color: hex(COLOR.placeholder) });
+      page.drawSvgPath(pathToD(SILHOUETTE_SHOULDERS), { x: X(ox), y: Y(oy), scale: PT_PER_PX, color: hex(COLOR.placeholder) });
     }
-  }
-  // Never more than 2 lines even in the pathological case the smallest
-  // tried size still wraps further — better to show the first two lines
-  // of a genuinely extreme name than to keep shrinking indefinitely.
-  nameLines = nameLines.slice(0, 2);
-  for (const line of nameLines) {
-    page.drawText(line, { x: DETAILS_X, y, size: nameSize, font: bold, color: INK });
-    y -= NAME_LINE_HEIGHT;
-  }
-  y -= 3; // a little breathing room before the fields start
+  });
 
-  // The 3 fields below then split whatever height is ACTUALLY left (not a
-  // fixed guess either) — a 2-line name leaves less room than a 1-line
-  // one, so the field rows compress slightly rather than running past
-  // CONTENT_BOTTOM into the footer, which is exactly what happened before
-  // this fix: a 2-line name pushed "DATE OF BIRTH" down far enough to
-  // collide with the footer rule and its "Property of the school" text.
-  const fieldRowHeight = (y - CONTENT_BOTTOM) / 3;
-  const labelOffset = Math.min(6, fieldRowHeight * 0.28);
-  const valueOffset = Math.min(17, fieldRowHeight * 0.72);
-
-  function field(label: string, value: string) {
-    const rowTop = y;
-    page.drawText(label, { x: DETAILS_X, y: rowTop - labelOffset, size: 5.5, font: bold, color: palette.accent700 });
-    page.drawText(value, { x: DETAILS_X, y: rowTop - valueOffset, size: 8.5, font: bold, color: INK, maxWidth: DETAILS_WIDTH });
-    y -= fieldRowHeight;
+  // 7. Data fields (§10).
+  for (const f of model.fields) {
+    drawRun(page, f.label, FIELDS.labelX, f.baseline, FIELDS.labelSize, sans600, fonts.sans600.font, COLOR.goldInk);
+    drawRun(page, f.value, FIELDS.valueX, f.baseline, f.fontSize, sans600, fonts.sans600.font, COLOR.navy900);
   }
 
-  field("GRADE / CLASS", data.className ?? "Not assigned");
-  field("STUDENT ID", data.enrollmentNumber);
-  field("DATE OF BIRTH", formatDob(data.dateOfBirth));
+  // 8. Barcode and its human-readable line (§11).
+  drawBarcode(page, model);
+  drawRun(page, model.barcodeText.text, model.barcodeText.x, BARCODE.textBaseline, BARCODE.textSize, sans600, fonts.sans600.font, COLOR.slateInk, BARCODE.textLetterSpacing);
 
-  // ---------------------------------------------------------------------
-  // Footer — thin rule + academic year + a standard "property of" line,
-  // same real-ID-card convention the admission PDF's own footer borrows
-  // from (generatePdf.ts's drawFooters).
-  // ---------------------------------------------------------------------
-  page.drawRectangle({ x: PADDING, y: FOOTER_RULE_Y, width: CARD_WIDTH - PADDING * 2, height: 0.75, color: rgb(0.85, 0.85, 0.87) });
-  const footerText = `${centerLabel} · Academic Year ${data.academicYear}`;
-  page.drawText(footerText, { x: PADDING, y: FOOTER_TEXT_Y, size: 5.5, font, color: MUTED });
-  const propertyText = "Property of the school — if found, return to the office.";
-  const propertyWidth = font.widthOfTextAtSize(propertyText, 5);
-  page.drawText(propertyText, { x: CARD_WIDTH - PADDING - propertyWidth, y: FOOTER_TEXT_Y, size: 5, font, color: MUTED });
-
+  page.pushOperators(popGraphicsState());
   return doc.save();
+}
+
+function drawBarcode(page: PDFPage, model: IdCardModel) {
+  if (!model.barcode) return;
+  const moduleW = BARCODE.w / model.barcode.modules;
+  for (const run of model.barcode.runs) {
+    page.drawRectangle({
+      x: X(BARCODE.x + run.start * moduleW),
+      y: Y(BARCODE.y + BARCODE.h),
+      width: X(run.width * moduleW),
+      height: X(BARCODE.h),
+      color: hex(COLOR.barcodeInk),
+    });
+  }
 }

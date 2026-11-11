@@ -9,7 +9,9 @@ export interface IdCardData {
   center: AdmissionCenter;
   fullName: string;
   enrollmentNumber: string;
+  /** The class's name as stored, e.g. "Primary Stage 1 | Grade 1" (layout.ts formatClassLabel turns it into the card text). */
   className: string | null;
+  section: string | null;
   dateOfBirth: string | null;
   academicYear: string;
   avatarUrl: string | null;
@@ -38,11 +40,13 @@ export async function getIdCardData(studentId: string): Promise<IdCardData | nul
   if (!student) return null;
 
   let className: string | null = null;
+  let section: string | null = null;
   let academicYear: string | null = null;
   if (student.class_id) {
     const { data: cls } = await supabase.from("classes").select("name, section, academic_year").eq("id", student.class_id).maybeSingle();
     if (cls) {
-      className = `${cls.name} - ${cls.section}`;
+      className = cls.name;
+      section = cls.section;
       academicYear = cls.academic_year;
     }
   }
@@ -53,6 +57,7 @@ export async function getIdCardData(studentId: string): Promise<IdCardData | nul
     fullName: profile.full_name,
     enrollmentNumber: student.enrollment_number,
     className,
+    section,
     dateOfBirth: profile.date_of_birth,
     // A class not yet assigned still needs SOME academic year on the card —
     // falls back to today's own school-year label (same helper the

@@ -72,6 +72,13 @@ const nextConfig = {
       bodySizeLimit: "4.4mb",
     },
   },
+  // The ID card routes read the card's font files and crest from disk at
+  // request time (lib/idcard/fonts.ts, generateIdCard.ts). Static tracing can't
+  // see paths built at runtime, so list them or the serverless bundle ships
+  // without them (docs: next.config.js › output › outputFileTracingIncludes).
+  outputFileTracingIncludes: {
+    "/api/id-card/**": ["./src/lib/idcard/fonts/*.woff", "./public/brand/crest-white-tight.png"],
+  },
   async headers() {
     return [
       {
