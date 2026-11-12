@@ -30,7 +30,13 @@ function mergeInbox(current: InboxItem[], incoming: InboxItem[]): InboxItem[] {
   for (const next of incoming) {
     const have = byId.get(next.id);
     if (!have || at(next.lastMessageAt) > at(have.lastMessageAt)) byId.set(next.id, next);
-    else if (at(next.lastMessageAt) === at(have.lastMessageAt)) byId.set(next.id, { ...have, unread: Math.min(have.unread, next.unread) });
+    else if (at(next.lastMessageAt) === at(have.lastMessageAt))
+      byId.set(next.id, {
+        ...have,
+        unread: Math.min(have.unread, next.unread),
+        // a snapshot can supply the sender's name a live update could not resolve
+        lastSenderName: have.lastSenderName ?? (next.lastSenderId === have.lastSenderId ? next.lastSenderName : null),
+      });
   }
   return [...byId.values()].sort(byRecency);
 }
@@ -92,7 +98,8 @@ export function MessagesShell({
   useEffect(() => {
     inboxRef.current = inbox;
     activeRef.current = activeId;
-  }, [inbox, activeId]);
+    contactsRef.current = contacts;
+  }, [inbox, activeId, contacts]);
 
   const [query, setQuery] = useState("");
   const [panelQuery, setPanelQuery] = useState("");
@@ -103,6 +110,9 @@ export function MessagesShell({
   const [, startTransition] = useTransition();
   const [menuOpen, setMenuOpen, menuAttach] = usePopover<HTMLDivElement>();
   const searchRef = useRef<HTMLInputElement>(null);
+  const panelBackRef = useRef<HTMLButtonElement>(null);
+  const newChatBtnRef = useRef<HTMLButtonElement>(null);
+  const contactsRef = useRef(contacts);
   const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(
@@ -124,13 +134,24 @@ export function MessagesShell({
             const item = prev.find((c) => c.id === m.chat_id);
             if (!item) return prev;
             const counts = m.sender_id !== me.id && m.chat_id !== activeRef.current;
+            // the sender's name: same sender as before, any other chat's latest from them, or a contact
+            const known =
+              m.sender_id === item.lastSenderId
+                ? item.lastSenderName
+                : prev.find((c) => c.lastSenderId === m.sender_id && c.lastSenderName)?.lastSenderName ??
+                  contactsRef.current.find((c) => c.id === m.sender_id)?.fullName ??
+                  null;
+            if (item.kind === "group" && m.sender_id !== me.id && !known) {
+              // not resolvable locally: fetch the authorised name once, the merge fills it in
+              void refreshInboxAction().then((fresh) => setInbox((p) => mergeInbox(p, fresh)));
+            }
             const updated: InboxItem = {
               ...item,
               lastMessageAt: m.created_at,
               preview: m.content,
               previewHidden: false,
               lastSenderId: m.sender_id,
-              lastSenderName: m.sender_id === item.lastSenderId ? item.lastSenderName : null,
+              lastSenderName: known,
               unread: counts ? item.unread + 1 : item.unread,
             };
             return [updated, ...prev.filter((c) => c.id !== m.chat_id)];
@@ -143,6 +164,11 @@ export function MessagesShell({
       }),
     [rt, me.id]
   );
+
+  // opening the New chat panel moves focus into it
+  useEffect(() => {
+    if (panelOpen) panelBackRef.current?.focus();
+  }, [panelOpen]);
 
   // "/" jumps to the search field (spec §4.4)
   useEffect(() => {
@@ -222,6 +248,8 @@ export function MessagesShell({
   function closePanel() {
     setPanelOpen(false);
     setPanelQuery("");
+    // give focus back to the control that opens the panel
+    requestAnimationFrame(() => newChatBtnRef.current?.focus());
   }
   function markAllRead() {
     setMenuOpen(false);
@@ -254,7 +282,7 @@ export function MessagesShell({
       const senderName = c.kind === "group" && !mine ? c.lastSenderName ?? (c.lastSenderId ? contactById.get(c.lastSenderId)?.fullName : null) : null;
       return (
         <>
-          {mine && <Ticks tick="delivered" variant="list" />}
+          {mine && <Ticks tick="sent" variant="list" />}
           <bdi dir="auto">{senderName ? `${senderName.split(" ")[0]}: ${c.preview}` : c.preview}</bdi>
         </>
       );
@@ -262,8 +290,8 @@ export function MessagesShell({
     return <span>{c.kind === "group" && c.subtitle ? dict.messages.taughtBy.replace("{teacher}", c.subtitle) : dict.messages.noMessagesYet}</span>;
   }
 
-  const searchField = (value: string, onChange: (v: string) => void, placeholder: string, ref?: React.Ref<HTMLInputElement>) => (
-    <div className="ch-search">
+  const searchField = (value: string, onChange: (v: string) => void, placeholder: string, ref?: React.Ref<HTMLInputElement>, inert?: boolean) => (
+    <div className="ch-search" inert={inert}>
       <Icon name="search" />
       <input ref={ref} type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder} autoComplete="off" />
       {value && (
@@ -323,9 +351,9 @@ export function MessagesShell({
 
         {/* ---------- chat list ---------- */}
         <aside className="ch-list">
-          <div className="ch-list-head">
+          <div className="ch-list-head" inert={panelOpen}>
             <h1 className="ch-title">{dict.messages.title}</h1>
-            <button type="button" className="ch-icon-btn is-solid" aria-label={dict.messages.newChat} title={dict.messages.newChat} onClick={openPanel}>
+            <button ref={newChatBtnRef} type="button" className="ch-icon-btn is-solid" aria-label={dict.messages.newChat} title={dict.messages.newChat} onClick={openPanel}>
               <Icon name="plus" />
             </button>
             <div className="ch-menu-wrap" ref={menuAttach}>
@@ -371,9 +399,9 @@ export function MessagesShell({
             </div>
           </div>
 
-          {searchField(query, setQuery, dict.messages.search, searchRef)}
+          {searchField(query, setQuery, dict.messages.search, searchRef, panelOpen)}
 
-          <div className="ch-chips" role="tablist" aria-label={dict.messages.chats}>
+          <div className="ch-chips" role="tablist" inert={panelOpen} aria-label={dict.messages.chats}>
             {(
               [
                 ["all", dict.messages.filterAll, 0],
@@ -388,7 +416,7 @@ export function MessagesShell({
             ))}
           </div>
 
-          <div className="ch-rows ch-scroll">
+          <div className="ch-rows ch-scroll" inert={panelOpen}>
             <ul ref={listRef} role="listbox" aria-label={dict.messages.chats} onKeyDown={onListKey}>
               {visibleChats.map((c) => {
                 const active = c.id === activeId;
@@ -432,7 +460,7 @@ export function MessagesShell({
           {panelOpen && (
             <section className="ch-panel" aria-label={dict.messages.newChat}>
               <div className="ch-panel-head">
-                <button type="button" className="ch-icon-btn ch-flip" aria-label={dict.messages.back} onClick={closePanel}>
+                <button ref={panelBackRef} type="button" className="ch-icon-btn ch-flip" aria-label={dict.messages.back} onClick={closePanel}>
                   <Icon name="arrow-left" />
                 </button>
                 <h2 className="ch-panel-title">{dict.messages.newChat}</h2>
