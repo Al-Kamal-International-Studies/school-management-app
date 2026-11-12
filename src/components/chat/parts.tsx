@@ -1,9 +1,29 @@
 "use client";
 
-import { AlertCircle, Check, CheckCheck, Clock, Users, Video } from "lucide-react";
-import { cn, initials } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { Icon } from "@/components/chat/icons";
 import type { Tick } from "@/lib/chat/types";
+
+/** Spec §10: first letter of the first word + first letter of the last word, max 2. */
+export function chatInitials(name: string): string {
+  // words that start with a letter or digit ("(QA)" and "·" don't count)
+  const words = name.split(/\s+/).filter((w) => /^[\p{L}\p{N}]/u.test(w));
+  if (words.length === 0) return "";
+  const first = Array.from(words[0]!)[0]!;
+  const last = words.length > 1 ? Array.from(words[words.length - 1]!)[0]! : "";
+  return (first + last).toLocaleUpperCase();
+}
+
+const SENDER_COLORS = ["#0e7490", "#7c3aed", "#b45309", "#be123c", "#15803d", "#1d4ed8"];
+
+/** Spec §5.4: a deterministic brand-compatible hue per sender inside a group. */
+export function senderColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return SENDER_COLORS[h % SENDER_COLORS.length]!;
+}
+
+const AVATAR_PX = { sm: 40, md: 49, lg: 56 } as const;
 
 export function ChatAvatar({
   name,
@@ -18,46 +38,38 @@ export function ChatAvatar({
   online?: boolean;
   size?: "sm" | "md" | "lg";
 }) {
-  const box = size === "lg" ? "h-14 w-14 text-base" : size === "sm" ? "h-9 w-9 text-xs" : "h-11 w-11 text-sm";
+  const px = AVATAR_PX[size];
+  const text = chatInitials(name);
   return (
-    <span className="relative inline-flex shrink-0">
-      <span
-        className={cn(
-          "flex items-center justify-center overflow-hidden rounded-full font-medium",
-          group ? "bg-slate-100 text-slate-600 dark:bg-navy-800 dark:text-navy-200" : "bg-navy-900 text-white dark:bg-navy-700",
-          box
-        )}
-      >
+    <span className="ch-avatar" style={{ width: px, height: px }}>
+      <span className="ch-avatar-face" style={{ fontSize: Math.round(px * 0.33) }}>
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className="h-full w-full object-cover" />
-        ) : group ? (
-          <Users className="h-[45%] w-[45%]" strokeWidth={1.75} />
+          <img src={url} alt="" />
+        ) : text ? (
+          text
         ) : (
-          initials(name)
+          <Icon name="grp" size={Math.round(px * 0.5)} />
         )}
       </span>
-      {online && (
-        <span className="absolute bottom-0 end-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-navy-950" aria-hidden />
-      )}
+      {online && !group && <span className="ch-online" aria-hidden />}
     </span>
   );
 }
 
-/** WhatsApp ticks. Read = ✓✓ in the status green (DESIGN.md: green = done). */
-export function Ticks({ tick, onDark }: { tick: Tick; onDark?: boolean }) {
+/**
+ * Receipts (spec §5.4). `list` = the 17px mint/slate tick in a chat-list preview,
+ * `bubble` = the 16px tick inside a sent bubble (white 70%, mint once read).
+ */
+export function Ticks({ tick, variant = "bubble" }: { tick: Tick; variant?: "bubble" | "list" }) {
   const { dict } = useLocale();
   const label = { pending: dict.messages.sending, sent: dict.messages.sent, delivered: dict.messages.delivered, read: dict.messages.read, failed: dict.messages.failed }[tick];
-  const base = onDark ? "text-white/60" : "text-slate-400 dark:text-navy-400";
-  const cls = "h-3.5 w-3.5 shrink-0";
+  const size = variant === "list" ? 17 : 16;
+  const name = tick === "pending" ? "clock" : tick === "sent" ? "tick-single" : tick === "failed" ? "alert" : "tick";
   return (
-    <span title={label} className="inline-flex">
+    <span title={label} className={`ch-tick ch-tick-${variant} is-${tick}`}>
       <span className="sr-only">{label}</span>
-      {tick === "pending" && <Clock className={cn(cls, base)} strokeWidth={2} />}
-      {tick === "sent" && <Check className={cn(cls, base)} strokeWidth={2.25} />}
-      {tick === "delivered" && <CheckCheck className={cn(cls, base)} strokeWidth={2.25} />}
-      {tick === "read" && <CheckCheck className={cn(cls, onDark ? "text-emerald-300" : "text-emerald-600 dark:text-emerald-400")} strokeWidth={2.25} />}
-      {tick === "failed" && <AlertCircle className={cn(cls, "text-red-500")} strokeWidth={2} />}
+      <Icon name={name} size={size} />
     </span>
   );
 }
@@ -88,64 +100,66 @@ export function meetingOf(text: string): { url: string; app: string } | null {
   return null;
 }
 
+/** Splits `text` around case-insensitive matches of `needle` and wraps each in <mark>. */
+function highlight(text: string, needle: string, keyBase: string): React.ReactNode[] {
+  if (!needle) return [text];
+  const out: React.ReactNode[] = [];
+  const lower = text.toLowerCase();
+  const n = needle.toLowerCase();
+  let at = 0;
+  for (let i = lower.indexOf(n); i !== -1; i = lower.indexOf(n, at)) {
+    if (i > at) out.push(text.slice(at, i));
+    out.push(<mark key={`${keyBase}-${i}`}>{text.slice(i, i + n.length)}</mark>);
+    at = i + n.length;
+  }
+  out.push(text.slice(at));
+  return out;
+}
+
 /** Message text with clickable links, plus a "Join meeting" card for Meet/Zoom/Teams links. */
-export function MessageText({ text, mine }: { text: string; mine: boolean }) {
+export function MessageText({ text, find }: { text: string; find?: string }) {
   const { dict } = useLocale();
   const parts: React.ReactNode[] = [];
   let last = 0;
   for (const m of text.matchAll(URL_RE)) {
     const u = toUrl(m[0]);
     if (!u) continue;
-    parts.push(text.slice(last, m.index));
+    parts.push(...highlight(text.slice(last, m.index), find ?? "", `t${m.index}`));
     parts.push(
-      <a
-        key={m.index}
-        href={u.href}
-        target="_blank"
-        rel="noopener noreferrer nofollow"
-        className={cn("underline underline-offset-2 [overflow-wrap:anywhere]", mine ? "text-white" : "text-navy-700 dark:text-navy-200")}
-      >
+      <a key={m.index} href={u.href} target="_blank" rel="noopener noreferrer nofollow">
         {m[0]}
       </a>
     );
     last = (m.index ?? 0) + m[0].length;
   }
-  parts.push(text.slice(last));
+  parts.push(...highlight(text.slice(last), find ?? "", "tail"));
   const meeting = meetingOf(text);
 
   return (
-    <>
-      <bdi dir="auto" className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+    <div className="ch-msg-body">
+      <bdi dir="auto" className="ch-msg-text">
         {parts}
       </bdi>
       {meeting && (
-        <a
-          href={meeting.url}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          className={cn(
-            "mt-2 flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
-            mine
-              ? "border-white/25 bg-white/10 text-white hover:bg-white/15"
-              : "border-slate-200 bg-slate-50 text-navy-900 hover:bg-slate-100 dark:border-navy-700 dark:bg-navy-800 dark:text-white dark:hover:bg-navy-700"
-          )}
-        >
-          <Video className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
-          <span className="min-w-0 flex-1">
+        <a href={meeting.url} target="_blank" rel="noopener noreferrer nofollow" className="ch-meet">
+          <Icon name="video" size={20} />
+          <span>
             {dict.messages.joinMeeting}
-            <span className={cn("block truncate text-xs font-normal", mine ? "text-white/70" : "text-slate-500 dark:text-navy-400")}>{meeting.app}</span>
+            <small>{meeting.app}</small>
           </span>
         </a>
       )}
-    </>
+    </div>
   );
 }
 
 export function useChatTime() {
   const { dict, locale } = useLocale();
   const time = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" });
-  const weekday = new Intl.DateTimeFormat(locale, { weekday: "long" });
-  const short = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
+  const weekdayLong = new Intl.DateTimeFormat(locale, { weekday: "long" });
+  const weekdayShort = new Intl.DateTimeFormat(locale, { weekday: "short" });
+  const monthDay = new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" });
+  const full = new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric" });
 
   const dayDiff = (iso: string) => {
     const d = new Date(iso);
@@ -157,21 +171,22 @@ export function useChatTime() {
 
   return {
     time: (iso: string) => time.format(new Date(iso)),
-    /** chat list: 14:05 / Yesterday / Tuesday / 3 Oct 2026 */
+    /** chat list (spec §4.4): 9:41 AM / Yesterday / Mon / Oct 29 / Oct 29, 2025 */
     listStamp: (iso: string) => {
       const diff = dayDiff(iso);
-      if (diff === 0) return time.format(new Date(iso));
+      const d = new Date(iso);
+      if (diff <= 0) return time.format(d);
       if (diff === 1) return dict.messages.yesterday;
-      if (diff < 7) return weekday.format(new Date(iso));
-      return short.format(new Date(iso));
+      if (diff <= 6) return weekdayShort.format(d);
+      return d.getFullYear() === new Date().getFullYear() ? monthDay.format(d) : full.format(d);
     },
-    /** divider between days inside a chat */
+    /** pill between days inside a chat (spec §5.3): Today / Yesterday / Monday / Oct 29, 2026 */
     dayLabel: (iso: string) => {
       const diff = dayDiff(iso);
-      if (diff === 0) return dict.messages.today;
+      if (diff <= 0) return dict.messages.today;
       if (diff === 1) return dict.messages.yesterday;
-      if (diff < 7) return weekday.format(new Date(iso));
-      return short.format(new Date(iso));
+      if (diff <= 6) return weekdayLong.format(new Date(iso));
+      return full.format(new Date(iso));
     },
     dayKey: (iso: string) => new Date(iso).toDateString(),
   };

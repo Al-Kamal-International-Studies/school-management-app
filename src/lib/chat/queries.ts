@@ -56,7 +56,8 @@ export const listInbox = cache(async (): Promise<InboxItem[]> => {
 
   const [groups, persons] = await Promise.all([
     groupMeta(rows.filter((r) => r.kind === "group" && r.cst_id).map((r) => r.cst_id!)),
-    people(rows.filter((r) => r.other_id).map((r) => r.other_id!)),
+    // also the last sender, so a group preview can read "Name: text"
+    people(rows.flatMap((r) => [r.other_id, r.last_sender_id]).filter((id): id is string => !!id)),
   ]);
 
   return rows.map((r) => {
@@ -75,6 +76,7 @@ export const listInbox = cache(async (): Promise<InboxItem[]> => {
       preview: preview && isHiddenByFilter(preview) ? null : preview,
       previewHidden: !!preview && isHiddenByFilter(preview),
       lastSenderId: r.last_sender_id,
+      lastSenderName: r.last_sender_id ? persons.get(r.last_sender_id)?.full_name ?? null : null,
       unread: r.unread,
     };
   });

@@ -1,14 +1,16 @@
-import { MessageCircle } from "lucide-react";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
+import { Icon } from "@/components/chat/icons";
 
-/** Right pane with no chat open (desktop only; phones show the list instead). */
+/** Right pane with no chat open (spec §6; on narrow frames the list shows instead). */
 export default async function MessagesPage() {
   const dict = await getDictionary(await getLocale());
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-      <MessageCircle className="h-10 w-10 text-slate-300 dark:text-navy-600" strokeWidth={1.5} />
-      <p className="max-w-xs text-sm text-slate-500 dark:text-navy-400">{dict.messages.selectChat}</p>
-    </div>
+    <section className="ch-empty ch-wallpaper">
+      <span className="ch-empty-icon">
+        <Icon name="chat" size={28} />
+      </span>
+      <p>{dict.messages.selectChat}</p>
+    </section>
   );
 }

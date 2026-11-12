@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import "@/components/chat/chat.css";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { roleLabel } from "@/lib/i18n/labels";
 import { useChatRealtime } from "@/components/chat/ChatRealtimeProvider";
-import { ChatAvatar, useChatTime } from "@/components/chat/parts";
+import { ChatAvatar, Ticks, useChatTime } from "@/components/chat/parts";
+import { Icon, type IconName } from "@/components/chat/icons";
+import { usePopover } from "@/components/chat/usePopover";
 import { openChatAction, refreshInboxAction } from "@/app/(dashboard)/messages/actions";
 import type { Contact, InboxItem } from "@/lib/chat/types";
 import type { UserRole } from "@/lib/types/database.types";
@@ -16,6 +17,9 @@ import type { UserRole } from "@/lib/types/database.types";
 type Filter = "all" | "unread" | "groups";
 
 const at = (iso: string | null) => (iso ? Date.parse(iso) : 0);
+
+/** Newest message first; chats with no messages sink below, alphabetically (spec §4.4). */
+const byRecency = (a: InboxItem, b: InboxItem) => at(b.lastMessageAt) - at(a.lastMessageAt) || a.title.localeCompare(b.title);
 
 /**
  * Combines inbox snapshots newest-wins per chat: the one with the later last
@@ -28,14 +32,33 @@ function mergeInbox(current: InboxItem[], incoming: InboxItem[]): InboxItem[] {
     if (!have || at(next.lastMessageAt) > at(have.lastMessageAt)) byId.set(next.id, next);
     else if (at(next.lastMessageAt) === at(have.lastMessageAt)) byId.set(next.id, { ...have, unread: Math.min(have.unread, next.unread) });
   }
-  return [...byId.values()].sort((a, b) => at(b.lastMessageAt) - at(a.lastMessageAt));
+  return [...byId.values()].sort(byRecency);
+}
+
+function RailButton({ icon, label, active, dot, onClick, href }: { icon: IconName; label: string; active?: boolean; dot?: boolean; onClick?: () => void; href?: string }) {
+  const cls = `ch-rail-btn${active ? " is-active" : ""}`;
+  const inner = (
+    <>
+      <Icon name={icon} />
+      {dot && <span className="ch-dot" aria-hidden />}
+    </>
+  );
+  return href ? (
+    <Link href={href} className={cls} title={label} aria-label={label}>
+      {inner}
+    </Link>
+  ) : (
+    <button type="button" className={cls} title={label} aria-label={label} aria-pressed={active} onClick={onClick}>
+      {inner}
+    </button>
+  );
 }
 
 /**
- * The Messages screen frame: on phones the list OR the open chat fills the
- * screen (like WhatsApp); from `lg` they sit side by side. The list is kept
- * live from ChatRealtimeProvider's events, so it re-orders, previews and
- * counts unread without any reload.
+ * The Messages screen ("Light Rail", Part 55): icon rail, chat list, conversation.
+ * The list is kept live from ChatRealtimeProvider's events, so it re-orders,
+ * previews and counts unread without any reload. Below 900px of frame width
+ * the list OR the open chat fills the frame (see chat.css).
  */
 export function MessagesShell({
   me,
@@ -72,10 +95,15 @@ export function MessagesShell({
   }, [inbox, activeId]);
 
   const [query, setQuery] = useState("");
+  const [panelQuery, setPanelQuery] = useState("");
+  const [panelOpen, setPanelOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [opening, setOpening] = useState<string | null>(null);
   const [openError, setOpenError] = useState(false);
   const [, startTransition] = useTransition();
+  const [menuOpen, setMenuOpen, menuAttach] = usePopover<HTMLDivElement>();
+  const searchRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(
     () =>
@@ -102,6 +130,7 @@ export function MessagesShell({
               preview: m.content,
               previewHidden: false,
               lastSenderId: m.sender_id,
+              lastSenderName: m.sender_id === item.lastSenderId ? item.lastSenderName : null,
               unread: counts ? item.unread + 1 : item.unread,
             };
             return [updated, ...prev.filter((c) => c.id !== m.chat_id)];
@@ -115,24 +144,60 @@ export function MessagesShell({
     [rt, me.id]
   );
 
+  // "/" jumps to the search field (spec §4.4)
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   const q = query.trim().toLowerCase();
-  const visibleContacts = useMemo(
-    () => contacts.filter((c) => !q || c.fullName.toLowerCase().includes(q) || c.context?.toLowerCase().includes(q)),
-    [contacts, q]
-  );
+  const unreadChats = inbox.filter((c) => c.unread > 0).length;
+  const groupChats = inbox.filter((c) => c.kind === "group").length;
+  const contactById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts]);
+
   const visibleChats = useMemo(
     () =>
       inbox.filter(
         (c) =>
-          (!q || c.title.toLowerCase().includes(q) || c.subtitle?.toLowerCase().includes(q)) &&
+          (!q || c.title.toLowerCase().includes(q) || c.subtitle?.toLowerCase().includes(q) || c.preview?.toLowerCase().includes(q)) &&
           (filter === "all" || (filter === "unread" ? c.unread > 0 : c.kind === "group"))
       ),
     [inbox, q, filter]
   );
+  // people matching the search who I have no chat with yet: a chat can start from search
+  const searchPeople = useMemo(
+    () =>
+      q
+        ? contacts.filter(
+            (c) => !inbox.some((i) => i.otherId === c.id) && (c.fullName.toLowerCase().includes(q) || c.context?.toLowerCase().includes(q))
+          )
+        : [],
+    [contacts, inbox, q]
+  );
+
+  const pq = panelQuery.trim().toLowerCase();
+  const panelGroups = useMemo(() => {
+    const matches = contacts.filter((c) => !pq || c.fullName.toLowerCase().includes(pq) || c.context?.toLowerCase().includes(pq));
+    const groups: { role: UserRole; people: Contact[] }[] = [];
+    for (const c of matches) {
+      const g = groups.find((x) => x.role === c.role);
+      if (g) g.people.push(c);
+      else groups.push({ role: c.role, people: [c] });
+    }
+    return groups;
+  }, [contacts, pq]);
 
   function openContact(c: Contact) {
     const existing = inbox.find((i) => i.otherId === c.id);
     if (existing) {
+      closePanel();
       router.push(`/messages/${existing.id}`);
       return;
     }
@@ -141,148 +206,207 @@ export function MessagesShell({
     startTransition(async () => {
       const res = await openChatAction(c.id);
       setOpening(null);
-      if (res.chatId) router.push(`/messages/${res.chatId}`);
-      else setOpenError(true);
+      if (res.chatId) {
+        closePanel();
+        router.push(`/messages/${res.chatId}`);
+      } else setOpenError(true);
     });
+  }
+
+  function openPanel() {
+    setMenuOpen(false);
+    setPanelQuery("");
+    setOpenError(false);
+    setPanelOpen(true);
+  }
+  function closePanel() {
+    setPanelOpen(false);
+    setPanelQuery("");
+  }
+  function markAllRead() {
+    setMenuOpen(false);
+    for (const c of inbox) if (c.unread > 0 && c.lastMessageAt) rt.markRead(c.id, c.lastMessageAt);
+  }
+
+  // Up/Down walk the list, Enter opens (links activate natively)
+  function onListKey(e: KeyboardEvent<HTMLUListElement>) {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const rows = [...(listRef.current?.querySelectorAll<HTMLElement>('[role="option"]') ?? [])];
+    if (rows.length === 0) return;
+    e.preventDefault();
+    const i = rows.indexOf(document.activeElement as HTMLElement);
+    const next = e.key === "ArrowDown" ? Math.min(i + 1, rows.length - 1) : Math.max(i - 1, 0);
+    rows[i === -1 ? 0 : next]?.focus();
   }
 
   const typingIn = (chatId: string) => (rt.typing.get(chatId)?.size ?? 0) > 0;
 
-  return (
-    <div
-      className={cn(
-        "-mx-4 -mb-12 -mt-6 flex h-[calc(100dvh-4rem)] overflow-hidden bg-white dark:bg-navy-950 sm:-mx-6",
-        "lg:mx-0 lg:-mb-8 lg:mt-0 lg:h-[calc(100dvh-8rem)] lg:rounded-xl lg:border lg:border-slate-200 lg:shadow-card lg:dark:border-navy-800"
-      )}
-    >
-      {/* ---------- left: contacts + chats ---------- */}
-      <aside
-        className={cn(
-          "flex w-full shrink-0 flex-col border-slate-200 dark:border-navy-800 lg:w-[360px] lg:border-e",
-          activeId ? "hidden lg:flex" : "flex"
-        )}
-      >
-        <div className="space-y-3 border-b border-slate-200 px-4 pb-3 pt-4 dark:border-navy-800">
-          <h1 className="page-title-compact">{dict.messages.title}</h1>
-          <label className="relative block">
-            <span className="sr-only">{dict.messages.search}</span>
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" strokeWidth={1.75} />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={dict.messages.search}
-              className="input h-10 w-full ps-9"
-            />
-          </label>
-        </div>
+  function preview(c: InboxItem) {
+    const mine = c.lastSenderId === me.id;
+    if (typingIn(c.id)) return <span>{dict.messages.typing}</span>;
+    if (c.previewHidden)
+      return (
+        <span>
+          <em>{dict.messages.hiddenMessage}</em>
+        </span>
+      );
+    if (c.preview) {
+      const senderName = c.kind === "group" && !mine ? c.lastSenderName ?? (c.lastSenderId ? contactById.get(c.lastSenderId)?.fullName : null) : null;
+      return (
+        <>
+          {mine && <Ticks tick="delivered" variant="list" />}
+          <bdi dir="auto">{senderName ? `${senderName.split(" ")[0]}: ${c.preview}` : c.preview}</bdi>
+        </>
+      );
+    }
+    return <span>{c.kind === "group" && c.subtitle ? dict.messages.taughtBy.replace("{teacher}", c.subtitle) : dict.messages.noMessagesYet}</span>;
+  }
 
-        <div className="flex-1 overflow-y-auto">
-          {/* people I can message: Sahar sees her students here */}
-          <section aria-label={dict.messages.startChat} className="border-b border-slate-200 py-3 dark:border-navy-800">
-            <p className="eyebrow mb-2 px-4">{dict.messages.startChat}</p>
-            {visibleContacts.length === 0 ? (
-              <p className="px-4 text-sm text-slate-500 dark:text-navy-400">{q ? dict.messages.noResults : dict.messages.noContacts}</p>
-            ) : (
-              <ul className="flex gap-1 overflow-x-auto px-2 pb-1 [scrollbar-width:thin]">
-                {visibleContacts.map((c) => (
-                  <li key={c.id}>
+  const searchField = (value: string, onChange: (v: string) => void, placeholder: string, ref?: React.Ref<HTMLInputElement>) => (
+    <div className="ch-search">
+      <Icon name="search" />
+      <input ref={ref} type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder} autoComplete="off" />
+      {value && (
+        <button type="button" className="ch-clear" aria-label={dict.messages.clearSearch} onClick={() => onChange("")}>
+          <Icon name="x" size={18} />
+        </button>
+      )}
+    </div>
+  );
+
+  const personRow = (c: Contact) => (
+    <li key={c.id}>
+      <button type="button" className="ch-row" onClick={() => openContact(c)} disabled={opening !== null} aria-busy={opening === c.id}>
+        <ChatAvatar name={c.fullName} url={c.avatarUrl} online={rt.online.has(c.id)} />
+        <span className="ch-row-mid">
+          <span className="ch-line">
+            <span className="ch-name">{c.fullName}</span>
+          </span>
+          <span className="ch-line">
+            <span className="ch-preview">
+              <span>{c.context ?? roleLabel(dict, c.role)}</span>
+            </span>
+          </span>
+        </span>
+      </button>
+    </li>
+  );
+
+  return (
+    <div className="ch-frame -mx-4 -mb-12 -mt-6 sm:-mx-6 lg:mx-auto lg:-mb-8 lg:mt-0">
+      <div className="ch-app" data-open={activeId ? "true" : "false"}>
+        {/* ---------- icon rail ---------- */}
+        <nav className="ch-rail" aria-label={dict.messages.navLabel}>
+          <RailButton
+            icon="chat"
+            label={dict.messages.chats}
+            active={!panelOpen && filter !== "groups"}
+            dot={unreadChats > 0}
+            onClick={() => {
+              closePanel();
+              setFilter("all");
+            }}
+          />
+          <RailButton
+            icon="grp"
+            label={dict.messages.filterGroups}
+            active={!panelOpen && filter === "groups"}
+            onClick={() => {
+              closePanel();
+              setFilter("groups");
+            }}
+          />
+          <RailButton icon="dir" label={dict.messages.directory} active={panelOpen} onClick={openPanel} />
+          <span className="ch-rail-spacer" />
+          <RailButton icon="gear" label={dict.messages.settings} href="/settings" />
+        </nav>
+
+        {/* ---------- chat list ---------- */}
+        <aside className="ch-list">
+          <div className="ch-list-head">
+            <h1 className="ch-title">{dict.messages.title}</h1>
+            <button type="button" className="ch-icon-btn is-solid" aria-label={dict.messages.newChat} title={dict.messages.newChat} onClick={openPanel}>
+              <Icon name="plus" />
+            </button>
+            <div className="ch-menu-wrap" ref={menuAttach}>
+              <button
+                type="button"
+                className="ch-icon-btn"
+                aria-label={dict.messages.moreOptions}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((o) => !o)}
+              >
+                <Icon name="dots" />
+              </button>
+              {menuOpen && (
+                <div className="ch-pop" role="menu" style={{ insetBlockStart: 44, insetInlineEnd: 0 }}>
+                  <button type="button" role="menuitem" onClick={markAllRead} disabled={unreadChats === 0} style={unreadChats === 0 ? { opacity: 0.45 } : undefined}>
+                    <Icon name="tick" size={20} />
+                    {dict.messages.markAllRead}
+                  </button>
+                  <span className="ch-narrow-items">
                     <button
                       type="button"
-                      onClick={() => openContact(c)}
-                      disabled={opening !== null}
-                      title={c.context ? `${c.fullName} · ${c.context}` : c.fullName}
-                      className="flex w-[76px] flex-col items-center gap-1.5 rounded-lg px-1 py-2 text-center transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 disabled:opacity-60 dark:hover:bg-white/5"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setFilter("groups");
+                      }}
                     >
-                      <span className="relative">
-                        <ChatAvatar name={c.fullName} url={c.avatarUrl} size="lg" online={rt.online.has(c.id)} />
-                        {opening === c.id && (
-                          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-white/70 dark:bg-navy-950/70">
-                            <Loader2 className="h-5 w-5 animate-spin text-navy-700 dark:text-white" />
-                          </span>
-                        )}
-                      </span>
-                      <span className="w-full truncate text-xs font-medium text-slate-800 dark:text-navy-100">{c.fullName.split(" ")[0]}</span>
-                      <span className="-mt-1 w-full truncate text-[11px] text-slate-500 dark:text-navy-400">
-                        {c.role === "student" || c.role === "teacher" ? c.context ?? roleLabel(dict, c.role) : roleLabel(dict, c.role)}
-                      </span>
+                      <Icon name="grp" size={20} />
+                      {dict.messages.filterGroups}
                     </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {openError && <p className="px-4 pt-1 text-sm text-red-600">{dict.messages.openChatFailed}</p>}
-          </section>
+                    <button type="button" role="menuitem" onClick={openPanel}>
+                      <Icon name="dir" size={20} />
+                      {dict.messages.directory}
+                    </button>
+                  </span>
+                  <Link href="/settings" role="menuitem" onClick={() => setMenuOpen(false)}>
+                    <Icon name="gear" size={20} />
+                    {dict.messages.settings}
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
 
-          {/* chats, WhatsApp-style */}
-          <div className="flex gap-2 px-4 pb-1 pt-3" role="tablist" aria-label={dict.messages.chats}>
-            {(["all", "unread", "groups"] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                role="tab"
-                aria-selected={filter === f}
-                onClick={() => setFilter(f)}
-                className={cn(
-                  "h-8 rounded-full px-3 text-xs font-medium transition-colors",
-                  filter === f
-                    ? "bg-navy-900 text-white dark:bg-white dark:text-navy-950"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-navy-800 dark:text-navy-200 dark:hover:bg-navy-700"
-                )}
-              >
-                {f === "all" ? dict.messages.filterAll : f === "unread" ? dict.messages.filterUnread : dict.messages.filterGroups}
+          {searchField(query, setQuery, dict.messages.search, searchRef)}
+
+          <div className="ch-chips" role="tablist" aria-label={dict.messages.chats}>
+            {(
+              [
+                ["all", dict.messages.filterAll, 0],
+                ["unread", dict.messages.filterUnread, unreadChats],
+                ["groups", dict.messages.filterGroups, groupChats],
+              ] as const
+            ).map(([f, label, count]) => (
+              <button key={f} type="button" role="tab" className="ch-chip" aria-selected={filter === f} onClick={() => setFilter(f)}>
+                {label}
+                {count > 0 && <i>{count}</i>}
               </button>
             ))}
           </div>
 
-          {visibleChats.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-slate-500 dark:text-navy-400">{q ? dict.messages.noResults : dict.messages.noConversations}</p>
-          ) : (
-            <ul className="py-1">
+          <div className="ch-rows ch-scroll">
+            <ul ref={listRef} role="listbox" aria-label={dict.messages.chats} onKeyDown={onListKey}>
               {visibleChats.map((c) => {
                 const active = c.id === activeId;
                 const typing = typingIn(c.id);
-                const mine = c.lastSenderId === me.id;
                 return (
-                  <li key={c.id}>
-                    <Link
-                      href={`/messages/${c.id}`}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-2.5 transition-colors focus:outline-none focus-visible:bg-slate-100 dark:focus-visible:bg-white/5",
-                        active ? "bg-slate-100 dark:bg-white/10" : "hover:bg-slate-50 dark:hover:bg-white/5"
-                      )}
-                    >
+                  <li key={c.id} role="presentation">
+                    <Link href={`/messages/${c.id}`} role="option" aria-selected={active} className="ch-row">
                       <ChatAvatar name={c.title} url={c.avatarUrl} group={c.kind === "group"} online={!!c.otherId && rt.online.has(c.otherId)} />
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline gap-2">
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900 dark:text-white">{c.title}</span>
-                          {c.lastMessageAt && (
-                            <span className={cn("shrink-0 text-xs tabular", c.unread ? "font-semibold text-navy-800 dark:text-white" : "text-slate-500 dark:text-navy-400")}>
-                              {stamp.listStamp(c.lastMessageAt)}
-                            </span>
-                          )}
-                        </span>
-                        <span className="mt-0.5 flex items-center gap-2">
-                          <span className={cn("min-w-0 flex-1 truncate text-[13px]", typing ? "font-medium text-emerald-700 dark:text-emerald-400" : "text-slate-500 dark:text-navy-400")}>
-                            {typing ? (
-                              dict.messages.typing
-                            ) : c.previewHidden ? (
-                              <em>{dict.messages.hiddenMessage}</em>
-                            ) : c.preview ? (
-                              <>
-                                {mine && `${dict.messages.you}: `}
-                                <bdi dir="auto">{c.preview}</bdi>
-                              </>
-                            ) : (
-                              c.subtitle && dict.messages.taughtBy.replace("{teacher}", c.subtitle)
-                            )}
+                      <span className="ch-row-mid">
+                        <span className="ch-line">
+                          <span className="ch-name">
+                            <bdi>{c.title}</bdi>
                           </span>
-                          {c.unread > 0 && (
-                            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-navy-800 px-1.5 text-[11px] font-semibold text-white tabular dark:bg-white dark:text-navy-950">
-                              {c.unread > 99 ? "99+" : c.unread}
-                            </span>
-                          )}
+                          {c.lastMessageAt && <span className={`ch-stamp${c.unread ? " is-unread" : ""}`}>{stamp.listStamp(c.lastMessageAt)}</span>}
+                        </span>
+                        <span className="ch-line">
+                          <span className={`ch-preview${typing ? " is-typing" : ""}`}>{preview(c)}</span>
+                          {c.unread > 0 && <span className="ch-badge">{c.unread > 99 ? "99+" : c.unread}</span>}
                         </span>
                       </span>
                     </Link>
@@ -290,12 +414,51 @@ export function MessagesShell({
                 );
               })}
             </ul>
-          )}
-        </div>
-      </aside>
 
-      {/* ---------- right: the open chat ---------- */}
-      <section className={cn("min-w-0 flex-1 flex-col", activeId ? "flex" : "hidden lg:flex")}>{children}</section>
+            {visibleChats.length === 0 && searchPeople.length === 0 && (
+              <p className="ch-none">{q || filter === "unread" ? dict.messages.noResults : dict.messages.noConversations}</p>
+            )}
+
+            {searchPeople.length > 0 && (
+              <section aria-label={dict.messages.people}>
+                <p className="ch-section">{dict.messages.people}</p>
+                <ul>{searchPeople.map((c) => personRow(c))}</ul>
+                {openError && <p className="ch-error">{dict.messages.openChatFailed}</p>}
+              </section>
+            )}
+          </div>
+
+          {/* ---------- new chat panel: replaces the list contents ---------- */}
+          {panelOpen && (
+            <section className="ch-panel" aria-label={dict.messages.newChat}>
+              <div className="ch-panel-head">
+                <button type="button" className="ch-icon-btn ch-flip" aria-label={dict.messages.back} onClick={closePanel}>
+                  <Icon name="arrow-left" />
+                </button>
+                <h2 className="ch-panel-title">{dict.messages.newChat}</h2>
+              </div>
+              {searchField(panelQuery, setPanelQuery, dict.messages.searchPeople)}
+              <div className="ch-rows ch-scroll">
+                {panelGroups.length === 0 && <p className="ch-none">{pq ? dict.messages.noResults : dict.messages.noContacts}</p>}
+                {panelGroups.map((g) => (
+                  <section key={g.role} aria-label={roleLabel(dict, g.role)}>
+                    <p className="ch-section">{roleLabel(dict, g.role)}</p>
+                    <ul>{g.people.map((c) => personRow(c))}</ul>
+                  </section>
+                ))}
+                {openError && (
+                  <p className="ch-error" role="alert">
+                    {dict.messages.openChatFailed}
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+        </aside>
+
+        {/* ---------- the open chat ---------- */}
+        {children}
+      </div>
     </div>
   );
 }

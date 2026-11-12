@@ -1,20 +1,21 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowLeft, Loader2, SendHorizontal, ShieldAlert } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { roleLabel } from "@/lib/i18n/labels";
 import { createClient } from "@/lib/supabase/client";
 import { useChatRealtime } from "@/components/chat/ChatRealtimeProvider";
-import { ChatAvatar, MessageText, Ticks, useChatTime } from "@/components/chat/parts";
+import { ChatAvatar, MessageText, Ticks, senderColor, useChatTime } from "@/components/chat/parts";
+import { Icon } from "@/components/chat/icons";
+import { usePopover } from "@/components/chat/usePopover";
 import { loadMessagesAction } from "@/app/(dashboard)/messages/actions";
 import { tickFor, type ChatDetail, type UiMessage } from "@/lib/chat/types";
 import type { ChatMessage, ChatReceipt } from "@/lib/types/database.types";
 
 const NEAR_BOTTOM_PX = 120;
-const GROUP_GAP_MS = 5 * 60 * 1000;
+const MAX_INPUT_PX = 122; // 5 lines of 20px + 2 × 11px padding
+const EMOJI = "😀 😂 🥹 😊 😍 😎 🤔 😢 😭 😡 👍 👎 👏 🙏 💪 👋 🎉 🎓 📚 ✏️ ⭐ ❤️ ✅ ❌".split(" ");
 
 function fromRow(m: ChatMessage): UiMessage {
   return { id: m.id, chatId: m.chat_id, senderId: m.sender_id, clientId: m.client_id, content: m.content, createdAt: m.created_at, status: "sent" };
@@ -41,15 +42,35 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
   const [hasMore, setHasMore] = useState(detail.hasMore);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [text, setText] = useState("");
+  const [multiline, setMultiline] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [showJump, setShowJump] = useState(false);
+  const [newCount, setNewCount] = useState(0);
+
+  // "N unread messages" divider: fixed at open, from my read mark before it advances
+  const [unread] = useState(() => {
+    if (detail.oversight) return { id: null as string | null, count: 0 };
+    const mark = detail.receipts.find((r) => r.user_id === myId)?.read_up_to;
+    const from = mark ? Date.parse(mark) : 0;
+    const fresh = detail.messages.filter((m) => m.senderId !== myId && Date.parse(m.createdAt) > from);
+    return { id: fresh[0]?.clientId ?? null, count: fresh.length };
+  });
+
+  // search in chat
+  const [searching, setSearching] = useState(false);
+  const [find, setFind] = useState("");
+  const [hit, setHit] = useState(0);
 
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+  const findInput = useRef<HTMLInputElement>(null);
   const prependAnchor = useRef<number | null>(null);
   const lastMarked = useRef<string | null>(null);
-  const stickToBottom = useRef(true);
+  const stickToBottom = useRef(!unread.id);
+  const mounted = useRef(false);
   const messagesRef = useRef(messages);
+  const [headMenuOpen, setHeadMenuOpen, headMenuAttach] = usePopover<HTMLDivElement>();
+  const [emojiOpen, setEmojiOpen, emojiAttach] = usePopover<HTMLDivElement>();
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -62,6 +83,7 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
     const el = scroller.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
     setShowJump(false);
+    setNewCount(0);
   };
 
   // ---- read receipts: mark read while the chat is on screen ----
@@ -90,7 +112,9 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
     () =>
       rt.subscribe((e) => {
         if (e.type === "message" && e.message.chat_id === chatId) {
-          stickToBottom.current = e.message.sender_id === myId || nearBottom();
+          const follow = e.message.sender_id === myId || nearBottom();
+          stickToBottom.current = follow;
+          if (!follow) setNewCount((n) => n + 1);
           setMessages((prev) => merge(prev, [fromRow(e.message)]));
         } else if (e.type === "receipt" && e.receipt.chat_id === chatId) {
           setReceipts((prev) => new Map(prev).set(e.receipt.user_id, e.receipt));
@@ -113,13 +137,23 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
   useLayoutEffect(() => {
     const el = scroller.current;
     if (!el) return;
+    if (!mounted.current) {
+      // opening: land on the first unread message, else the newest
+      mounted.current = true;
+      const divider = el.querySelector<HTMLElement>("[data-unread-divider]");
+      if (divider) {
+        el.scrollTop = Math.max(0, divider.offsetTop - 12);
+        setShowJump(!nearBottom());
+      } else scrollToBottom(false);
+      return;
+    }
     if (prependAnchor.current !== null) {
       el.scrollTop = el.scrollHeight - prependAnchor.current;
       prependAnchor.current = null;
       return;
     }
     if (stickToBottom.current) scrollToBottom(false);
-    else setShowJump(true);
+    else setShowJump(!nearBottom());
   }, [messages.length]);
 
   async function loadOlder() {
@@ -178,117 +212,218 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
     void deliver(m.content, m.clientId);
   }
 
-  // auto-grow the composer up to ~6 lines
+  // auto-grow the composer up to 5 lines, then scroll inside it
   useLayoutEffect(() => {
     const el = input.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 144)}px`;
+    const h = Math.min(el.scrollHeight, MAX_INPUT_PX);
+    el.style.height = `${h}px`;
+    el.style.overflowY = el.scrollHeight > MAX_INPUT_PX ? "auto" : "hidden";
+    setMultiline(h > 42);
   }, [text]);
 
-  // ---- header subtitle: typing… > online > group info > role ----
+  function insertEmoji(e: string) {
+    const el = input.current;
+    const start = el?.selectionStart ?? text.length;
+    const end = el?.selectionEnd ?? text.length;
+    setText((t) => (t.slice(0, start) + e + t.slice(end)).slice(0, 4000));
+    setEmojiOpen(false);
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + e.length, start + e.length);
+    });
+  }
+
+  // ---- search in chat ----
+  const needle = find.trim().toLowerCase();
+  const hits = useMemo(
+    () => (needle ? messages.filter((m) => !m.hidden && m.content.toLowerCase().includes(needle)).map((m) => m.clientId) : []),
+    [messages, needle]
+  );
+  const hitId = hits.length ? hits[((hit % hits.length) + hits.length) % hits.length] : null;
+  useEffect(() => {
+    if (!hitId) return;
+    scroller.current?.querySelector(`[data-mid="${hitId}"]`)?.scrollIntoView({ block: "center" });
+  }, [hitId]);
+  useEffect(() => {
+    if (searching) findInput.current?.focus();
+  }, [searching]);
+  function openSearch() {
+    setHeadMenuOpen(false);
+    setSearching(true);
+  }
+  function closeSearch() {
+    setSearching(false);
+    setFind("");
+    setHit(0);
+  }
+
+  // ---- header subtitle ----
   const typers = [...(rt.typing.get(chatId)?.keys() ?? [])];
-  let subtitle = detail.otherRole ? roleLabel(dict, detail.otherRole) : "";
+  const online = !!detail.otherId && rt.online.has(detail.otherId);
+  let subtitle = "";
   if (typers.length) {
     subtitle =
       detail.kind === "direct"
         ? dict.messages.typing
         : dict.messages.typingName.replace("{name}", detail.people[typers[0]!]?.full_name.split(" ")[0] ?? "");
-  } else if (detail.otherId && rt.online.has(detail.otherId)) {
-    subtitle = dict.messages.online;
   } else if (detail.kind === "group") {
-    subtitle = [detail.subtitle && dict.messages.taughtBy.replace("{teacher}", detail.subtitle), dict.messages.members.replace("{count}", String(detail.memberIds.length))]
+    const names = detail.memberIds
+      .filter((id) => id !== myId)
+      .map((id) => detail.people[id]?.full_name.split(" ")[0])
       .filter(Boolean)
-      .join(" · ");
+      .join(", ");
+    subtitle = names || dict.messages.members.replace("{count}", String(detail.memberIds.length));
+  } else {
+    subtitle = [detail.otherRole ? roleLabel(dict, detail.otherRole) : "", online ? dict.messages.online : ""].filter(Boolean).join(" · ");
   }
 
   const coarsePointer = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const showSender = detail.kind === "group" || detail.oversight;
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <section className="ch-pane" aria-label={detail.title}>
       {/* header */}
-      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 px-2 dark:border-navy-800 sm:px-4">
-        <Link
-          href="/messages"
-          aria-label={dict.messages.back}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 dark:text-navy-300 dark:hover:bg-white/10 lg:hidden"
-        >
-          <ArrowLeft className="h-5 w-5 rtl:rotate-180" strokeWidth={1.75} />
+      <header className="ch-head">
+        <Link href="/messages" aria-label={dict.messages.back} className="ch-icon-btn ch-flip ch-only-narrow" style={{ marginInlineStart: -6 }}>
+          <Icon name="arrow-left" />
         </Link>
         <ChatAvatar name={detail.title} url={detail.avatarUrl} group={detail.kind === "group"} size="sm" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{detail.title}</p>
-          <p className={cn("truncate text-xs", typers.length ? "font-medium text-emerald-700 dark:text-emerald-400" : "text-slate-500 dark:text-navy-400")}>{subtitle}</p>
-        </div>
+
+        {searching ? (
+          <>
+            <div className="ch-search ch-head-search">
+              <Icon name="search" />
+              <input
+                ref={findInput}
+                type="search"
+                value={find}
+                onChange={(e) => {
+                  setFind(e.target.value);
+                  setHit(0);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") closeSearch();
+                  else if (e.key === "Enter") {
+                    e.preventDefault();
+                    setHit((h) => h + (e.shiftKey ? -1 : 1));
+                  }
+                }}
+                placeholder={dict.messages.messageSearchPlaceholder}
+                aria-label={dict.messages.searchInChat}
+                autoComplete="off"
+              />
+            </div>
+            {needle && (
+              <span className="ch-head-count" aria-live="polite">
+                {hits.length ? `${(((hit % hits.length) + hits.length) % hits.length) + 1} / ${hits.length}` : dict.messages.noMessageMatches}
+              </span>
+            )}
+            <button type="button" className="ch-icon-btn" aria-label={dict.messages.closeSearch} onClick={closeSearch}>
+              <Icon name="x" />
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="ch-head-title">
+              <b>
+                <bdi>{detail.title}</bdi>
+              </b>
+              <span className={typers.length ? "is-typing" : undefined}>{subtitle}</span>
+            </div>
+            <button type="button" className="ch-icon-btn ch-only-wide" aria-label={dict.messages.searchInChat} title={dict.messages.searchInChat} onClick={openSearch}>
+              <Icon name="search" />
+            </button>
+            <div className="ch-menu-wrap ch-only-narrow" ref={headMenuAttach}>
+              <button
+                type="button"
+                className="ch-icon-btn"
+                aria-label={dict.messages.moreOptions}
+                aria-haspopup="menu"
+                aria-expanded={headMenuOpen}
+                onClick={() => setHeadMenuOpen((o) => !o)}
+              >
+                <Icon name="dots" />
+              </button>
+              {headMenuOpen && (
+                <div className="ch-pop" role="menu" style={{ insetBlockStart: 44, insetInlineEnd: 0 }}>
+                  <button type="button" role="menuitem" onClick={openSearch}>
+                    <Icon name="search" size={20} />
+                    {dict.messages.searchInChat}
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </header>
 
       {/* messages */}
-      <div className="relative min-h-0 flex-1">
+      <div className="ch-stage">
         <div
           ref={scroller}
-          onScroll={() => nearBottom() && setShowJump(false)}
-          className="h-full overflow-y-auto bg-slate-50 px-3 py-4 dark:bg-navy-950 sm:px-6"
+          onScroll={() => {
+            const near = nearBottom();
+            setShowJump(!near);
+            if (near) setNewCount(0);
+          }}
+          className="ch-wall ch-scroll"
           role="log"
           aria-live="polite"
         >
           {hasMore && (
-            <div className="mb-4 flex justify-center">
-              <button type="button" onClick={loadOlder} disabled={loadingOlder} className="btn-secondary h-9 text-xs">
-                {loadingOlder && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {dict.messages.loadEarlier}
-              </button>
-            </div>
+            <button type="button" className="ch-older" onClick={loadOlder} disabled={loadingOlder}>
+              {dict.messages.loadEarlier}
+            </button>
           )}
 
-          {messages.length === 0 && <p className="mt-10 text-center text-sm text-slate-500 dark:text-navy-400">{dict.messages.noMessages}</p>}
+          {messages.length === 0 && <p className="ch-nomsg">{dict.messages.noMessages}</p>}
 
           {messages.map((m, i) => {
             const prev = messages[i - 1];
             const mine = m.senderId === myId;
             const newDay = !prev || fmt.dayKey(prev.createdAt) !== fmt.dayKey(m.createdAt);
-            const sameRun = !newDay && prev?.senderId === m.senderId && Date.parse(m.createdAt) - Date.parse(prev.createdAt) < GROUP_GAP_MS;
-            const showName = (detail.kind === "group" || detail.oversight) && !mine && !sameRun;
+            const sameRun = !newDay && prev?.senderId === m.senderId;
             const tick = mine ? tickFor(m, myId, detail.memberIds, receipts) : null;
+            const sender = showSender && !mine && !sameRun ? detail.people[m.senderId]?.full_name ?? "—" : null;
             return (
               <Fragment key={m.clientId}>
-                {newDay && (
-                  <div className="my-3 flex justify-center">
-                    <span className="rounded-md bg-white px-2.5 py-1 text-xs font-medium text-slate-500 shadow-card dark:bg-navy-900 dark:text-navy-300">
-                      {fmt.dayLabel(m.createdAt)}
-                    </span>
+                {newDay && <div className="ch-date">{fmt.dayLabel(m.createdAt)}</div>}
+                {m.clientId === unread.id && (
+                  <div className="ch-date is-unread" data-unread-divider>
+                    {unread.count === 1 ? dict.messages.unreadMessage : dict.messages.unreadMessages.replace("{count}", String(unread.count))}
                   </div>
                 )}
-                <div className={cn("flex", mine ? "justify-end" : "justify-start", sameRun ? "mt-0.5" : "mt-2")}>
-                  <div
-                    className={cn(
-                      "max-w-[85%] rounded-lg px-3 pb-1.5 pt-2 text-sm shadow-card sm:max-w-[70%]",
-                      mine ? "bg-navy-800 text-white dark:bg-navy-700" : "border border-slate-200 bg-white text-slate-900 dark:border-navy-800 dark:bg-navy-900 dark:text-navy-100",
-                      m.status === "failed" && "opacity-80"
-                    )}
-                  >
-                    {showName && (
-                      <p className="mb-0.5 text-xs font-semibold text-navy-700 dark:text-navy-200">{detail.people[m.senderId]?.full_name ?? "—"}</p>
-                    )}
+                {!newDay && !sameRun && prev && <div className="ch-gap" aria-hidden />}
+                <div
+                  data-mid={m.clientId}
+                  className={`ch-msg ${mine ? "out" : "in"}${sameRun ? "" : " tail"}${m.status === "failed" ? " is-failed" : ""}${m.clientId === hitId ? " is-hit" : ""}`}
+                >
+                  {sender && (
+                    <span className="ch-sender" style={{ color: senderColor(m.senderId) }}>
+                      {sender}
+                    </span>
+                  )}
+                  <div className="ch-msg-row">
                     {m.hidden ? (
-                      <p className="flex items-center gap-1.5 italic text-slate-500 dark:text-navy-400">
-                        <ShieldAlert className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                      <p className="ch-hidden-msg">
+                        <Icon name="alert" size={16} />
                         {dict.messages.hiddenMessage}
                       </p>
                     ) : (
-                      <MessageText text={m.content} mine={mine} />
+                      <MessageText text={m.content} find={needle} />
                     )}
-                    <span className={cn("mt-0.5 flex items-center justify-end gap-1 text-[11px] tabular", mine ? "text-white/70" : "text-slate-400 dark:text-navy-400")}>
-                      {fmt.time(m.createdAt)}
-                      {tick && <Ticks tick={tick} onDark />}
-                    </span>
+                    <small className="ch-meta">
+                      <time dateTime={m.createdAt}>{fmt.time(m.createdAt)}</time>
+                      {tick && <Ticks tick={tick} />}
+                    </small>
                   </div>
                 </div>
                 {m.status === "failed" && (
-                  <div className="mt-1 flex justify-end">
-                    <button type="button" onClick={() => retry(m)} className="text-xs font-medium text-red-600 hover:underline dark:text-red-400">
-                      {m.error ?? dict.messages.failed}
-                    </button>
-                  </div>
+                  <button type="button" className="ch-retry" onClick={() => retry(m)}>
+                    {m.error ?? dict.messages.failed}
+                  </button>
                 )}
               </Fragment>
             );
@@ -296,33 +431,49 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
         </div>
 
         {showJump && (
-          <button
-            type="button"
-            onClick={() => scrollToBottom(true)}
-            className="absolute bottom-3 start-1/2 flex h-9 -translate-x-1/2 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-medium text-navy-800 shadow-overlay rtl:translate-x-1/2 dark:bg-navy-800 dark:text-white"
-          >
-            <ArrowDown className="h-4 w-4" strokeWidth={1.75} />
-            {dict.messages.newBelow}
+          <button type="button" className="ch-jump" onClick={() => scrollToBottom(true)} aria-label={dict.messages.scrollToLatest} title={dict.messages.scrollToLatest}>
+            <Icon name="chevron-down" />
+            {newCount > 0 && <span className="ch-badge">{newCount > 99 ? "99+" : newCount}</span>}
           </button>
         )}
       </div>
 
       {/* composer */}
-      <div className="shrink-0 border-t border-slate-200 bg-white px-3 py-2.5 dark:border-navy-800 dark:bg-navy-950 sm:px-4">
+      <div className="ch-composer-wrap">
         {banner && (
-          <p role="alert" className="mb-2 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200">
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <p role="alert" className="ch-banner">
             {banner}
           </p>
         )}
         {detail.canSend ? (
           <form
+            className="ch-composer"
             onSubmit={(e) => {
               e.preventDefault();
               send();
             }}
-            className="flex items-end gap-2"
           >
+            <div className="ch-menu-wrap" ref={emojiAttach}>
+              <button
+                type="button"
+                className="ch-icon-btn"
+                aria-label={dict.messages.emoji}
+                aria-haspopup="true"
+                aria-expanded={emojiOpen}
+                onClick={() => setEmojiOpen((o) => !o)}
+              >
+                <Icon name="smile" />
+              </button>
+              {emojiOpen && (
+                <div className="ch-pop ch-emoji-grid" role="group" aria-label={dict.messages.emoji}>
+                  {EMOJI.map((e) => (
+                    <button key={e} type="button" onClick={() => insertEmoji(e)} aria-label={e}>
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <label htmlFor="chat-input" className="sr-only">
               {dict.messages.typeMessage}
             </label>
@@ -344,18 +495,16 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
               }}
               placeholder={dict.messages.typeMessage}
               dir="auto"
-              className="input max-h-36 min-h-[44px] flex-1 resize-none py-2.5 leading-5"
+              className={`ch-input${multiline ? " is-multi" : ""}`}
             />
-            <button type="submit" aria-label={dict.messages.send} disabled={!text.trim()} className="btn-primary h-11 w-11 shrink-0 p-0">
-              <SendHorizontal className="h-5 w-5 rtl:rotate-180" strokeWidth={1.75} />
+            <button type="submit" className="ch-send ch-flip" aria-label={dict.messages.send} title={dict.messages.send} disabled={!text.trim()}>
+              <Icon name="send" />
             </button>
           </form>
         ) : (
-          <p className="py-2 text-center text-sm text-slate-500 dark:text-navy-400">
-            {detail.oversight ? dict.chatOversight.readOnly : dict.messages.readOnly}
-          </p>
+          <p className="ch-readonly">{detail.oversight ? dict.chatOversight.readOnly : dict.messages.readOnly}</p>
         )}
       </div>
-    </div>
+    </section>
   );
 }

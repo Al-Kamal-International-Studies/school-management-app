@@ -30,6 +30,7 @@ export interface InboxItem {
   preview: string | null;
   previewHidden: boolean;
   lastSenderId: string | null;
+  lastSenderName: string | null;
   unread: number;
 }
 
