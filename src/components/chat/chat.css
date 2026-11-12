@@ -21,7 +21,7 @@
   --row-hover: #f6f8fb;
   --wall: #eaf0f6;
   --white: #ffffff;
-  --rail-icon: #9fb0c4;
+  --rail-icon: #ffffff;
   --font-body: "IBM Plex Sans", "IBM Plex Sans Arabic", system-ui, sans-serif;
   --font-display: "Source Serif 4", "IBM Plex Sans Arabic", Georgia, serif;
 
@@ -137,7 +137,7 @@
 .ch-rail-spacer {
   flex: 1;
 }
-.ch-rail-btn {
+.ch-frame .ch-rail-btn {
   position: relative;
   width: 44px;
   height: 44px;
