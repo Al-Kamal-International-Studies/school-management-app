@@ -12,34 +12,10 @@ import { Icon, type IconName } from "@/components/chat/icons";
 import { usePopover } from "@/components/chat/usePopover";
 import { openChatAction, refreshInboxAction } from "@/app/(dashboard)/messages/actions";
 import type { Contact, InboxItem } from "@/lib/chat/types";
+import { applyMessage, mergeInbox, needsSenderLookup } from "@/lib/chat/inbox";
 import type { UserRole } from "@/lib/types/database.types";
 
 type Filter = "all" | "unread" | "groups";
-
-const at = (iso: string | null) => (iso ? Date.parse(iso) : 0);
-
-/** Newest message first; chats with no messages sink below, alphabetically (spec §4.4). */
-const byRecency = (a: InboxItem, b: InboxItem) => at(b.lastMessageAt) - at(a.lastMessageAt) || a.title.localeCompare(b.title);
-
-/**
- * Combines inbox snapshots newest-wins per chat: the one with the later last
- * message is kept; on a tie, the lower unread count (a read can only lower it).
- */
-function mergeInbox(current: InboxItem[], incoming: InboxItem[]): InboxItem[] {
-  const byId = new Map(current.map((c) => [c.id, c]));
-  for (const next of incoming) {
-    const have = byId.get(next.id);
-    if (!have || at(next.lastMessageAt) > at(have.lastMessageAt)) byId.set(next.id, next);
-    else if (at(next.lastMessageAt) === at(have.lastMessageAt))
-      byId.set(next.id, {
-        ...have,
-        unread: Math.min(have.unread, next.unread),
-        // a snapshot can supply the sender's name a live update could not resolve
-        lastSenderName: have.lastSenderName ?? (next.lastSenderId === have.lastSenderId ? next.lastSenderName : null),
-      });
-  }
-  return [...byId.values()].sort(byRecency);
-}
 
 function RailButton({ icon, label, active, dot, onClick, href }: { icon: IconName; label: string; active?: boolean; dot?: boolean; onClick?: () => void; href?: string }) {
   const cls = `ch-rail-btn${active ? " is-active" : ""}`;
@@ -130,32 +106,11 @@ export function MessagesShell({
             });
             return;
           }
-          setInbox((prev) => {
-            const item = prev.find((c) => c.id === m.chat_id);
-            if (!item) return prev;
-            const counts = m.sender_id !== me.id && m.chat_id !== activeRef.current;
-            // the sender's name: same sender as before, any other chat's latest from them, or a contact
-            const known =
-              m.sender_id === item.lastSenderId
-                ? item.lastSenderName
-                : prev.find((c) => c.lastSenderId === m.sender_id && c.lastSenderName)?.lastSenderName ??
-                  contactsRef.current.find((c) => c.id === m.sender_id)?.fullName ??
-                  null;
-            if (item.kind === "group" && m.sender_id !== me.id && !known) {
-              // not resolvable locally: fetch the authorised name once, the merge fills it in
-              void refreshInboxAction().then((fresh) => setInbox((p) => mergeInbox(p, fresh)));
-            }
-            const updated: InboxItem = {
-              ...item,
-              lastMessageAt: m.created_at,
-              preview: m.content,
-              previewHidden: false,
-              lastSenderId: m.sender_id,
-              lastSenderName: known,
-              unread: counts ? item.unread + 1 : item.unread,
-            };
-            return [updated, ...prev.filter((c) => c.id !== m.chat_id)];
-          });
+          // the lookup is a side effect, so it lives here and not in the state updater
+          if (needsSenderLookup(inboxRef.current, contactsRef.current, m, me.id)) {
+            void refreshInboxAction().then((fresh) => setInbox((prev) => mergeInbox(prev, fresh)));
+          }
+          setInbox((prev) => applyMessage(prev, contactsRef.current, m, me.id, activeRef.current));
         } else if (e.type === "read") {
           setInbox((prev) => prev.map((c) => (c.id === e.chatId ? { ...c, unread: 0 } : c)));
         } else if (e.type === "resync") {
