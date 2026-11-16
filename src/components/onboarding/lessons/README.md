@@ -13,7 +13,6 @@ with made-up people. This file is the contract for writing those lessons.
 | Practice kit (`PracticeFrame`, `FakePeople`, `useFakeToast`, `FakeTable`, `FakeForm`) | `src/components/onboarding/practice/kit.tsx` |
 | Framework strings (flow UI only) | `src/lib/onboarding/i18n/framework.ts` |
 | Lessons | `src/components/onboarding/lessons/<owner>/` |
-| Stub helper (placeholders) | `src/components/onboarding/lessons/stub.ts` (delete when no stub is left) |
 
 ## Ownership: one index file per author
 
@@ -26,10 +25,11 @@ Each index file exports exactly one array. You own your folder and nothing else.
 | `admin/index.ts` | `adminLessons` | every `/admin/*` href, including `/admin/chat-oversight` (`requiresOverseer: true`) |
 | `student-parent/index.ts` | `studentParentLessons` | every `/student/*` href, `/parent`, `/parent/id-card` |
 
-Every index file already holds a **stub** for each href it owns, so the whole
-flow works end to end. Replace a stub with a real `LessonDef`; keep its `id`
-and `navHref`. Do not touch another author's index file, the registry, or the
-framework strings.
+When a new sidebar item ships, `scripts/onboarding.test.ts` fails until a lesson
+for it exists in the owning index file. Give the new lesson `since` = the next
+`ONBOARDING_VERSION` and bump that constant, so returning users see only the new
+lesson. Keep existing lessons' `id` and `navHref` stable. Do not touch another
+author's index file, the registry, or the framework strings.
 
 ## The contract
 

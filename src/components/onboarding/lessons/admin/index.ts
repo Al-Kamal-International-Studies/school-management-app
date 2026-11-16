@@ -1,29 +1,60 @@
-import type { LessonDef } from "@/lib/onboarding/types";
-import { stubLesson } from "../stub";
+import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
+import type { FocusTag, LessonDef, PracticeProps } from "@/lib/onboarding/types";
+import { adminTexts } from "./texts";
 
 /**
  * Admin lessons: every /admin/* sidebar href, including
  * /admin/chat-oversight (requiresOverseer: shown only to the oversight account).
- * Replace each stub with a real LessonDef; keep the id and navHref.
  */
 const A: LessonDef["roles"] = ["admin"];
 
+function lesson(
+  id: string,
+  navHref: string,
+  Practice: ComponentType<PracticeProps>,
+  focusTags: FocusTag[] = [],
+  requiresOverseer?: boolean,
+): LessonDef {
+  const text = adminTexts[id];
+  if (!text) throw new Error(`Missing admin lesson text: ${id}`);
+  return { id, navHref, roles: A, focusTags, since: 10, text, Practice, requiresOverseer };
+}
+
+const Overview = dynamic(() => import("./OverviewPractice"), { ssr: false });
+const Users = dynamic(() => import("./UsersPractice"), { ssr: false });
+const Admissions = dynamic(() => import("./AdmissionsPractice"), { ssr: false });
+const IdCards = dynamic(() => import("./IdCardsPractice"), { ssr: false });
+const PasswordResets = dynamic(() => import("./PasswordResetsPractice"), { ssr: false });
+const Classes = dynamic(() => import("./ClassesPractice"), { ssr: false });
+const Subjects = dynamic(() => import("./SubjectsPractice"), { ssr: false });
+const Timetable = dynamic(() => import("./TimetablePractice"), { ssr: false });
+const Progress = dynamic(() => import("./ProgressPractice"), { ssr: false });
+const Leave = dynamic(() => import("./LeavePractice"), { ssr: false });
+const Events = dynamic(() => import("./EventsPractice"), { ssr: false });
+const Documents = dynamic(() => import("./DocumentsPractice"), { ssr: false });
+const Announcements = dynamic(() => import("./AnnouncementsPractice"), { ssr: false });
+const MessageSafety = dynamic(() => import("./MessageSafetyPractice"), { ssr: false });
+const ChatOversight = dynamic(() => import("./ChatOversightPractice"), { ssr: false });
+const Feedback = dynamic(() => import("./FeedbackPractice"), { ssr: false });
+const AuditLog = dynamic(() => import("./AuditLogPractice"), { ssr: false });
+
 export const adminLessons: LessonDef[] = [
-  stubLesson({ id: "overview", navHref: "/admin", roles: A, titleEn: "Overview", titleAr: "نظرة عامة" }),
-  stubLesson({ id: "users", navHref: "/admin/users", roles: A, focusTags: ["setup"], titleEn: "Users", titleAr: "المستخدمون" }),
-  stubLesson({ id: "admissions", navHref: "/admin/admissions", roles: A, focusTags: ["admissions"], titleEn: "Admissions", titleAr: "القبول" }),
-  stubLesson({ id: "id-cards", navHref: "/admin/id-cards", roles: A, titleEn: "ID cards", titleAr: "بطاقات الهوية" }),
-  stubLesson({ id: "password-resets", navHref: "/admin/password-reset-requests", roles: A, focusTags: ["approvals"], titleEn: "Password resets", titleAr: "إعادة تعيين كلمات المرور" }),
-  stubLesson({ id: "classes", navHref: "/admin/classes", roles: A, focusTags: ["setup"], titleEn: "Classes", titleAr: "الصفوف" }),
-  stubLesson({ id: "subjects", navHref: "/admin/subjects", roles: A, focusTags: ["setup"], titleEn: "Subjects", titleAr: "المواد" }),
-  stubLesson({ id: "timetable", navHref: "/admin/timetable", roles: A, focusTags: ["setup"], titleEn: "Timetable", titleAr: "الجدول الدراسي" }),
-  stubLesson({ id: "progress", navHref: "/admin/progress", roles: A, focusTags: ["oversight"], titleEn: "Progress", titleAr: "التقدم" }),
-  stubLesson({ id: "leave-requests", navHref: "/admin/leave-requests", roles: A, focusTags: ["approvals"], titleEn: "Leave requests", titleAr: "طلبات الإجازة" }),
-  stubLesson({ id: "events", navHref: "/admin/events", roles: A, focusTags: ["communication"], titleEn: "Calendar", titleAr: "التقويم" }),
-  stubLesson({ id: "documents", navHref: "/admin/documents", roles: A, focusTags: ["communication"], titleEn: "Documents", titleAr: "المستندات" }),
-  stubLesson({ id: "announcements", navHref: "/admin/announcements", roles: A, focusTags: ["communication"], titleEn: "Announcements", titleAr: "الإعلانات" }),
-  stubLesson({ id: "message-safety", navHref: "/admin/message-safety", roles: A, focusTags: ["oversight"], titleEn: "Message safety", titleAr: "أمان الرسائل" }),
-  stubLesson({ id: "chat-oversight", navHref: "/admin/chat-oversight", roles: A, focusTags: ["oversight"], titleEn: "Chat oversight", titleAr: "الإشراف على المحادثات", requiresOverseer: true }),
-  stubLesson({ id: "feedback", navHref: "/admin/feedback", roles: A, focusTags: ["communication"], titleEn: "Feedback", titleAr: "الملاحظات" }),
-  stubLesson({ id: "audit-log", navHref: "/admin/audit-log", roles: A, focusTags: ["oversight"], titleEn: "Audit log", titleAr: "سجل التدقيق" }),
+  lesson("overview", "/admin", Overview),
+  lesson("users", "/admin/users", Users, ["setup"]),
+  lesson("admissions", "/admin/admissions", Admissions, ["admissions"]),
+  lesson("id-cards", "/admin/id-cards", IdCards),
+  lesson("password-resets", "/admin/password-reset-requests", PasswordResets, ["approvals"]),
+  lesson("classes", "/admin/classes", Classes, ["setup"]),
+  lesson("subjects", "/admin/subjects", Subjects, ["setup"]),
+  lesson("timetable", "/admin/timetable", Timetable, ["setup"]),
+  lesson("progress", "/admin/progress", Progress, ["oversight"]),
+  lesson("leave-requests", "/admin/leave-requests", Leave, ["approvals"]),
+  lesson("events", "/admin/events", Events, ["communication"]),
+  lesson("documents", "/admin/documents", Documents, ["communication"]),
+  lesson("announcements", "/admin/announcements", Announcements, ["communication"]),
+  lesson("message-safety", "/admin/message-safety", MessageSafety, ["oversight"]),
+  lesson("chat-oversight", "/admin/chat-oversight", ChatOversight, ["oversight"], true),
+  lesson("feedback", "/admin/feedback", Feedback, ["communication"]),
+  lesson("audit-log", "/admin/audit-log", AuditLog, ["oversight"]),
 ];
