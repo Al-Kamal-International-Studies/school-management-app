@@ -15,6 +15,15 @@ export function needsOnboarding(profile: { has_seen_tour: boolean; tour_version_
 }
 
 /**
+ * The "what's new" floor to use when opening the flow: only people who are
+ * actually behind get the filtered list. Someone who is up to date and opens
+ * Getting started from the sidebar gets the full flow.
+ */
+export function floorForVisit(profile: { has_seen_tour: boolean; tour_version_seen: number }): number {
+  return needsOnboarding(profile) ? lessonsSinceFloor(profile) : 0;
+}
+
+/**
  * The lowest `since` a lesson must exceed to be shown. 0 = show every lesson
  * (first time, or the old tour). An account that finished onboarding v10 or
  * later only sees lessons added after the version it saw.

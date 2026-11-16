@@ -207,10 +207,11 @@ for (const role of ROLES) {
   check(`${role}: overseer lesson hidden without canOverseeChats`, lessonsForRole(role, { canOverseeChats: false }).every((l) => !l.requiresOverseer));
 }
 
-const { ONBOARDING_VERSION, needsOnboarding, lessonsSinceFloor } = await load<{
+const { ONBOARDING_VERSION, needsOnboarding, lessonsSinceFloor, floorForVisit } = await load<{
   ONBOARDING_VERSION: number;
   needsOnboarding: (p: { has_seen_tour: boolean; tour_version_seen: number }) => boolean;
   lessonsSinceFloor: (p: { has_seen_tour: boolean; tour_version_seen: number }) => number;
+  floorForVisit: (p: { has_seen_tour: boolean; tour_version_seen: number }) => number;
 }>("lib/onboarding/version.ts");
 check("ONBOARDING_VERSION is 10", ONBOARDING_VERSION === 10);
 check("needsOnboarding: never seen", needsOnboarding({ has_seen_tour: false, tour_version_seen: 10 }));
@@ -219,6 +220,29 @@ check("needsOnboarding: up to date", !needsOnboarding({ has_seen_tour: true, tou
 check("lessonsSinceFloor: old tour users see everything", lessonsSinceFloor({ has_seen_tour: true, tour_version_seen: 4 }) === 0);
 check("lessonsSinceFloor: v10 finishers see only newer", lessonsSinceFloor({ has_seen_tour: true, tour_version_seen: 10 }) === 10);
 check("lessonsSinceFloor: first timers see everything", lessonsSinceFloor({ has_seen_tour: false, tour_version_seen: 10 }) === 0);
+
+// A finished, up-to-date user replaying from the sidebar gets the full flow;
+// only someone who is behind (seen >= 10 but < current) gets "what's new".
+const finishedUser = { has_seen_tour: true, tour_version_seen: ONBOARDING_VERSION };
+check("floorForVisit: finished user gets floor 0 (full flow)", floorForVisit(finishedUser) === 0);
+for (const role of ROLES) {
+  const full = lessonsForRole(role, { canOverseeChats: true, sinceFloor: floorForVisit(finishedUser) });
+  check(`${role}: finished user replay lists every lesson`, full.length === lessonsForRole(role, { canOverseeChats: true }).length && full.length > 0);
+}
+// A user who saw version 10 while the current version is later. Lessons are
+// tagged with `since`; simulate one newer lesson by comparing against the floor.
+const behindUser = { has_seen_tour: true, tour_version_seen: ONBOARDING_VERSION - 1 };
+const behindFloor = floorForVisit(behindUser);
+if (ONBOARDING_VERSION - 1 >= 10) {
+  check("floorForVisit: behind user gets their seen version as floor", behindFloor === ONBOARDING_VERSION - 1);
+  for (const role of ROLES) {
+    const newer = lessonsForRole(role, { canOverseeChats: true, sinceFloor: behindFloor });
+    check(`${role}: behind user sees only newer lessons`, newer.every((l) => l.since > behindFloor));
+  }
+} else {
+  check("floorForVisit: pre-v10 user sees everything (floor 0)", behindFloor === 0);
+}
+check("floorForVisit: first timer gets floor 0", floorForVisit({ has_seen_tour: false, tour_version_seen: 10 }) === 0);
 
 /* ------------------------------ framework strings ------------------------------ */
 

@@ -67,11 +67,13 @@ export function readRaw(userId: string): string | null {
   }
 }
 
-export function writeProgress(userId: string, progress: Progress): void {
+/** Returns false when the browser would not store it (the flow keeps working in memory). */
+export function writeProgress(userId: string, progress: Progress): boolean {
   try {
     window.localStorage.setItem(storageKey(userId), JSON.stringify({ ...progress, updatedAt: Date.now() }));
+    return true;
   } catch {
-    // storage unavailable: the flow keeps working in memory
+    return false;
   }
 }
 

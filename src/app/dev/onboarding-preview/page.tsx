@@ -12,7 +12,9 @@ const ROLES: UserRole[] = ["admin", "teacher", "student", "parent"];
  * Development-only preview of the onboarding flow with a fake profile, so it
  * can be checked without signing in:
  *   /dev/onboarding-preview?role=teacher&locale=ar&overseer=1&seen=10
- * `seen=N` pretends the account finished onboarding version N (what's new).
+ * `seen=N` pretends the account finished onboarding version N: a voluntary
+ * replay, so the full flow. Add `behind=1` to pretend the account is behind
+ * (what's new: only lessons newer than N).
  * Returns 404 everywhere except `next dev`; src/proxy.ts only skips the
  * sign-in redirect for this path in development too. Nothing here is saved
  * to the server (the flow's `preview` prop turns that off).
@@ -40,8 +42,7 @@ export default async function OnboardingPreviewPage({
         userId={`preview-${role}`}
         role={role}
         canOverseeChats={role === "admin" && one("overseer") === "1"}
-        hasSeenTour={Number.isFinite(seen) && seen > 0}
-        tourVersionSeen={Number.isFinite(seen) && seen > 0 ? seen : 1}
+        sinceFloor={one("behind") === "1" && Number.isFinite(seen) && seen >= 10 ? seen : 0}
       />
     </LocaleProvider>
   );

@@ -135,8 +135,8 @@ export default function IdCardPracticeBase({
                 <p className="text-slate-600 dark:text-navy-200">
                   {tr(
                     locale,
-                    "In the real app you pick a picture from your device (up to 4 MB) and crop it. Here, use the sample photo.",
-                    "في التطبيق الحقيقي تختار صورة من جهازك (حتى 4 ميغابايت) وتقصّها. هنا استخدم الصورة التجريبية.",
+                    "In the real app you pick a picture from your device (JPG, PNG or WebP, up to 4 MB) and crop it. Here, use the sample photo.",
+                    "في التطبيق الحقيقي تختار صورة من جهازك (JPG أو PNG أو WebP، حتى 4 ميغابايت) وتقصّها. هنا استخدم الصورة التجريبية.",
                   )}
                 </p>
                 <div className="flex flex-wrap gap-2">

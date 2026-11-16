@@ -25,7 +25,6 @@ import {
   type Progress,
 } from "@/lib/onboarding/storage";
 import type { Device, FocusTag, Level, OnboardingLocale } from "@/lib/onboarding/types";
-import { lessonsSinceFloor } from "@/lib/onboarding/version";
 import type { UserRole } from "@/lib/types/database.types";
 import { cn } from "@/lib/utils";
 import { FinishScreen } from "./FinishScreen";
@@ -40,9 +39,12 @@ export interface OnboardingFlowProps {
   role: UserRole;
   /** Adds the Chat oversight lesson (the oversight account only). */
   canOverseeChats: boolean;
-  /** From the profile: decides whether only newer lessons are shown. */
-  hasSeenTour: boolean;
-  tourVersionSeen: number;
+  /**
+   * "What's new" floor, computed on the server: 0 = the full flow (first time,
+   * or a voluntary replay by someone who is up to date); above 0 = this person
+   * is behind and sees only lessons newer than that version.
+   */
+  sinceFloor: number;
   /** Dev preview: never calls the server action and never leaves the page. */
   preview?: boolean;
 }
@@ -81,7 +83,7 @@ function subscribeStorage(onChange: () => void) {
 }
 const subscribeNothing = () => () => {};
 
-export function OnboardingFlow({ userId, role, canOverseeChats, hasSeenTour, tourVersionSeen, preview = false }: OnboardingFlowProps) {
+export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, preview = false }: OnboardingFlowProps) {
   const { locale, dict } = useLocale();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
@@ -108,7 +110,6 @@ export function OnboardingFlow({ userId, role, canOverseeChats, hasSeenTour, tou
   );
 
   /* --------------------------------- the steps -------------------------------- */
-  const sinceFloor = lessonsSinceFloor({ has_seen_tour: hasSeenTour, tour_version_seen: tourVersionSeen });
   const whatsNew = sinceFloor > 0;
   const navItems = useMemo(() => [...navItemsFor(role, canOverseeChats), SETTINGS_ITEM], [role, canOverseeChats]);
   const focus = progress.answers.focus;
@@ -142,6 +143,14 @@ export function OnboardingFlow({ userId, role, canOverseeChats, hasSeenTour, tou
   }, [steps, progress.position]);
   const step = steps[stepIndex]!;
   const currentKey = stepKey(step);
+
+  // The furthest step reached since this page loaded, so a language switch from
+  // the language question (which reloads) can resume where the person was if
+  // they came Back to it from later in the flow.
+  const furthest = useRef(0);
+  useEffect(() => {
+    furthest.current = Math.max(furthest.current, stepIndex);
+  }, [stepIndex]);
 
   const goTo = useCallback((s: Step) => update((p) => ({ ...p, position: positionOf(s) })), [update]);
 
@@ -178,6 +187,7 @@ export function OnboardingFlow({ userId, role, canOverseeChats, hasSeenTour, tou
   const [finishing, setFinishing] = useState(false);
   const [failed, setFailed] = useState(false);
   const [previewDone, setPreviewDone] = useState(false);
+  const [languageNote, setLanguageNote] = useState(false);
 
   function chooseLanguage(code: OnboardingLocale) {
     if (code === locale) {
@@ -185,14 +195,26 @@ export function OnboardingFlow({ userId, role, canOverseeChats, hasSeenTour, tou
       return;
     }
     // Save first, then switch the way the rest of the app does (cookie + a
-    // full page load). The flow resumes at the question after the language.
+    // full page load). During the first pass the flow resumes at the question
+    // after the language; if the person came Back to it, at the furthest step
+    // they had reached.
+    const afterLanguage = Math.min(questions.indexOf("language") + 1, questions.length - 1);
+    const resumeStep = steps[furthest.current];
+    const position: Position =
+      resumeStep && furthest.current > afterLanguage
+        ? positionOf(resumeStep)
+        : { chapter: "questions", question: afterLanguage, lessonId: null };
     const next: Progress = {
       ...progress,
       answers: { ...progress.answers, language: code },
-      position: { chapter: "questions", question: Math.min(questions.indexOf("language") + 1, questions.length - 1), lessonId: null },
+      position,
       total: lessons.length,
     };
-    writeProgress(userId, next);
+    if (!writeProgress(userId, next)) {
+      // Storage is blocked: a reload would lose everything, so stay put.
+      setLanguageNote(true);
+      return;
+    }
     setLocaleCookie(code);
     const url = new URL(window.location.href);
     if (url.searchParams.has("locale")) url.searchParams.set("locale", code); // dev preview
@@ -260,16 +282,23 @@ export function OnboardingFlow({ userId, role, canOverseeChats, hasSeenTour, tou
     router.push(DASHBOARD_PATH[role]);
   }
 
+  const remainingLessons = lessons.filter((l) => !completedLessons.has(l.id));
+
   async function finish() {
     setFailed(false);
+    if (remainingLessons.length > 0) return;
     if (preview) {
       setPreviewDone(true);
       return;
     }
     setFinishing(true);
+    let ok = false;
     try {
-      await markOnboardingCompleteAction();
+      ok = (await markOnboardingCompleteAction()).ok;
     } catch {
+      ok = false;
+    }
+    if (!ok) {
       setFailed(true);
       setFinishing(false);
       return;
@@ -367,8 +396,13 @@ export function OnboardingFlow({ userId, role, canOverseeChats, hasSeenTour, tou
         previewDone={previewDone}
         finishing={finishing}
         failed={failed}
+        remaining={remainingLessons.length}
         t={t}
         onFinish={finish}
+        onJumpToRemaining={() => {
+          const first = remainingLessons[0];
+          if (first) goTo({ kind: "lesson", lessonId: first.id });
+        }}
       />
     );
   } else if (step.kind === "lesson") {
@@ -441,6 +475,11 @@ export function OnboardingFlow({ userId, role, canOverseeChats, hasSeenTour, tou
       >
         <div key={currentKey} className="animate-fade-in">
           {screen}
+          {languageNote && step.kind === "question" && (
+            <p className="mt-4 max-w-3xl text-sm text-slate-600 dark:text-navy-200" role="status">
+              {t.common.languageNoStorage}
+            </p>
+          )}
         </div>
       </main>
 

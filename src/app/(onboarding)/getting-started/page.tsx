@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+import { floorForVisit } from "@/lib/onboarding/version";
 
 export async function generateMetadata(): Promise<Metadata> {
   const dict = await getDictionary(await getLocale());
@@ -28,8 +29,7 @@ export default async function GettingStartedPage() {
       userId={profile.id}
       role={profile.role}
       canOverseeChats={canOverseeChats}
-      hasSeenTour={profile.has_seen_tour}
-      tourVersionSeen={profile.tour_version_seen}
+      sinceFloor={floorForVisit(profile)}
     />
   );
 }

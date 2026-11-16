@@ -104,9 +104,9 @@ const CFG: Record<UserRole, Cfg> = {
     oneLinerEn: "Start a chat with anyone in the school and reply to the people you wrote to.",
     oneLinerAr: "ابدأ محادثة مع أي شخص في المدرسة وردّ على من راسلتهم.",
     rulesEn:
-      "As an admin you can start a chat with anyone in the school, and reply in the chats you started. Admins are not members of the subject groups, so you won't see group chats.",
+      "As an admin you can start a chat with anyone in the school, and reply in the chats you started. Admins aren't usually members of the subject groups, so you normally won't see group chats; the school's oversight account is the exception.",
     rulesAr:
-      "بصفتك مديرًا يمكنك بدء محادثة مع أي شخص في المدرسة، والرد في المحادثات التي بدأتها. المدراء ليسوا أعضاء في مجموعات المواد، لذلك لن تظهر لك محادثات المجموعات.",
+      "بصفتك مديرًا يمكنك بدء محادثة مع أي شخص في المدرسة، والرد في المحادثات التي بدأتها. المدراء ليسوا عادةً أعضاء في مجموعات المواد، لذلك لا تظهر لك عادةً محادثات المجموعات؛ وحساب الإشراف في المدرسة هو الاستثناء.",
     useWhenEn: "you need to reach a teacher, a parent or a student directly.",
     useWhenAr: "تحتاج إلى التواصل مباشرة مع معلم أو ولي أمر أو طالب.",
     seenByEn: ["The people in the chat"],

@@ -38,8 +38,10 @@ export function FinishScreen({
   previewDone,
   finishing,
   failed,
+  remaining,
   t,
   onFinish,
+  onJumpToRemaining,
 }: {
   role: UserRole;
   device: Device | undefined;
@@ -50,8 +52,11 @@ export function FinishScreen({
   previewDone: boolean;
   finishing: boolean;
   failed: boolean;
+  /** Lessons in the current list that are not completed yet. */
+  remaining: number;
   t: FrameworkStrings;
   onFinish: () => void;
+  onJumpToRemaining: () => void;
 }) {
   const f = t.finish;
   const doneCount = lessons.filter((l) => completed.has(l.id)).length;
@@ -59,7 +64,7 @@ export function FinishScreen({
 
   return (
     <div className="space-y-7">
-      <ScreenTitle title={f.title} description={f.intro} />
+      <ScreenTitle title={remaining > 0 ? f.titleAlmost : f.title} description={f.intro} />
 
       {lessons.length > 0 && (
         <section aria-labelledby="onb-recap" className="max-w-3xl space-y-3">
@@ -125,7 +130,23 @@ export function FinishScreen({
       <div className="max-w-3xl space-y-3">
         {failed && <Alert tone="error">{f.error}</Alert>}
         {previewDone && <Alert tone="info">{f.previewDone}</Alert>}
-        <Button type="button" onClick={onFinish} loading={finishing}>
+        {remaining > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            <p id="onb-finish-hint" className="text-sm text-slate-600 dark:text-navy-200">
+              {fill(f.remaining, { n: remaining })}
+            </p>
+            <Button type="button" variant="secondary" onClick={onJumpToRemaining}>
+              {f.goToRemaining}
+            </Button>
+          </div>
+        )}
+        <Button
+          type="button"
+          onClick={onFinish}
+          loading={finishing}
+          disabled={remaining > 0}
+          aria-describedby={remaining > 0 ? "onb-finish-hint" : undefined}
+        >
           {finishing ? f.finishing : f.finishButton}
         </Button>
       </div>

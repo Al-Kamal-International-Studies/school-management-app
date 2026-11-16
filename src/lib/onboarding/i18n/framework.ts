@@ -22,6 +22,7 @@ const en = {
     previewNotice: "Preview only: nothing here is saved.",
     stepOf: "Step {n} of {total}",
     skipToContent: "Skip to content",
+    languageNoStorage: "Your browser is blocking saved progress, so the language can't be switched here. You can change it later in Settings.",
   },
   header: {
     title: "Getting started",
@@ -210,7 +211,7 @@ const en = {
       parent: [
         {
           title: "What you can see",
-          body: "You see your own child's attendance, grades, remarks (including negative ones), progress comments, timetable and leave requests. You cannot see other children or other parents.",
+          body: "You see your own child's attendance, grades, remarks (including negative ones), progress comments and leave requests. You cannot see other children or other parents.",
         },
         {
           title: "Not told automatically",
@@ -229,6 +230,7 @@ const en = {
   },
   finish: {
     title: "You're ready",
+    titleAlmost: "Almost there",
     intro: "Here is what you covered. You can reopen any lesson later from Getting started in the sidebar.",
     recap: "Lessons",
     recapDone: "{done} of {total} lessons done",
@@ -254,6 +256,8 @@ const en = {
     finishButton: "Finish",
     finishing: "Saving…",
     error: "We couldn't save that. Try again.",
+    remaining: "Finish the remaining lessons first ({n} left).",
+    goToRemaining: "Go to the first unfinished lesson",
     previewDone: "Preview finished. In the real app this saves your progress and opens your dashboard.",
   },
   banner: {
@@ -280,6 +284,7 @@ const ar: FrameworkStrings = {
     previewNotice: "معاينة فقط: لا يُحفظ شيء هنا.",
     stepOf: "الخطوة {n} من {total}",
     skipToContent: "انتقل إلى المحتوى",
+    languageNoStorage: "متصفحك يمنع حفظ التقدم، لذلك لا يمكن تبديل اللغة من هنا. يمكنك تغييرها لاحقًا من الإعدادات.",
   },
   header: {
     title: "البدء",
@@ -468,7 +473,7 @@ const ar: FrameworkStrings = {
       parent: [
         {
           title: "ما تراه",
-          body: "ترى حضور ابنك أو ابنتك ودرجاته وملاحظاته (بما فيها السلبية) وتعليقات التقدم والجدول وطلبات الإجازة. لا يمكنك رؤية الأطفال الآخرين ولا أولياء الأمور الآخرين.",
+          body: "ترى حضور ابنك أو ابنتك ودرجاته وملاحظاته (بما فيها السلبية) وتعليقات التقدم وطلبات الإجازة. لا يمكنك رؤية الأطفال الآخرين ولا أولياء الأمور الآخرين.",
         },
         {
           title: "لا يُبلَّغ تلقائيًا",
@@ -487,6 +492,7 @@ const ar: FrameworkStrings = {
   },
   finish: {
     title: "أنت جاهز",
+    titleAlmost: "اقتربت من النهاية",
     intro: "هذا ما غطّيته. يمكنك إعادة فتح أي درس لاحقًا من «البدء» في الشريط الجانبي.",
     recap: "الدروس",
     recapDone: "أنجزت {done} من {total} دروس",
@@ -512,6 +518,8 @@ const ar: FrameworkStrings = {
     finishButton: "إنهاء",
     finishing: "جارٍ الحفظ…",
     error: "تعذّر الحفظ. حاول مرة أخرى.",
+    remaining: "أكمل الدروس المتبقية أولًا (متبقٍّ {n}).",
+    goToRemaining: "اذهب إلى أول درس لم يكتمل",
     previewDone: "انتهت المعاينة. في التطبيق الحقيقي يحفظ هذا تقدمك ويفتح لوحتك الرئيسية.",
   },
   banner: {

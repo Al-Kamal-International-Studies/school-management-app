@@ -14,14 +14,16 @@ import { ONBOARDING_VERSION } from "./version";
  * (0017/0022 policy), since a user flipping their own onboarding state has no
  * security consequence. Replaces the old markTourSeenAction.
  */
-export async function markOnboardingCompleteAction(): Promise<void> {
+export async function markOnboardingCompleteAction(): Promise<{ ok: boolean }> {
   const me = await requireSession();
-  if (!me) return;
+  if (!me) return { ok: false };
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .update({ has_seen_tour: true, tour_version_seen: ONBOARDING_VERSION })
-    .eq("id", me.id);
+    .eq("id", me.id)
+    .select("id");
   if (error) console.error("markOnboardingCompleteAction: failed to persist onboarding state:", error.message);
+  return { ok: !error && (data?.length ?? 0) > 0 };
 }

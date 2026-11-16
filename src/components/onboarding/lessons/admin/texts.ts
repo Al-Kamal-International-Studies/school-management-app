@@ -158,7 +158,7 @@ export const adminTexts: Record<string, LessonTexts> = {
       useWhen: "a family needs a card or a photo needs replacing.",
       seenBy: ["Admins", "The student (their own card)", "Their parents (their own child's card)", "Teachers (only students of classes they teach)"],
       notSeenBy: ["Other students", "Other parents"],
-      note: "Teachers can view and download cards but can't change photos. Photos must be PNG and up to 4 MB.",
+      note: "Teachers can view and download cards but can't change photos. Photos can be JPG, PNG or WebP, up to 4 MB.",
       tasks: [
         ["open-card", "Open a student's ID card", "Press View ID card next to any student."],
         ["download-card", "Download the card", "Press Download PDF or Save as Image under the card."],
@@ -175,7 +175,7 @@ export const adminTexts: Record<string, LessonTexts> = {
       useWhen: "تحتاج عائلة إلى بطاقة أو تحتاج صورة إلى استبدال.",
       seenBy: ["المسؤولون", "الطالب (بطاقته هو)", "أولياء أمره (بطاقة ابنهم)", "المعلمون (طلاب الفصول التي يدرّسونها فقط)"],
       notSeenBy: ["الطلاب الآخرون", "أولياء الأمور الآخرون"],
-      note: "يستطيع المعلمون عرض البطاقات وتنزيلها لكن لا يستطيعون تغيير الصور. يجب أن تكون الصورة بصيغة PNG وبحجم حتى 4 ميغابايت.",
+      note: "يستطيع المعلمون عرض البطاقات وتنزيلها لكن لا يستطيعون تغيير الصور. يمكن أن تكون الصورة بصيغة JPG أو PNG أو WebP وبحجم حتى 4 ميغابايت.",
       tasks: [
         ["open-card", "افتح بطاقة هوية طالب", "اضغط «عرض بطاقة الهوية» بجانب أي طالب."],
         ["download-card", "نزّل البطاقة", "اضغط «تنزيل PDF» أو «حفظ كصورة» أسفل البطاقة."],

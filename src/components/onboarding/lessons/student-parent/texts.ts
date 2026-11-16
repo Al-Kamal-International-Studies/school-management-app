@@ -64,7 +64,7 @@ export const studentIdCardText: LessonTexts = {
     visibility: {
       seenBy: ["You", "Your parents", "Your teachers", "Admins"],
       notSeenBy: ["Other students", "Other parents"],
-      note: "Your parents and admins can change your photo too. A photo can be up to 4 MB.",
+      note: "Your parents and admins can change your photo too. A photo can be JPG, PNG or WebP, up to 4 MB.",
     },
     tasks: [
       { id: "photo", label: "Change your photo", hint: "Press Choose a photo, then pick the sample photo." },
@@ -85,7 +85,7 @@ export const studentIdCardText: LessonTexts = {
     visibility: {
       seenBy: ["أنت", "ولي أمرك", "معلموك", "الإدارة"],
       notSeenBy: ["الطلاب الآخرون", "أولياء الأمور الآخرون"],
-      note: "يستطيع ولي أمرك والإدارة تغيير صورتك أيضًا. ويمكن أن يصل حجم الصورة إلى 4 ميغابايت.",
+      note: "يستطيع ولي أمرك والإدارة تغيير صورتك أيضًا. ويمكن أن تكون الصورة بصيغة JPG أو PNG أو WebP وبحجم حتى 4 ميغابايت.",
     },
     tasks: [
       { id: "photo", label: "غيّر صورتك", hint: "اضغط «اختيار صورة»، ثم اختر الصورة التجريبية." },
@@ -414,7 +414,7 @@ export const parentIdCardText: LessonTexts = {
     visibility: {
       seenBy: ["You (your own children only)", "Your child", "Teachers of your child's classes", "Admins"],
       notSeenBy: ["Other parents", "Other students"],
-      note: "Changing the photo here changes it for your child everywhere in the app.",
+      note: "Changing the photo here changes it for your child everywhere in the app. A photo can be JPG, PNG or WebP, up to 4 MB.",
     },
     tasks: [
       { id: "switch", label: "Show Lina's card", hint: "Press Lina Sample at the top of the page." },
@@ -435,7 +435,7 @@ export const parentIdCardText: LessonTexts = {
     visibility: {
       seenBy: ["أنت (أبناؤك فقط)", "طفلك", "معلمو فصول طفلك", "الإدارة"],
       notSeenBy: ["أولياء الأمور الآخرون", "الطلاب الآخرون"],
-      note: "تغيير الصورة هنا يغيّرها لطفلك في كل أنحاء التطبيق.",
+      note: "تغيير الصورة هنا يغيّرها لطفلك في كل أنحاء التطبيق. ويمكن أن تكون الصورة بصيغة JPG أو PNG أو WebP وبحجم حتى 4 ميغابايت.",
     },
     tasks: [
       { id: "switch", label: "اعرض بطاقة لينا", hint: "اضغط على «لينا نموذج» في أعلى الصفحة." },
