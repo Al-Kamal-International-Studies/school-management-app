@@ -28,19 +28,23 @@ Mark (Claude). Branch `mark/onboarding-v2`, fix commit after `bc77a8f`.
 - **Pause and resume:** each role reopened at the position saved earlier (for example, the parent resumed on "Almost there", and the teacher on Messages).
 - Console errors across all runs: none.
 
-## Not run: needs a signed-in account (Muhammad's call)
+## Signed-in run (dev server against production Supabase, Muhammad's OK)
 
-Local dev uses the production Supabase project. A signed-in run therefore signs in to a real account, and Finish writes `has_seen_tour` / `tour_version_seen` on production. That is a live action, and I can't enter real passwords. The following are verified only in code and the unit test, not in a browser:
+Throwaway teacher `onboarding.test@alkamalinternational.com` was created with `scripts/onboarding-test-account.mjs`. Muhammad typed the password at both sign-ins; I drove everything else. The account was deleted afterwards: 0 profiles left with that email, and the password file was removed.
 
-- first launch redirect, with the original deep link kept in `?next=`
-- Continue later and Finish returning to that deep link
-- sign-out and sign-in in the same tab re-opening unfinished onboarding, with progress kept
-- "Open the real page" refusing to leave silently when the save fails
-- a failed Finish save showing the error, then a retry
-- replay after completion
+| Scenario | Result |
+|---|---|
+| First launch from a deep link (`/login?next=/teacher/attendance?from=deeplink`) | Landed on `/getting-started?next=%2Fteacher%2Fattendance%3Ffrom%3Ddeeplink`, question 1 |
+| Continue later | Back on `/teacher/attendance?from=deeplink`; banner "0 of 16 done"; progress saved at question 2 |
+| Resume from the banner | Reopened on the same question |
+| Sign out in the same tab | sessionStorage flag cleared, localStorage progress kept, landed on `/login` |
+| Sign in again in the same tab | Auto-opened `/getting-started?next=%2Fteacher` on the saved question |
+| Blocked storage (setItem throws) | "Progress is saved" note shown while storage worked. With storage blocked, "Open the real page" stayed on the page and showed the not-saved warning, and the note switched to "isn't saving". "Leave anyway" opened `/messages` |
+| Failed Finish save (server-action fetch rejected) | "We couldn't save that. Try again." shown; stayed on Finish, button enabled |
+| Retry | Landed on `/teacher/attendance?from=finish`; banner gone; local progress cleared; DB `has_seen_tour=true`, `tour_version_seen=10` |
+| Replay after completion | Sidebar "Getting started" opened the full flow (Step 1 of 24) |
+| After completion, new tab session | `/teacher` stays put; no redirect, no banner |
 
-Options:
+Console: only the dev server's HMR websocket errors.
 
-1. Muhammad signs in to a test account in the browser pane himself, and I drive the rest.
-2. He OKs a throwaway test account on production that is deleted afterwards.
-3. Run it on a preview deploy.
+Found during the run, fixed after it: the banner's Continue link dropped the page's query string. It now keeps the path, query and hash. Checked by typecheck, lint and tests only, not in the browser.

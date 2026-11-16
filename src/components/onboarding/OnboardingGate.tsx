@@ -75,6 +75,13 @@ export function OnboardingGate({ profile }: { profile: Pick<Profile, "id" | "has
       </p>
       <Link
         href={gettingStartedHref(pathname)}
+        onClick={(e) => {
+          // Keep the query and hash too (usePathname has neither).
+          const { pathname: path, search, hash } = window.location;
+          if (!search && !hash) return;
+          e.preventDefault();
+          router.push(gettingStartedHref(path + search + hash));
+        }}
         className="shrink-0 rounded text-sm font-medium underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:focus-visible:ring-navy-300"
       >
         {t.continue}
