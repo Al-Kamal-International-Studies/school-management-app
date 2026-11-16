@@ -199,8 +199,11 @@ export default function MessagesPractice({ role, locale, dir, level, completeTas
     completeTask("send");
     const setTick = (tick: Tick) =>
       setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, msgs: c.msgs.map((m) => (m.id === id ? { ...m, tick } : m)) } : c)));
+    // Same rule as the live app (tickFor): Read only once every other member
+    // has read it. A direct chat has one reader; in a group the practice
+    // members read it one by one, so it stays Delivered for longer first.
     timers.current.push(setTimeout(() => setTick("delivered"), 900));
-    if (direct) timers.current.push(setTimeout(() => setTick("read"), 2100));
+    timers.current.push(setTimeout(() => setTick("read"), direct ? 2100 : 6000));
   }
 
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {

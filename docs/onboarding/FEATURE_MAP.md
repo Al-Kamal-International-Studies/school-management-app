@@ -142,7 +142,7 @@ General admin data rule: admins read most tables through `is_admin()` policies t
 
 ### Messages - `/messages` - label "Messages" (`nav.messages`)
 - Shared WhatsApp-style two-pane inbox for every role; the full rules, filter and oversight behaviour are in **section 6**. Admin specifics: an admin may start a direct chat with **anyone** active in the centre (`mig/0048_demo_center.sql:126-140`, `pa.role = 'admin'`); admins are **not** members of subject groups (since `mig/0047_chat_oversight.sql:45-58` only the overseer is), so an admin sees no group chats unless they are the overseer; replying works in chats an admin started.
-- **Practice demo (admin):** start a chat with a teacher; open the "Directory"; send a message and watch the ticks (Sent/Delivered/Read). Live rule (`tickFor`, `L/chat/types.ts:70`): Read only once **every** other member has read it, so in a group it usually stays Delivered; the chat-list preview always shows a single tick (`MessagesShell.tsx:240`).
+- **Practice demo (admin):** start a chat with a teacher; open the "Directory"; send a message and watch the ticks (Sent/Delivered/Read). Live rule (`tickFor`, `L/chat/types.ts:70`): Read only once **every** other member has read it, so in a group it stays Delivered until the last member reads it (the practice shows Delivered, then Read after ~6 s); the chat-list preview always shows a single tick (`MessagesShell.tsx:240`).
 
 ### Message safety - `/admin/message-safety` - label "Message safety" (`nav.messageSafety`)
 - **What it does:** The review queue for messages the safety filter stopped or found borderline. Marking each "Harmful" or "Fine" also builds training data for the filter.

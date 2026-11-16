@@ -352,6 +352,52 @@ for (const file of walk(path.join(SRC, "components/onboarding"))) {
   check("Continue later and Finish use the return path", /router\.push\(exitPath\)/.test(flow) && /window\.location\.assign\(exitPath\)/.test(flow) && !/DASHBOARD_PATH\[role\]\)/.test(flow.replace("returnTo ?? DASHBOARD_PATH[role]", "")));
 }
 
+/* ------------------------------ autosave status ------------------------------ */
+
+{
+  const st = await load<{
+    writeProgress: (id: string, p: unknown) => boolean;
+    lastSaveOk: () => boolean;
+    subscribeSaveStatus: (fn: () => void) => () => void;
+    emptyProgress: () => unknown;
+  }>("lib/onboarding/storage.ts");
+  const g = globalThis as unknown as { window?: unknown };
+  const prev = g.window;
+  let blocked = false;
+  const m = new Map<string, string>();
+  g.window = {
+    localStorage: {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        if (blocked) throw new Error("QuotaExceededError");
+        m.set(k, v);
+      },
+      removeItem: (k: string) => void m.delete(k),
+    },
+  };
+  let calls = 0;
+  const off = st.subscribeSaveStatus(() => calls++);
+  check("save status starts ok", st.lastSaveOk() === true);
+  blocked = true;
+  check("a failed autosave returns false", st.writeProgress("u1", st.emptyProgress()) === false);
+  check("save status turns false after a failed write", st.lastSaveOk() === false && calls === 1);
+  st.writeProgress("u1", st.emptyProgress());
+  check("a second failure does not re-notify", calls === 1);
+  blocked = false;
+  check("a later write succeeds", st.writeProgress("u1", st.emptyProgress()) === true);
+  check("save status recovers after a successful write", st.lastSaveOk() === true && calls === 2);
+  off();
+  g.window = prev;
+
+  const flow = fs.readFileSync(path.join(SRC, "components/onboarding/OnboardingFlow.tsx"), "utf8");
+  check("the saved label follows the autosave status", /useSyncExternalStore\(subscribeSaveStatus, lastSaveOk/.test(flow) && /progressSaved=\{progressSaved\}/.test(flow));
+  const practice = fs.readFileSync(path.join(SRC, "components/onboarding/lessons/shared/MessagesPractice.tsx"), "utf8");
+  check("group practice reaches Read after Delivered", /setTick\("read"\), direct \? \d+ : \d+/.test(practice));
+  const script = fs.readFileSync(path.join(ROOT, "scripts/onboarding-test-account.mjs"), "utf8");
+  check("account script marks fixtures and checks the marker before reset/delete", /app_metadata: \{ fixture: FIXTURE \}/.test(script) && /app_metadata\?\.fixture === FIXTURE/.test(script) && /if \(!mine\) done\(1/.test(script));
+  check("account script has no admin role", !/ROLES = \[[^\]]*admin/.test(script));
+}
+
 /* ----------------------------------- result ----------------------------------- */
 
 if (fail) {

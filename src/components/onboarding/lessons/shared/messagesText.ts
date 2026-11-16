@@ -12,8 +12,8 @@ const taskGroup = {
   ar: { id: "group", label: "افتح مجموعة مادة", hint: "اضغط تبويبة «المجموعات»، ثم اضغط إحدى المجموعات مثل الرياضيات." },
 };
 const taskSend = {
-  en: { id: "send", label: "Send a normal message", hint: "Open a chat, type \"Thank you\" in the message box and press Send. Watch the ticks change. In a group, Read only shows once every member has read it." },
-  ar: { id: "send", label: "أرسل رسالة عادية", hint: "افتح محادثة، واكتب «شكرًا لكم» في مربع الرسالة ثم اضغط إرسال. راقب تغيّر علامات الصح. في المجموعة لا تظهر «قُرئت» إلا بعد أن يقرأها جميع الأعضاء." },
+  en: { id: "send", label: "Send a normal message", hint: "Open a chat, type \"Thank you\" in the message box and press Send. Watch the ticks change. In a group it stays Delivered until every member has read it, then turns to Read." },
+  ar: { id: "send", label: "أرسل رسالة عادية", hint: "افتح محادثة، واكتب «شكرًا لكم» في مربع الرسالة ثم اضغط إرسال. راقب تغيّر علامات الصح. في المجموعة تبقى «وصلت» حتى يقرأها جميع الأعضاء، ثم تتحول إلى «قُرئت»." },
 };
 const taskBlocked = {
   en: { id: "blocked", label: "See the safety filter stop a message", hint: "In an open chat, type the practice word idiot and press Send. The practice filter will stop it and show the school's warning." },

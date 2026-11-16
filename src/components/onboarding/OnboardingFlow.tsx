@@ -15,12 +15,13 @@ import { DASHBOARD_PATH, questionsFor } from "@/lib/onboarding/config";
 import { fill, framework } from "@/lib/onboarding/i18n/framework";
 import { lessonTexts, lessonsForRole, orderLessons } from "@/lib/onboarding/registry";
 import {
-  canStoreProgress,
   clearProgress,
   emptyProgress,
+  lastSaveOk,
   markSessionHandled,
   parseProgress,
   readRaw,
+  subscribeSaveStatus,
   writeProgress,
   type Position,
   type Progress,
@@ -95,7 +96,8 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, retu
 
   /* ------------------------------ progress state ------------------------------ */
   const hydrated = useSyncExternalStore(subscribeNothing, () => true, () => false);
-  const storageWorks = useSyncExternalStore(subscribeNothing, canStoreProgress, () => true);
+  // Follows every write, autosave included: false after a failed save, true again once one succeeds.
+  const progressSaved = useSyncExternalStore(subscribeSaveStatus, lastSaveOk, () => true);
   const raw = useSyncExternalStore(subscribeStorage, () => readRaw(userId), () => null);
   const stored = useMemo(() => parseProgress(raw), [raw]);
   const blank = useMemo(() => emptyProgress(), []);
@@ -194,7 +196,6 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, retu
   const [languageNote, setLanguageNote] = useState(false);
   // Set when a save failed just before leaving: the page we were about to open.
   const [unsavedLeave, setUnsavedLeave] = useState<string | null>(null);
-  const [saveFailed, setSaveFailed] = useState(false);
   const exitPath = returnTo ?? DASHBOARD_PATH[role];
 
   function chooseLanguage(code: OnboardingLocale) {
@@ -282,7 +283,6 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, retu
   function saveNow(): boolean {
     const ok = writeProgress(userId, { ...progress, total: lessons.length });
     markSessionHandled(userId);
-    if (!ok) setSaveFailed(true);
     return ok;
   }
 
@@ -410,7 +410,7 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, retu
         t={t}
         onCompleteTask={(taskId) => markTasks(activeLesson.id, [taskId], allIds)}
         onCompleteAll={() => markTasks(activeLesson.id, allIds, allIds)}
-        progressSaved={storageWorks && !saveFailed}
+        progressSaved={progressSaved}
         onBeforeLeave={beforeLeave}
       />
     );

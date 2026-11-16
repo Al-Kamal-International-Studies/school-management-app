@@ -67,14 +67,41 @@ export function readRaw(userId: string): string | null {
   }
 }
 
+/*
+ * Result of the most recent progress write (autosave or explicit), so the UI
+ * can say "saved" only while saving really works, and recovers once a later
+ * write succeeds. Subscribe with useSyncExternalStore.
+ */
+let lastWriteOk = true;
+const saveListeners = new Set<() => void>();
+
+function setLastWrite(ok: boolean) {
+  if (ok === lastWriteOk) return;
+  lastWriteOk = ok;
+  for (const fn of saveListeners) fn();
+}
+
+export function subscribeSaveStatus(onChange: () => void): () => void {
+  saveListeners.add(onChange);
+  return () => saveListeners.delete(onChange);
+}
+
+/** True when the last progress write succeeded (or none failed yet). */
+export function lastSaveOk(): boolean {
+  return lastWriteOk;
+}
+
 /** Returns false when the browser would not store it (the flow keeps working in memory). */
 export function writeProgress(userId: string, progress: Progress): boolean {
+  let ok: boolean;
   try {
     window.localStorage.setItem(storageKey(userId), JSON.stringify({ ...progress, updatedAt: Date.now() }));
-    return true;
+    ok = true;
   } catch {
-    return false;
+    ok = false;
   }
+  setLastWrite(ok);
+  return ok;
 }
 
 export function clearProgress(userId: string): void {
@@ -157,20 +184,4 @@ export function safeReturnPath(next: string | null | undefined): string | null {
 export function gettingStartedHref(returnTo: string | null | undefined): string {
   const safe = safeReturnPath(returnTo);
   return safe ? `/getting-started?next=${encodeURIComponent(safe)}` : "/getting-started";
-}
-
-let storageProbe: boolean | null = null;
-
-/** Whether this browser lets the flow keep progress at all (checked once per page load). */
-export function canStoreProgress(): boolean {
-  if (storageProbe !== null) return storageProbe;
-  try {
-    const key = "onboarding:probe";
-    window.localStorage.setItem(key, "1");
-    window.localStorage.removeItem(key);
-    storageProbe = true;
-  } catch {
-    storageProbe = false;
-  }
-  return storageProbe;
 }
