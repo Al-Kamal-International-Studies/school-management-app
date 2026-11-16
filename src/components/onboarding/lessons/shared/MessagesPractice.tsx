@@ -243,7 +243,7 @@ export default function MessagesPractice({ role, locale, dir, level, completeTas
     const sender = c.kind === "group" && !mine ? nameOf(last.from).split(" ")[0] : null;
     return (
       <>
-        {mine && last.tick && <TickMark tick={last.tick} variant="list" label={ui[last.tick]} />}
+        {mine && <TickMark tick="sent" variant="list" label={ui.sent} />}
         <bdi dir="auto">{sender ? `${sender}: ${body}` : body}</bdi>
       </>
     );

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { fill, framework } from "@/lib/onboarding/i18n/framework";
-import { markSessionHandled, parseProgress, readRaw, sessionHandled } from "@/lib/onboarding/storage";
+import { gettingStartedHref, markSessionHandled, parseProgress, readRaw, sessionHandled } from "@/lib/onboarding/storage";
 import { needsOnboarding } from "@/lib/onboarding/version";
 import type { Profile } from "@/lib/types/database.types";
 
@@ -21,7 +21,9 @@ function subscribeStorage(onChange: () => void) {
  * - If onboarding is still to do (never finished, or behind
  *   ONBOARDING_VERSION) and it hasn't been opened or paused in this browser
  *   session, sends the person to /getting-started once. The sessionStorage
- *   flag is set before redirecting, so it can't loop.
+ *   flag is set before redirecting, so it can't loop. The page that was
+ *   asked for (path, query and hash) goes along as ?next=, so "Continue
+ *   later" and Finish land there instead of on the dashboard.
  * - Otherwise, while onboarding is unfinished, shows a slim banner with the
  *   progress kept on this device. The banner can be dismissed for the page
  *   being viewed.
@@ -55,7 +57,8 @@ export function OnboardingGate({ profile }: { profile: Pick<Profile, "id" | "has
     if (!needs || pathname.startsWith("/getting-started")) return;
     if (sessionHandled(profile.id)) return;
     markSessionHandled(profile.id);
-    router.replace("/getting-started");
+    const { pathname: path, search, hash } = window.location;
+    router.replace(gettingStartedHref(path + search + hash));
   }, [needs, pathname, profile.id, router]);
 
   if (!needs || !handled || dismissedOn === pathname) return null;
@@ -71,7 +74,7 @@ export function OnboardingGate({ profile }: { profile: Pick<Profile, "id" | "has
         {showCount ? fill(t.withCount, { done: progress.completed.length, total: progress.total }) : t.noCount}
       </p>
       <Link
-        href="/getting-started"
+        href={gettingStartedHref(pathname)}
         className="shrink-0 rounded text-sm font-medium underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:focus-visible:ring-navy-300"
       >
         {t.continue}

@@ -31,6 +31,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Onboarding tests
+        # Every sidebar item has a lesson, EN/AR keys match, practice screens
+        # never import Supabase/auth/actions, return-path and storage rules.
+        run: npm run test:onboarding
+
       - name: Build
         # Placeholder values, not real secrets — next build never needs a
         # live Supabase connection for this app (every route is server-

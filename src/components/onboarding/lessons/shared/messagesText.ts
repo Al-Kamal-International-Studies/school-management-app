@@ -12,8 +12,8 @@ const taskGroup = {
   ar: { id: "group", label: "افتح مجموعة مادة", hint: "اضغط تبويبة «المجموعات»، ثم اضغط إحدى المجموعات مثل الرياضيات." },
 };
 const taskSend = {
-  en: { id: "send", label: "Send a normal message", hint: "Open a chat, type \"Thank you\" in the message box and press Send. Watch the ticks change." },
-  ar: { id: "send", label: "أرسل رسالة عادية", hint: "افتح محادثة، واكتب «شكرًا لكم» في مربع الرسالة ثم اضغط إرسال. راقب تغيّر علامات الصح." },
+  en: { id: "send", label: "Send a normal message", hint: "Open a chat, type \"Thank you\" in the message box and press Send. Watch the ticks change. In a group, Read only shows once every member has read it." },
+  ar: { id: "send", label: "أرسل رسالة عادية", hint: "افتح محادثة، واكتب «شكرًا لكم» في مربع الرسالة ثم اضغط إرسال. راقب تغيّر علامات الصح. في المجموعة لا تظهر «قُرئت» إلا بعد أن يقرأها جميع الأعضاء." },
 };
 const taskBlocked = {
   en: { id: "blocked", label: "See the safety filter stop a message", hint: "In an open chat, type the practice word idiot and press Send. The practice filter will stop it and show the school's warning." },
@@ -29,9 +29,9 @@ const safetyAr =
   "يفحص فلتر الأمان في المدرسة كل رسالة قبل تسليمها. الرسالة التي تخالف قواعد المراسلة تُوقف ويُبلَّغ المدرسة. أما بعض الرسائل المشكوك فيها فتُسلَّم لكن تُرسل إلى المدراء لمراجعتها.";
 
 const introEn =
-  "Messages works like a chat app. Your chats are listed on the left, or fill the screen on a phone. Open one to read it and reply. Under each message you send, ticks show Sent, then Delivered, then Read.";
+  "Messages works like a chat app. Your chats are listed on the left, or fill the screen on a phone. Open one to read it and reply. Under each message you send, ticks show Sent, then Delivered, then Read. In a group chat, Read only appears once every other member has read it.";
 const introAr =
-  "تعمل الرسائل مثل تطبيق المحادثة. تظهر محادثاتك في القائمة على الجانب، أو تملأ الشاشة على الهاتف. افتح محادثة لتقرأها وتردّ عليها. تحت كل رسالة ترسلها تظهر علامات صح: أُرسلت، ثم وصلت، ثم قُرئت.";
+  "تعمل الرسائل مثل تطبيق المحادثة. تظهر محادثاتك في القائمة على الجانب، أو تملأ الشاشة على الهاتف. افتح محادثة لتقرأها وتردّ عليها. تحت كل رسالة ترسلها تظهر علامات صح: أُرسلت، ثم وصلت، ثم قُرئت. وفي محادثة المجموعة لا تظهر «قُرئت» إلا بعد أن يقرأها جميع الأعضاء الآخرين.";
 
 const oversightNoteEn = "Admins can read the text of blocked or flagged messages in Message safety. Only the school's oversight account can read whole chats.";
 const oversightNoteAr = "يستطيع المدراء قراءة نص الرسائل التي أوقفها الفلتر أو علّمها في «أمان الرسائل». أما قراءة المحادثات كاملة فتقتصر على حساب الإشراف في المدرسة.";

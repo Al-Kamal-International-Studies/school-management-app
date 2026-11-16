@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test:onboarding": "node scripts/onboarding.test.ts",
     "create-admin": "node scripts/create-admin.mjs"
   },
   "dependencies": {

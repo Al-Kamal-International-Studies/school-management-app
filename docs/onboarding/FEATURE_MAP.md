@@ -68,7 +68,7 @@ General admin data rule: admins read most tables through `is_admin()` policies t
 - **What it does:** Look up any student's official ID card, view it, download as PDF or image, and change the student's photo.
 - **Main actions:** Searchable student list (avatar, name, "Grade / Class", "Student ID") -> "View ID card" (`/admin/id-cards/[studentId]`); card view with photo upload (admin may edit) and "Download PDF" / "Save as Image" (`idCard.*`). Failure text `idCard.downloadError`.
 - **Who can see / change:** READ: an admin of AKIS for a student of AKIS (`L/idcard/authorizeIdCardAccess.ts:36-41`); teachers only for students of classes they teach (`:26-34`); a student only their own (`:12`); a parent only linked children (`:14-23`). WRITE (photo): everyone allowed to view **except teachers** (`:44-47`); stored as the student's profile avatar, so it changes the picture shown everywhere (`L/idcard/actions.ts:30-45`). PNG only, <= 4 MB.
-- **Practice demo:** (1) search a student and open the card; (2) download the PDF; (3) replace the photo and notice the same photo appears on the profile. 
+- **Practice demo:** (1) search a student and open the card; (2) download the PDF; (3) replace the photo and notice the same photo appears on the profile.
 - **Errors:** "You don't have permission to change this student's photo." / "Invalid image type." / "Image is too large." (`L/idcard/actions.ts`); `idCard.notFound` "This student's ID card isn't available."
 - **UI details:** `IdCardView` (Navy & Gold card graphic, same model feeds screen/PDF/PNG), `IdCardDownloadButtons`, `IdCardPhotoUpload`.
 
@@ -142,7 +142,7 @@ General admin data rule: admins read most tables through `is_admin()` policies t
 
 ### Messages - `/messages` - label "Messages" (`nav.messages`)
 - Shared WhatsApp-style two-pane inbox for every role; the full rules, filter and oversight behaviour are in **section 6**. Admin specifics: an admin may start a direct chat with **anyone** active in the centre (`mig/0048_demo_center.sql:126-140`, `pa.role = 'admin'`); admins are **not** members of subject groups (since `mig/0047_chat_oversight.sql:45-58` only the overseer is), so an admin sees no group chats unless they are the overseer; replying works in chats an admin started.
-- **Practice demo (admin):** start a chat with a teacher; open the "Directory"; send a message and watch the ticks (Sent/Delivered/Read).
+- **Practice demo (admin):** start a chat with a teacher; open the "Directory"; send a message and watch the ticks (Sent/Delivered/Read). Live rule (`tickFor`, `L/chat/types.ts:70`): Read only once **every** other member has read it, so in a group it usually stays Delivered; the chat-list preview always shows a single tick (`MessagesShell.tsx:240`).
 
 ### Message safety - `/admin/message-safety` - label "Message safety" (`nav.messageSafety`)
 - **What it does:** The review queue for messages the safety filter stopped or found borderline. Marking each "Harmful" or "Fine" also builds training data for the filter.
@@ -188,7 +188,7 @@ Key teacher rule: write access to a class's data requires a `class_subject_teach
 - **What it does:** The teacher's home: today's lessons, latest announcements, pending work counts and the list of classes they teach.
 - **Main actions:** Header "Welcome, {name}" with date eyebrow and the primary button "Submit Progress" -> `/teacher/progress`. Stat cards: My Classes, Students, "Upcoming exams" (their own), "Pending grading" (submitted, ungraded submissions of their assignments; hint "Nothing waiting to be graded"). "Today's schedule" rows (time, subject, class, room) each linking to that class's attendance. Announcements (3 latest). "My Classes" table (Class, Subject, Students) whose rows link to attendance. Empty states `teacherDashboard.noClassesAssignedYet` / `...Description`.
 - **Who can see / change:** READ: the teacher sees their own cst rows, their own timetable entries, announcements for `all`/`teacher` (`mig/0027:392-396`). `Pending grading` counts only submissions RLS shows them (own assignments' submissions, `mig/0010:192-195`). WRITE: none here.
-- **Practice demo:** (1) click a row in Today's schedule -> lands on attendance for that class; (2) notice "Pending grading 2" and go to Assignments. 
+- **Practice demo:** (1) click a row in Today's schedule -> lands on attendance for that class; (2) notice "Pending grading 2" and go to Assignments.
 - **UI details:** `PageHeader` + 4 `StatCard`; `card` list rows with `ChevronRight` (flipped in RTL); `Table` with a full-row link overlay.
 
 ### ID Cards - `/teacher/id-cards` - label "ID Cards" (`nav.idCards`)

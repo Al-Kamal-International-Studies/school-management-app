@@ -301,6 +301,57 @@ for (const file of walk(path.join(SRC, "components/onboarding"))) {
   }
 }
 
+/* --------------------------- return path + session flags --------------------------- */
+
+{
+  const st = await load<{
+    safeReturnPath: (n: string | null | undefined) => string | null;
+    gettingStartedHref: (n: string | null | undefined) => string;
+    clearSessionFlags: () => void;
+    sessionKey: (id: string) => string;
+    storageKey: (id: string) => string;
+  }>("lib/onboarding/storage.ts");
+
+  const okPaths = ["/teacher/attendance?class=7A#today", "/messages", "/admin/users?q=omar"];
+  for (const p of okPaths) check(`safeReturnPath keeps ${p}`, st.safeReturnPath(p) === p);
+  const badPaths = [null, "", "https://evil.example/x", "//evil.example", "/\\evil.example", "/x\u0000y", "teacher", "/getting-started", "/getting-started?next=/a", "/getting-started/x"];
+  for (const p of badPaths) check(`safeReturnPath refuses ${JSON.stringify(p)}`, st.safeReturnPath(p) === null);
+  check("gettingStartedHref encodes the return path", st.gettingStartedHref("/teacher/attendance?class=7A") === "/getting-started?next=%2Fteacher%2Fattendance%3Fclass%3D7A");
+  check("gettingStartedHref drops unsafe paths", st.gettingStartedHref("//evil.example") === "/getting-started");
+
+  // Fake browser storage: sign-out/sign-in clears the per-session flags only.
+  const mk = () => {
+    const m = new Map<string, string>();
+    const o: Record<string, unknown> = {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, v),
+      removeItem: (k: string) => void m.delete(k),
+    };
+    return new Proxy(o, { ownKeys: () => [...m.keys()], getOwnPropertyDescriptor: (_t, k) => (m.has(String(k)) ? { enumerable: true, configurable: true, value: m.get(String(k)) } : Object.getOwnPropertyDescriptor(o, k)) }) as unknown as Storage & { getItem(k: string): string | null };
+  };
+  const g = globalThis as unknown as { window?: unknown };
+  const prev = g.window;
+  const session = mk();
+  const local = mk();
+  g.window = { sessionStorage: session, localStorage: local };
+  session.setItem(st.sessionKey("u1"), "1");
+  session.setItem(st.sessionKey("u2"), "1");
+  session.setItem("unrelated", "keep");
+  local.setItem(st.storageKey("u1"), "{}");
+  st.clearSessionFlags();
+  check("clearSessionFlags removes every onboarding session flag", session.getItem(st.sessionKey("u1")) === null && session.getItem(st.sessionKey("u2")) === null);
+  check("clearSessionFlags leaves other session keys", session.getItem("unrelated") === "keep");
+  check("clearSessionFlags keeps saved progress", local.getItem(st.storageKey("u1")) === "{}");
+  g.window = prev;
+
+  const read = (rel: string) => fs.readFileSync(path.join(SRC, rel), "utf8");
+  check("sign-out clears the onboarding session flags", /clearSessionFlags\(\)/.test(read("components/nav/SignOutForm.tsx")));
+  check("the sign-in page clears the onboarding session flags", /clearSessionFlags\(\)/.test(read("app/login/LoginForm.tsx")));
+  check("the gate passes the original page as ?next=", /gettingStartedHref\(path \+ search \+ hash\)/.test(read("components/onboarding/OnboardingGate.tsx")));
+  const flow = read("components/onboarding/OnboardingFlow.tsx");
+  check("Continue later and Finish use the return path", /router\.push\(exitPath\)/.test(flow) && /window\.location\.assign\(exitPath\)/.test(flow) && !/DASHBOARD_PATH\[role\]\)/.test(flow.replace("returnTo ?? DASHBOARD_PATH[role]", "")));
+}
+
 /* ----------------------------------- result ----------------------------------- */
 
 if (fail) {

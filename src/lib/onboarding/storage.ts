@@ -129,3 +129,48 @@ export function sessionHandled(userId: string): boolean {
     return true;
   }
 }
+
+/**
+ * Forgets every "already opened this session" flag in this tab. Called on
+ * sign-out and on the sign-in page, so signing in again in the same tab
+ * auto-opens unfinished onboarding again. Saved progress (localStorage) is kept.
+ */
+export function clearSessionFlags(): void {
+  try {
+    const store = window.sessionStorage;
+    for (const key of Object.keys(store)) {
+      if (key.startsWith("onboarding:") && key.includes(":session:")) store.removeItem(key);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/** Where the flow sends people back to: a same-site path, never the flow itself. */
+export function safeReturnPath(next: string | null | undefined): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\") || /[\u0000-\u001f\u007f]/.test(next)) return null;
+  if (next === "/getting-started" || next.startsWith("/getting-started?") || next.startsWith("/getting-started/") || next.startsWith("/getting-started#")) return null;
+  return next;
+}
+
+/** /getting-started, remembering the page to come back to. */
+export function gettingStartedHref(returnTo: string | null | undefined): string {
+  const safe = safeReturnPath(returnTo);
+  return safe ? `/getting-started?next=${encodeURIComponent(safe)}` : "/getting-started";
+}
+
+let storageProbe: boolean | null = null;
+
+/** Whether this browser lets the flow keep progress at all (checked once per page load). */
+export function canStoreProgress(): boolean {
+  if (storageProbe !== null) return storageProbe;
+  try {
+    const key = "onboarding:probe";
+    window.localStorage.setItem(key, "1");
+    window.localStorage.removeItem(key);
+    storageProbe = true;
+  } catch {
+    storageProbe = false;
+  }
+  return storageProbe;
+}

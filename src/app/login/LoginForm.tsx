@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { ActionForm, useFormStatus } from "@/components/ui/ActionForm";
 import Link from "next/link";
 import { Mail, Lock, ArrowRight } from "lucide-react";
@@ -10,6 +10,7 @@ import { Alert } from "@/components/ui/Alert";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { BiometricSignInButton } from "@/components/auth/BiometricSignInButton";
 import type { Dictionary } from "@/lib/i18n/types";
+import { clearSessionFlags } from "@/lib/onboarding/storage";
 
 const initialState: LoginState = {};
 
@@ -36,6 +37,11 @@ export function LoginForm({
   const [state, formAction] = useActionState(loginAction, initialState);
   const emailRef = useRef<HTMLInputElement>(null);
   const rememberRef = useRef<HTMLInputElement>(null);
+
+  // A new sign-in in this tab should open unfinished onboarding again.
+  useEffect(() => {
+    clearSessionFlags();
+  }, []);
 
   return (
     <div className="space-y-4">

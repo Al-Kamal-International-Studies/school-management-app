@@ -50,6 +50,7 @@ export function LessonScreen({
   t,
   onCompleteTask,
   onCompleteAll,
+  progressSaved,
   onBeforeLeave,
 }: {
   lesson: LessonDef;
@@ -70,7 +71,10 @@ export function LessonScreen({
   /** Escape hatch if a practice screen crashes: mark every task done. */
   onCompleteAll: () => void;
   /** Called right before leaving for the real page (saves progress). */
-  onBeforeLeave: () => void;
+  /** Whether progress is being kept on this device (picks the note under "Open the real page"). */
+  progressSaved: boolean;
+  /** Saves progress before following "Open the real page"; false cancels the navigation. */
+  onBeforeLeave: (href: string) => boolean;
 }) {
   const text = useMemo(() => lessonTexts(lesson, role)[locale], [lesson, role, locale]);
   const L = t.lesson;
@@ -247,14 +251,16 @@ export function LessonScreen({
             ) : (
               <Link
                 href={lesson.navHref}
-                onClick={onBeforeLeave}
+                onClick={(e) => {
+                  if (!onBeforeLeave(lesson.navHref)) e.preventDefault();
+                }}
                 className="rounded text-sm font-medium text-navy-700 hover:text-navy-950 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:text-navy-200 dark:hover:text-white"
               >
                 {L.openRealPage}
               </Link>
             )}
           </p>
-          {!preview && <p className="text-xs text-slate-500 dark:text-navy-400">{L.openRealPageNote}</p>}
+          {!preview && <p className="text-xs text-slate-500 dark:text-navy-400">{progressSaved ? L.openRealPageNote : L.openRealPageNoSave}</p>}
         </Card>
       )}
     </div>

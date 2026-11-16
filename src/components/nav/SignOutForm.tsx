@@ -2,6 +2,7 @@
 
 import { LogOut } from "lucide-react";
 import { signOutAction } from "@/app/logout/actions";
+import { clearSessionFlags } from "@/lib/onboarding/storage";
 
 // Prefix of the localStorage dashboard snapshots the (since removed) App
 // Store offline cache wrote. Nothing writes these any more, but a shared
@@ -21,12 +22,20 @@ function clearLegacyOfflineSnapshots() {
 
 /**
  * Same form/action as before, wrapped in a client component only so the
- * legacy snapshot cleanup above runs synchronously before the form submits;
+ * legacy snapshot cleanup above (and the onboarding session flags, so the
+ * next sign-in in this tab resumes unfinished onboarding) runs synchronously
+ * before the form submits;
  * it never blocks or delays sign-out.
  */
 export function SignOutForm({ label }: { label: string }) {
   return (
-    <form action={signOutAction} onSubmit={clearLegacyOfflineSnapshots}>
+    <form
+      action={signOutAction}
+      onSubmit={() => {
+        clearLegacyOfflineSnapshots();
+        clearSessionFlags();
+      }}
+    >
       <button
         type="submit"
         aria-label={label}

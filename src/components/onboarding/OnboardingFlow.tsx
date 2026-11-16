@@ -15,6 +15,7 @@ import { DASHBOARD_PATH, questionsFor } from "@/lib/onboarding/config";
 import { fill, framework } from "@/lib/onboarding/i18n/framework";
 import { lessonTexts, lessonsForRole, orderLessons } from "@/lib/onboarding/registry";
 import {
+  canStoreProgress,
   clearProgress,
   emptyProgress,
   markSessionHandled,
@@ -45,6 +46,8 @@ export interface OnboardingFlowProps {
    * is behind and sees only lessons newer than that version.
    */
   sinceFloor: number;
+  /** Same-site page to return to on "Continue later" and Finish; null = the role's dashboard. */
+  returnTo?: string | null;
   /** Dev preview: never calls the server action and never leaves the page. */
   preview?: boolean;
 }
@@ -83,7 +86,7 @@ function subscribeStorage(onChange: () => void) {
 }
 const subscribeNothing = () => () => {};
 
-export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, preview = false }: OnboardingFlowProps) {
+export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, returnTo = null, preview = false }: OnboardingFlowProps) {
   const { locale, dict } = useLocale();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
@@ -92,6 +95,7 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, prev
 
   /* ------------------------------ progress state ------------------------------ */
   const hydrated = useSyncExternalStore(subscribeNothing, () => true, () => false);
+  const storageWorks = useSyncExternalStore(subscribeNothing, canStoreProgress, () => true);
   const raw = useSyncExternalStore(subscribeStorage, () => readRaw(userId), () => null);
   const stored = useMemo(() => parseProgress(raw), [raw]);
   const blank = useMemo(() => emptyProgress(), []);
@@ -188,6 +192,10 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, prev
   const [failed, setFailed] = useState(false);
   const [previewDone, setPreviewDone] = useState(false);
   const [languageNote, setLanguageNote] = useState(false);
+  // Set when a save failed just before leaving: the page we were about to open.
+  const [unsavedLeave, setUnsavedLeave] = useState<string | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const exitPath = returnTo ?? DASHBOARD_PATH[role];
 
   function chooseLanguage(code: OnboardingLocale) {
     if (code === locale) {
@@ -271,15 +279,38 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, prev
     if (target) goTo(target);
   }
 
-  function saveNow() {
-    writeProgress(userId, { ...progress, total: lessons.length });
+  function saveNow(): boolean {
+    const ok = writeProgress(userId, { ...progress, total: lessons.length });
     markSessionHandled(userId);
+    if (!ok) setSaveFailed(true);
+    return ok;
   }
 
   function pause() {
-    saveNow();
-    if (preview) return;
-    router.push(DASHBOARD_PATH[role]);
+    const ok = saveNow();
+    if (preview) {
+      if (!ok) setUnsavedLeave(exitPath);
+      return;
+    }
+    if (!ok) {
+      setUnsavedLeave(exitPath);
+      return;
+    }
+    router.push(exitPath);
+  }
+
+  /** "Open the real page": true lets the link navigate; false keeps the person here and explains. */
+  function beforeLeave(href: string): boolean {
+    if (saveNow()) return true;
+    setUnsavedLeave(href);
+    return false;
+  }
+
+  function leaveAnyway() {
+    const href = unsavedLeave;
+    setUnsavedLeave(null);
+    if (!href || preview) return;
+    router.push(href);
   }
 
   const remainingLessons = lessons.filter((l) => !completedLessons.has(l.id));
@@ -306,7 +337,7 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, prev
     clearProgress(userId);
     markSessionHandled(userId);
     // Full load so the dashboard layout re-reads the profile.
-    window.location.assign(DASHBOARD_PATH[role]);
+    window.location.assign(exitPath);
   }
 
   /* ----------------------------------- view ----------------------------------- */
@@ -379,7 +410,8 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, prev
         t={t}
         onCompleteTask={(taskId) => markTasks(activeLesson.id, [taskId], allIds)}
         onCompleteAll={() => markTasks(activeLesson.id, allIds, allIds)}
-        onBeforeLeave={saveNow}
+        progressSaved={storageWorks && !saveFailed}
+        onBeforeLeave={beforeLeave}
       />
     );
   } else if (step.kind === "privacy") {
@@ -484,6 +516,22 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, prev
       </main>
 
       <footer className="sticky bottom-0 z-20 border-t border-slate-200 bg-white dark:border-navy-800 dark:bg-navy-900">
+        {unsavedLeave && (
+          <div
+            role="alert"
+            className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:px-6 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100"
+          >
+            <p className="min-w-0 flex-1 basis-60">{t.common.notSaved}</p>
+            <div className="flex shrink-0 gap-2">
+              <Button type="button" variant="secondary" onClick={() => setUnsavedLeave(null)}>
+                {t.common.stayHere}
+              </Button>
+              <Button type="button" onClick={leaveAnyway}>
+                {t.common.leaveAnyway}
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
           {isFirst ? (
             <span className="w-0" aria-hidden="true" />
