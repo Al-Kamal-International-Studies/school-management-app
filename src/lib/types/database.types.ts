@@ -46,8 +46,8 @@ export type Profile = {
   passkey_prompt_dismissed_at: string | null;
   // Added by 0029_tour_seen.sql.
   has_seen_tour: boolean;
-  // Added by 0032_tour_versioning_and_notifications.sql — see
-  // src/lib/tour/steps.ts's CURRENT_TOUR_VERSION doc comment.
+  // Added by 0032_tour_versioning_and_notifications.sql. Reused by the
+  // Getting-started onboarding (ONBOARDING_VERSION in src/lib/onboarding/version.ts).
   tour_version_seen: number;
   // Added by 0027_centers.sql — the profile's home center. See
   // profile_center_access for which center(s) a profile may actually access

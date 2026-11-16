@@ -38,7 +38,7 @@ child's standing for parents, counts and pending items for management).
   Primary buttons, links, selection on light surfaces.
 - **Greys:** slate, one cool family.
 - **Accent:** gold, only on the dark brand surfaces — the sidebar's selected
-  rule, the sign-in tagline and the guided tour. Never a button, gradient or
+  rule and the sign-in tagline. Never a button, gradient or
   glow.
 - **Status, one meaning each:** green = done / present / approved,
   amber = pending / needs attention, red = failed / absent / rejected.
@@ -52,8 +52,7 @@ child's standing for parents, counts and pending items for management).
   with hairline dividers (`ListCard` / `ListRow` in `components/ui/List.tsx`),
   not a card per row.
 - Elevation is a 1px border plus a whisper of shadow (`shadow-card`). Real
-  shadow (`shadow-overlay`) only on things that float: menus, dialogs, the
-  tour card.
+  shadow (`shadow-overlay`) only on things that float: menus and dialogs.
 - One brand surface: the quiet vertical `bg-navy-gradient` with the crest's
   8-point star lattice fading out from the top (`AuthBackground`). Used by the
   sidebar, the sign-in panel and the welcome screens only.

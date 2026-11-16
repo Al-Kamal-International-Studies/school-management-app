@@ -39,7 +39,6 @@ export default async function TeacherDashboardPage() {
       <PageHeader
         eyebrow={formatSchoolDate(new Date(), locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         title={`${dict.common.welcome}, ${profile!.full_name}`}
-        titleDataTour="page-title"
         description={dict.common.todaysScheduleAndClasses}
         action={
           <Link href="/teacher/progress" className="btn-primary">

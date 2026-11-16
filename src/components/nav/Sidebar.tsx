@@ -40,7 +40,6 @@ import { CenterLogo, CenterMark } from "@/components/auth/CenterLogo";
 import { AKIS_CENTER } from "@/lib/centers/knownCenters";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { dirForLocale } from "@/lib/i18n/locales";
-import { useTour } from "@/lib/tour/TourProvider";
 import type { Dictionary } from "@/lib/i18n/types";
 import type { UserRole } from "@/lib/types/database.types";
 
@@ -96,13 +95,13 @@ function setCollapsedPreference(next: boolean) {
   collapsedListeners.forEach((listener) => listener());
 }
 
-interface NavItem {
+export interface NavItem {
   href: string;
   labelKey: keyof Dictionary["nav"];
   icon: LucideIcon;
 }
 
-const NAV_ITEMS: Record<UserRole, NavItem[]> = {
+export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   admin: [
     { href: "/admin", labelKey: "overview", icon: LayoutDashboard },
     { href: "/admin/users", labelKey: "users", icon: Users },
@@ -165,7 +164,20 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
 };
 
-const OVERSIGHT_ITEM: NavItem = { href: "/admin/chat-oversight", labelKey: "chatOversight", icon: Eye };
+export const OVERSIGHT_ITEM: NavItem = { href: "/admin/chat-oversight", labelKey: "chatOversight", icon: Eye };
+
+/** Pinned to the bottom of the rail for every role. */
+export const SETTINGS_ITEM: NavItem = { href: "/settings", labelKey: "settings", icon: SettingsIcon };
+
+/** Pinned above Settings; opens the full-screen getting-started flow. */
+export const GETTING_STARTED_ITEM: NavItem = { href: "/getting-started", labelKey: "gettingStarted", icon: Compass };
+
+/** The role's sidebar items in order (Chat oversight only for the overseer). */
+export function navItemsFor(role: UserRole, canOverseeChats: boolean): NavItem[] {
+  return canOverseeChats
+    ? NAV_ITEMS[role].flatMap((i) => (i.href === "/admin/message-safety" ? [i, OVERSIGHT_ITEM] : [i]))
+    : NAV_ITEMS[role];
+}
 
 export function Sidebar({
   role,
@@ -182,10 +194,7 @@ export function Sidebar({
   const pathname = usePathname();
   const { dict, locale } = useLocale();
   const isRtl = dirForLocale(locale) === "rtl";
-  const items = canOverseeChats
-    ? NAV_ITEMS[role].flatMap((i) => (i.href === "/admin/message-safety" ? [i, OVERSIGHT_ITEM] : [i]))
-    : NAV_ITEMS[role];
-  const { startTour } = useTour();
+  const items = navItemsFor(role, canOverseeChats);
 
   const activeCenterName = AKIS_CENTER.name;
   useEffect(() => {
@@ -295,7 +304,6 @@ export function Sidebar({
           onClick={onClose}
           aria-label={label}
           title={collapsed ? label : undefined}
-          data-tour-nav={item.href}
           className={cn(
             "relative flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 lg:py-2",
             active ? "text-white" : "text-white/65 hover:bg-white/[0.04] hover:text-white",
@@ -413,36 +421,15 @@ export function Sidebar({
           {items.map(renderItem)}
         </ul>
 
-        {/* Tutorial (the guided tour, see src/lib/tour) and Settings are
-            both pinned to the bottom, outside the per-role scrollable nav
-            list, so they're always reachable without scrolling — same
-            "always visible" reasoning Settings already had, extended to
-            Tutorial per Muhammad's request that it live beside Settings
-            rather than buried as a card inside the Settings page. Tutorial
-            sits above Settings in the same footer block, styled identically
-            to a real nav item (via renderItem's own classes below) even
-            though it triggers `startTour()` instead of navigating — it's a
-            <button>, not a <Link>, and deliberately never shows the
-            "active" highlight renderItem gives a real route, since there's
-            no page it corresponds to. */}
+        {/* Getting started (the full-screen onboarding flow at
+            /getting-started) and Settings are both pinned to the bottom,
+            outside the per-role scrollable nav list, so they're always
+            reachable without scrolling. Getting started sits above Settings
+            and renders like any other nav item. */}
         <div className="relative border-t border-white/10 p-3">
           <ul className="space-y-0.5">
-            <li>
-              <button
-                type="button"
-                onClick={startTour}
-                aria-label={dict.nav.tutorial}
-                title={collapsed ? dict.nav.tutorial : undefined}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-white/65 transition-colors duration-150 hover:bg-white/[0.04] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 lg:py-2",
-                  collapsed && "lg:justify-center lg:px-0"
-                )}
-              >
-                <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
-                <span className={cn(collapsed && "lg:hidden")}>{dict.nav.tutorial}</span>
-              </button>
-            </li>
-            {renderItem({ href: "/settings", labelKey: "settings", icon: SettingsIcon })}
+            {renderItem(GETTING_STARTED_ITEM)}
+            {renderItem(SETTINGS_ITEM)}
           </ul>
         </div>
       </nav>

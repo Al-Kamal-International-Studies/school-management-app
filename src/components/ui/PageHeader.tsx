@@ -6,30 +6,25 @@ import { cn } from "@/lib/utils";
  * line (e.g. today's date), the page's one serif h1, an optional grey
  * description, and at most one action aligned to the end. Replaces the old
  * WelcomeRobot mascot + speech-bubble header.
- *
- * `titleDataTour` keeps the guided tour's `[data-tour="page-title"]` anchor
- * (src/lib/tour/steps.ts) on the h1, where it has always been.
  */
 export function PageHeader({
   eyebrow,
   title,
   description,
   action,
-  titleDataTour,
   className,
 }: {
   eyebrow?: ReactNode;
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
-  titleDataTour?: string;
   className?: string;
 }) {
   return (
     <header className={cn("flex flex-wrap items-end justify-between gap-x-6 gap-y-4", className)}>
       <div className="min-w-0 max-w-2xl">
         {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}
-        <h1 data-tour={titleDataTour} className="page-title">
+        <h1 className="page-title">
           {title}
         </h1>
         {description && <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{description}</p>}

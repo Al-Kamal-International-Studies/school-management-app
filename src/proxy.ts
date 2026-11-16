@@ -37,6 +37,16 @@ function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
+// Development only: the onboarding preview page (src/app/dev/onboarding-preview)
+// renders the flow with a fake profile, so it must be reachable without a
+// session and without the first-launch language redirect. NODE_ENV is
+// inlined at build time, so in production this is always false and the auth
+// behaviour below is unchanged.
+const DEV_PREVIEW_PATH = "/dev/onboarding-preview";
+function isDevPreview(pathname: string) {
+  return process.env.NODE_ENV === "development" && (pathname === DEV_PREVIEW_PATH || pathname.startsWith(`${DEV_PREVIEW_PATH}/`));
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -64,7 +74,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const publicPath = isPublicPath(pathname);
+  const publicPath = isPublicPath(pathname) || isDevPreview(pathname);
 
   // Mandatory first-launch language screen: if this browser has never picked
   // a language, send it there before anything else (including /login) — the
@@ -72,7 +82,7 @@ export async function proxy(request: NextRequest) {
   // for the static infrastructure files above — a first-ever visit's SW
   // registration or manifest fetch races the human's own first navigation
   // and must never be answered with an HTML redirect either.
-  if (!request.cookies.get(LOCALE_COOKIE) && !pathname.startsWith("/welcome") && !PUBLIC_STATIC_FILES.includes(pathname)) {
+  if (!request.cookies.get(LOCALE_COOKIE) && !pathname.startsWith("/welcome") && !PUBLIC_STATIC_FILES.includes(pathname) && !isDevPreview(pathname)) {
     return NextResponse.redirect(new URL("/welcome/language", request.url));
   }
 

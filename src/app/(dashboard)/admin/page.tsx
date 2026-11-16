@@ -79,7 +79,6 @@ export default async function AdminOverviewPage() {
       <PageHeader
         eyebrow={profile ? `${dict.common.welcome}, ${profile.full_name}` : undefined}
         title={dict.adminOverview.title}
-        titleDataTour="page-title"
         description={dict.adminOverview.subtitle}
       />
 

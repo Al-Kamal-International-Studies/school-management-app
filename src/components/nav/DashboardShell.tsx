@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/nav/Sidebar";
 import { Topbar } from "@/components/nav/Topbar";
 import { PageTransition } from "@/components/nav/PageTransition";
-import { TourProvider } from "@/lib/tour/TourProvider";
-import { TourOverlay } from "@/components/tour/TourOverlay";
+import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { ChatRealtimeProvider } from "@/components/chat/ChatRealtimeProvider";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { Notification, Profile } from "@/lib/types/database.types";
@@ -41,7 +40,6 @@ export function DashboardShell({
 
   return (
     <ChatRealtimeProvider myId={profile.id} initialUnread={unreadMessages}>
-    <TourProvider profile={profile} onNavStepChange={setMobileOpen}>
       <>
         {/* Visually hidden until focused — lets a keyboard user jump past the
             full sidebar nav (14-20 items on every role) straight to the
@@ -66,6 +64,9 @@ export function DashboardShell({
               notifications={notifications}
               onMenuClick={() => setMobileOpen(true)}
             />
+            {/* Sends unfinished accounts to /getting-started once per browser
+                session, then shows the slim "Finish getting started" banner. */}
+            <OnboardingGate profile={profile} />
             {/* One content column, capped at 1280px so tables and stat rows keep
                 sane proportions on wide monitors. 16px gutter on phones
                 (DESIGN.md), stepping up to 24/32px; the bottom padding is a
@@ -78,9 +79,7 @@ export function DashboardShell({
             </main>
           </div>
         </div>
-        <TourOverlay />
       </>
-    </TourProvider>
     </ChatRealtimeProvider>
   );
 }

@@ -48,7 +48,6 @@ export default async function ParentDashboardPage({ searchParams }: { searchPara
       <PageHeader
         eyebrow={greeting}
         title={activeChild.full_name}
-        titleDataTour="page-title"
         description={`${activeChild.className ?? dict.common.notAssigned} · #${activeChild.enrollment_number}`}
         action={
           children.length > 1 ? (

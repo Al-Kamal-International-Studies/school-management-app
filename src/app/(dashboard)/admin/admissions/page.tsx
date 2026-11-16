@@ -31,7 +31,7 @@ export default async function AdmissionsPage() {
     <div className="space-y-7">
       <FadeUp className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 data-tour="page-title" className="page-title">
+          <h1 className="page-title">
             {dict.admissions.title}
           </h1>
           <p className="mt-1.5 text-sm text-slate-500 dark:text-navy-400">{dict.admissions.subtitle}</p>

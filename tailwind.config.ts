@@ -89,7 +89,7 @@ const config: Config = {
         soft: "0 1px 2px 0 rgb(15 33 49 / 0.04)",
         card: "0 1px 2px 0 rgb(15 33 49 / 0.05)",
         "card-hover": "0 2px 6px -1px rgb(15 33 49 / 0.08), 0 1px 2px 0 rgb(15 33 49 / 0.05)",
-        // Overlays only (menus, dialogs, the tour card): the one place a
+        // Overlays only (menus, dialogs): the one place a
         // real shadow communicates "this floats above the page".
         overlay: "0 12px 32px -8px rgb(15 33 49 / 0.22), 0 2px 6px -2px rgb(15 33 49 / 0.10)",
         // Kept as a name so old call sites compile; no more gold glow.

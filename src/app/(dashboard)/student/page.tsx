@@ -71,7 +71,6 @@ export default async function StudentDashboardPage() {
       <PageHeader
         eyebrow={formatSchoolDate(new Date(), locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         title={`${dict.common.welcome}, ${profile!.full_name}`}
-        titleDataTour="page-title"
         description={
           <>
             {classRow ? `${classRow.name} - ${classRow.section}` : dict.studentDashboard.noClassAssignedShort} · {dict.studentDashboard.enrollmentHash}
