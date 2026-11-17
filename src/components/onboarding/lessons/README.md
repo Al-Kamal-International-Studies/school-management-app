@@ -28,7 +28,8 @@ Each index file exports exactly one array. You own your folder and nothing else.
 When a new sidebar item ships, `scripts/onboarding.test.ts` fails until a lesson
 for it exists in the owning index file. Give the new lesson `since` = the next
 `ONBOARDING_VERSION` and bump that constant, so returning users see only the new
-lesson. Keep existing lessons' `id` and `navHref` stable. Do not touch another
+lesson. Also raise `ROLE_ONBOARDING_VERSION` (same file) for each role the lesson
+covers, so roles without a new lesson are not sent to an empty "what's new". Keep existing lessons' `id` and `navHref` stable. Do not touch another
 author's index file, the registry, or the framework strings.
 
 ## The contract
@@ -119,4 +120,4 @@ shows hints, so keep the practice itself the same for every level. Lay out for
    `role` is `admin | teacher | student | parent`, `locale` is `en | ar`,
    `overseer=1` adds the Chat oversight lesson. Check light, dark, Arabic, a
    390 px viewport, and the keyboard. Nothing is saved on the server; progress
-   goes to `localStorage` under `onboarding:v10:preview-<role>`.
+   goes to `localStorage` under `onboarding:v11:preview-<role>`.

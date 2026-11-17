@@ -31,7 +31,7 @@ function subscribeStorage(onChange: () => void) {
  * It runs inside DashboardShell, i.e. only after every security gate in
  * requireDashboardAccess() has passed, so it never bypasses them.
  */
-export function OnboardingGate({ profile }: { profile: Pick<Profile, "id" | "has_seen_tour" | "tour_version_seen"> }) {
+export function OnboardingGate({ profile }: { profile: Pick<Profile, "id" | "role" | "has_seen_tour" | "tour_version_seen"> }) {
   const router = useRouter();
   const pathname = usePathname();
   const { locale } = useLocale();

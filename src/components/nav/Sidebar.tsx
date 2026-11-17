@@ -33,6 +33,7 @@ import {
   X,
   UserPlus,
   IdCard,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -104,6 +105,7 @@ export interface NavItem {
 export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   admin: [
     { href: "/admin", labelKey: "overview", icon: LayoutDashboard },
+    { href: "/cambrilearn", labelKey: "cambrilearn", icon: Globe },
     { href: "/admin/users", labelKey: "users", icon: Users },
     { href: "/admin/admissions", labelKey: "admissions", icon: UserPlus },
     { href: "/admin/id-cards", labelKey: "idCards", icon: IdCard },
@@ -123,6 +125,7 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   teacher: [
     { href: "/teacher", labelKey: "myClasses", icon: BookOpen },
+    { href: "/cambrilearn", labelKey: "cambrilearn", icon: Globe },
     { href: "/teacher/id-cards", labelKey: "idCards", icon: IdCard },
     { href: "/teacher/timetable", labelKey: "myTimetable", icon: CalendarClock },
     { href: "/teacher/timetable-builder", labelKey: "timetable", icon: CalendarClock },
@@ -140,6 +143,7 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   student: [
     { href: "/student", labelKey: "dashboard", icon: LayoutDashboard },
+    { href: "/cambrilearn", labelKey: "cambrilearn", icon: Globe },
     { href: "/student/id-card", labelKey: "idCard", icon: IdCard },
     { href: "/student/timetable", labelKey: "myTimetable", icon: CalendarClock },
     { href: "/student/attendance", labelKey: "attendance", icon: CalendarCheck },
