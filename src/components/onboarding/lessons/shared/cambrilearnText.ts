@@ -5,8 +5,8 @@ export const cambrilearnText: LessonTexts = {
     title: "CambriLearn",
     oneLiner: "Open CambriLearn's login page from inside the app.",
     what: [
-      "CambriLearn is a separate website. This page is a launcher: press Open CambriLearn and its own login page opens in the same window. In the installed Al Kamal app, it stays inside the app's window.",
-      "Sign in there with your CambriLearn email and password, not your Al Kamal account. To come back to Al Kamal, use the back arrow or the close button at the top of the screen.",
+      "CambriLearn is a separate website. Press Open CambriLearn to go to its login page. In a browser, this replaces the current page. In the installed app, how it opens depends on your device and browser.",
+      "Sign in there with your CambriLearn email and password, not your Al Kamal account. To return to Al Kamal, use Back. If CambriLearn opens in a separate view, dismiss that view. If needed, reopen Al Kamal.",
     ],
     useWhen: "you want to go to CambriLearn from inside the app.",
     visibility: {
@@ -23,8 +23,8 @@ export const cambrilearnText: LessonTexts = {
     title: "CambriLearn",
     oneLiner: "افتح صفحة تسجيل الدخول إلى CambriLearn من داخل التطبيق.",
     what: [
-      "CambriLearn موقع مستقل. هذه الصفحة مجرد بوابة: اضغط «فتح CambriLearn» لتفتح صفحة تسجيل الدخول الخاصة به في النافذة نفسها. وفي تطبيق الكمال المثبّت، يبقى داخل نافذة التطبيق.",
-      "سجّل الدخول هناك ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس ببيانات الكمال. للعودة إلى الكمال، استخدم سهم الرجوع أو زر الإغلاق في أعلى الشاشة.",
+      "CambriLearn موقع مستقل. اضغط «فتح CambriLearn» للانتقال إلى صفحة تسجيل الدخول الخاصة به. في المتصفح، تحلّ صفحة CambriLearn محل الصفحة الحالية. وفي التطبيق المثبّت، تختلف طريقة الفتح حسب جهازك ومتصفحك.",
+      "سجّل الدخول هناك ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس ببيانات الكمال. للعودة إلى الكمال، استخدم زر الرجوع. إذا فتح CambriLearn في نافذة منفصلة، أغلق تلك النافذة. ويمكنك إعادة فتح تطبيق الكمال عند الحاجة.",
     ],
     useWhen: "تريد الانتقال إلى CambriLearn من داخل التطبيق.",
     visibility: {

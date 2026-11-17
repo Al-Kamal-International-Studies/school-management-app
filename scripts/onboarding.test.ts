@@ -516,8 +516,8 @@ for (const file of walk(path.join(SRC, "components/onboarding"))) {
 /* ------------------- CambriLearn opens in the same window ------------------- */
 
 {
-  // An installed app sends new-tab links out to the system browser. Opening in
-  // the same window keeps CambriLearn inside the installed app's window.
+  // Verify the link requests current-context navigation. Installed-app window
+  // handling belongs to the browser and requires a real device check.
   const read = (rel: string) => fs.readFileSync(path.join(SRC, rel), "utf8");
   const page = read("app/(dashboard)/cambrilearn/page.tsx");
   check("CambriLearn page link has no new-tab target", /href=\{CAMBRILEARN_LOGIN_URL\}/.test(page) && !/target=/.test(page));

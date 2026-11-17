@@ -870,7 +870,7 @@ const en = {
     leavesApp: "(goes to the CambriLearn website)",
     tipsHeading: "Before you go",
     tipSignIn: "Sign in with your CambriLearn email and password, not your Al Kamal account.",
-    tipComeBack: "To come back to Al Kamal, use the back arrow or the close button at the top of the screen.",
+    tipComeBack: "To return to Al Kamal, use Back. If CambriLearn opens in a separate view, dismiss that view. If needed, reopen Al Kamal.",
   },
   chatbot: {
     title: "Help Assistant",
