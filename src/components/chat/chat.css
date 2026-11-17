@@ -1090,15 +1090,8 @@
   }
 }
 
-/* iPhone zooms the whole page into any text box whose text is under 16px;
-   16px on touch screens stops that. */
-@media (pointer: coarse) {
-  .ch-frame .ch-input,
-  .ch-frame input[type="search"],
-  .ch-frame input[type="text"] {
-    font-size: 16px;
-  }
-}
+/* Touch screens: text boxes are held at 16px app-wide (globals.css) so iPhone
+   never zooms into the composer. */
 
 @media (prefers-reduced-motion: reduce) {
   .ch-frame *,

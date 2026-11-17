@@ -241,3 +241,18 @@
     background-color: rgb(255 255 255 / 0.4);
   }
 }
+
+/* iPhone zooms the page into any focused text box whose text is under 16px,
+   and it stays zoomed after typing. The shared .input style is 14px (and a
+   few screens style their own boxes), so on touch screens every typable
+   control is held at 16px. Unlayered and !important on purpose: it must win
+   over Tailwind text-size utilities and inline styles everywhere.
+   Desktop keeps the denser 14px design. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="button"], [type="submit"], [type="reset"], [type="image"], [type="hidden"]),
+  textarea,
+  select,
+  [contenteditable]:not([contenteditable="false"]) {
+    font-size: 16px !important;
+  }
+}
