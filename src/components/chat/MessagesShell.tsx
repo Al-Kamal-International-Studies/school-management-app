@@ -10,6 +10,7 @@ import { useChatRealtime } from "@/components/chat/ChatRealtimeProvider";
 import { ChatAvatar, Ticks, useChatTime } from "@/components/chat/parts";
 import { Icon, type IconName } from "@/components/chat/icons";
 import { usePopover } from "@/components/chat/usePopover";
+import { useKeyboardViewport } from "@/components/chat/useKeyboardViewport";
 import { openChatAction, refreshInboxAction } from "@/app/(dashboard)/messages/actions";
 import type { Contact, InboxItem } from "@/lib/chat/types";
 import { applyMessage, mergeInbox, needsSenderLookup } from "@/lib/chat/inbox";
@@ -59,6 +60,8 @@ export function MessagesShell({
   const activeId = pathname.split("/")[2] ?? null;
   const rt = useChatRealtime();
   const stamp = useChatTime();
+  const frameRef = useRef<HTMLDivElement>(null);
+  useKeyboardViewport(frameRef);
 
   const [inbox, setInbox] = useState(initialInbox);
   const [prevInitial, setPrevInitial] = useState(initialInbox);
@@ -276,7 +279,7 @@ export function MessagesShell({
   );
 
   return (
-    <div className="ch-frame -mx-4 -mb-12 -mt-6 sm:-mx-6 lg:mx-auto lg:-mb-8 lg:mt-0">
+    <div ref={frameRef} className="ch-frame -mx-4 -mb-12 -mt-6 sm:-mx-6 lg:mx-auto lg:-mb-8 lg:mt-0">
       <div className="ch-app" data-open={activeId ? "true" : "false"}>
         {/* ---------- icon rail ---------- */}
         <nav className="ch-rail" aria-label={dict.messages.navLabel}>

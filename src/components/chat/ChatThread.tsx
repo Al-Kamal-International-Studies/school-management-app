@@ -68,6 +68,8 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
   const lastMarked = useRef<string | null>(null);
   const stickToBottom = useRef(!unread.id);
   const mounted = useRef(false);
+  const atBottom = useRef(!unread.id);
+  const [launch, setLaunch] = useState(0);
   const messagesRef = useRef(messages);
   const [headMenuOpen, setHeadMenuOpen, headMenuAttach] = usePopover<HTMLDivElement>();
   const [emojiOpen, setEmojiOpen, emojiAttach] = usePopover<HTMLDivElement>();
@@ -156,6 +158,23 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
     else setShowJump(!nearBottom());
   }, [messages.length]);
 
+  // When the frame shrinks (phone keyboard opening), keep the newest message
+  // in view if the reader was already at the bottom, like WhatsApp.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    let first = true;
+    const ro = new ResizeObserver(() => {
+      if (first) {
+        first = false;
+        return;
+      }
+      if (atBottom.current) el.scrollTop = el.scrollHeight;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   async function loadOlder() {
     const first = messages.find((m) => m.status === "sent");
     if (!first || loadingOlder) return;
@@ -198,7 +217,9 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
     const clientId = crypto.randomUUID();
     setText("");
     setBanner(null);
+    setLaunch((n) => n + 1);
     stickToBottom.current = true;
+    atBottom.current = true;
     setMessages((prev) => [
       ...prev,
       { id: clientId, chatId, senderId: myId, clientId, content, createdAt: new Date().toISOString(), status: "sending" },
@@ -365,6 +386,7 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
           ref={scroller}
           onScroll={() => {
             const near = nearBottom();
+            atBottom.current = near;
             setShowJump(!near);
             if (near) setNewCount(0);
           }}
@@ -497,8 +519,19 @@ export function ChatThread({ myId, detail }: { myId: string; detail: ChatDetail 
               dir="auto"
               className={`ch-input${multiline ? " is-multi" : ""}`}
             />
-            <button type="submit" className="ch-send ch-flip" aria-label={dict.messages.send} title={dict.messages.send} disabled={!text.trim()}>
-              <Icon name="send" />
+            <button
+              type="submit"
+              className="ch-send ch-flip"
+              aria-label={dict.messages.send}
+              title={dict.messages.send}
+              disabled={!text.trim()}
+              // keep focus (and the phone keyboard) in the text box on tap
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              {/* re-keyed on every send so the paper-plane flight replays */}
+              <span key={launch} className={`ch-send-plane${launch ? (launch % 2 ? " is-launch-a" : " is-launch-b") : ""}`}>
+                <Icon name="send" />
+              </span>
             </button>
           </form>
         ) : (

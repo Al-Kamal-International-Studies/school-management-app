@@ -899,6 +899,52 @@
 .ch-send:disabled:hover {
   background: var(--navy);
 }
+
+/* Send: the paper plane flies off and a fresh one glides back in. Two
+   alternating class names so the button's hold animation restarts on every
+   send (the text box empties at once, which disables and dims the button;
+   the hold keeps it bright until the plane is home). */
+.ch-send-plane {
+  display: inline-flex;
+  --fly: 1;
+}
+.ch-send-plane:dir(rtl) {
+  --fly: -1;
+}
+.ch-send-plane.is-launch-a {
+  animation: ch-plane-a 520ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+.ch-send-plane.is-launch-b {
+  animation: ch-plane-b 520ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+.ch-send:has(.is-launch-a) {
+  animation: ch-send-hold-a 520ms ease-out;
+}
+.ch-send:has(.is-launch-b) {
+  animation: ch-send-hold-b 520ms ease-out;
+}
+@keyframes ch-plane-a {
+  0% { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; }
+  18% { transform: translate(calc(var(--fly) * -3px), 3px) rotate(0) scale(0.92); opacity: 1; }
+  48% { transform: translate(calc(var(--fly) * 22px), -22px) rotate(calc(var(--fly) * -12deg)) scale(0.7); opacity: 0; }
+  49% { transform: translate(calc(var(--fly) * -16px), 16px) scale(0.7); opacity: 0; }
+  100% { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; }
+}
+@keyframes ch-plane-b {
+  0% { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; }
+  18% { transform: translate(calc(var(--fly) * -3px), 3px) rotate(0) scale(0.92); opacity: 1; }
+  48% { transform: translate(calc(var(--fly) * 22px), -22px) rotate(calc(var(--fly) * -12deg)) scale(0.7); opacity: 0; }
+  49% { transform: translate(calc(var(--fly) * -16px), 16px) scale(0.7); opacity: 0; }
+  100% { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; }
+}
+@keyframes ch-send-hold-a {
+  0%, 80% { opacity: 1; transform: scale(1); }
+  12% { opacity: 1; transform: scale(0.9); }
+}
+@keyframes ch-send-hold-b {
+  0%, 80% { opacity: 1; transform: scale(1); }
+  12% { opacity: 1; transform: scale(0.9); }
+}
 .ch-readonly {
   padding: 22px 16px;
   text-align: center;
@@ -1006,6 +1052,9 @@
   .ch-composer {
     padding-block-end: calc(11px + env(safe-area-inset-bottom));
   }
+  .ch-frame[data-kb="true"] .ch-composer {
+    padding-block-end: 11px;
+  }
   .ch-only-wide {
     display: none !important;
   }
@@ -1022,6 +1071,32 @@
   .ch-frame {
     border: 0;
     border-radius: 0;
+  }
+}
+
+/* Phones only, while the keyboard is up (useKeyboardViewport.ts): the frame
+   becomes a fixed box covering exactly the visible screen above the keyboard,
+   so the composer rests on the keyboard with no gap. No ancestor carries a
+   transform (the page transition is opacity-only), so fixed is screen-based. */
+@media (max-width: 1023px) {
+  .ch-frame[data-kb="true"] {
+    position: fixed;
+    inset-inline: 0;
+    top: var(--vv-top, 0px);
+    height: var(--vv-h, 100dvh);
+    min-height: 0;
+    margin: 0;
+    z-index: 60;
+  }
+}
+
+/* iPhone zooms the whole page into any text box whose text is under 16px;
+   16px on touch screens stops that. */
+@media (pointer: coarse) {
+  .ch-frame .ch-input,
+  .ch-frame input[type="search"],
+  .ch-frame input[type="text"] {
+    font-size: 16px;
   }
 }
 
