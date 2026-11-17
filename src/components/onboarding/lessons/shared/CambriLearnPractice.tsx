@@ -1,7 +1,6 @@
 "use client";
 
 import { ExternalLink, Globe, Lock } from "lucide-react";
-import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { PracticeFrame, useFakeToast } from "@/components/onboarding/practice/kit";
 import type { PracticeProps } from "@/lib/onboarding/types";
@@ -11,22 +10,20 @@ const UI = {
   en: {
     tab: "CambriLearn",
     addressLabel: "Web address",
-    addressShown: "This is the page the button opens:",
     open: "Open CambriLearn",
-    tip1: "Sign in with your CambriLearn username and password, not your Al Kamal one.",
+    tip1: "Sign in with your CambriLearn email and password, not your Al Kamal account.",
     tip2: "CambriLearn opens in a new tab. Switch back to the Al Kamal tab to return.",
     fake: "Practice only: nothing opened. In the real app, CambriLearn opens in a new tab.",
-    newHint: "Press the address bar, then press Open CambriLearn.",
+    newHint: "Check the web address, then press Open CambriLearn.",
   },
   ar: {
     tab: "CambriLearn",
     addressLabel: "عنوان الموقع",
-    addressShown: "هذه هي الصفحة التي يفتحها الزر:",
     open: "فتح CambriLearn",
-    tip1: "سجّل الدخول باسم مستخدم CambriLearn وكلمة مروره، وليس بحساب الكمال.",
+    tip1: "سجّل الدخول ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس بحساب الكمال.",
     tip2: "يفتح CambriLearn في تبويبة جديدة. عد إلى تبويبة الكمال للرجوع.",
     fake: "للتدريب فقط: لم يُفتح شيء. في التطبيق الحقيقي يفتح CambriLearn في تبويبة جديدة.",
-    newHint: "اضغط على شريط العنوان ثم اضغط «فتح CambriLearn».",
+    newHint: "تحقّق من عنوان الموقع ثم اضغط «فتح CambriLearn».",
   },
 } as const;
 
@@ -34,7 +31,6 @@ const UI = {
 export default function CambriLearnPractice({ locale, dir, level, completeTask }: PracticeProps) {
   const ui = UI[locale];
   const { toast, show } = useFakeToast(8000);
-  const [addressSeen, setAddressSeen] = useState(false);
 
   return (
     <PracticeFrame locale={locale} dir={dir} title={ui.tab}>
@@ -48,24 +44,15 @@ export default function CambriLearnPractice({ locale, dir, level, completeTask }
           </div>
         </div>
         <div className="border-b border-slate-200 bg-white p-2 dark:border-navy-700 dark:bg-navy-800">
-          <button
-            type="button"
-            onClick={() => {
-              setAddressSeen(true);
-              completeTask("find-address");
-            }}
+          <div
+            role="group"
             aria-label={`${ui.addressLabel}: ${ADDRESS}`}
             dir="ltr"
-            className="flex w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-start text-sm text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 dark:border-navy-600 dark:bg-navy-900 dark:text-navy-100"
+            className="flex w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-start text-sm text-slate-600 dark:border-navy-600 dark:bg-navy-900 dark:text-navy-100"
           >
             <Lock className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
             <span className="min-w-0 truncate">{ADDRESS}</span>
-          </button>
-          {addressSeen && (
-            <p className="mt-2 px-1 text-xs text-slate-500 dark:text-navy-300">
-              {ui.addressShown} <span dir="ltr" className="font-medium text-navy-900 dark:text-white">{ADDRESS}</span>
-            </p>
-          )}
+          </div>
         </div>
         <div className="space-y-4 p-4 sm:p-6">
           <button

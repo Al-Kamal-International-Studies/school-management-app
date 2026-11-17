@@ -371,9 +371,9 @@ Layout gate `D/parent/layout.tsx:4`. Sidebar (`Sidebar.tsx:148-156`): Dashboard,
 # ADMIN, TEACHER AND STUDENT: CambriLearn
 
 ### CambriLearn - `/cambrilearn` - label "CambriLearn"
-- **What it does:** A launcher page styled like a browser window (tab "CambriLearn", address bar `campus.cambrilearn.com/users/login`) with one button, "Open CambriLearn", that opens CambriLearn's own login page in a new browser tab. It is not embedded because CambriLearn's site forbids embedding. Two tips: sign in with your CambriLearn username and password (not your Al Kamal one); CambriLearn opens in a new tab, so switch back to the Al Kamal tab to return.
+- **What it does:** A launcher page styled like a browser window (tab "CambriLearn", address bar `campus.cambrilearn.com/users/login`) with one button, "Open CambriLearn", that opens CambriLearn's own login page in a new browser tab. It is not embedded because CambriLearn's site forbids embedding. Two tips: sign in with your CambriLearn email and password (not your Al Kamal one); CambriLearn opens in a new tab, so switch back to the Al Kamal tab to return.
 - **Who can see / change:** admin, teacher and student: layout gate `src/app/(dashboard)/cambrilearn/layout.tsx` `requireRole("admin","teacher","student")`; sidebar item in `src/components/nav/Sidebar.tsx`, second item for each of those roles. **Parents do not see it.** The app only links out; it never sees or stores the CambriLearn password. Onboarding: `since: 11`; `ROLE_ONBOARDING_VERSION` in `src/lib/onboarding/version.ts` keeps parents (no new lesson) from being sent to an empty "what's new".
-- **Practice demo:** tap the address bar to see where it goes; press "Open CambriLearn" (the practice shows a pretend message and opens nothing).
+- **Practice demo:** read the static address bar to see where it goes; press "Open CambriLearn" (the practice shows a pretend message and opens nothing).
 - **Uncertain:** what CambriLearn contains is deliberately not described.
 
 ---

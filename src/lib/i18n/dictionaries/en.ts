@@ -869,7 +869,7 @@ const en = {
     openButton: "Open CambriLearn",
     opensInNewTab: "(opens in a new tab)",
     tipsHeading: "Before you go",
-    tipSignIn: "Sign in with your CambriLearn username and password, not your Al Kamal one.",
+    tipSignIn: "Sign in with your CambriLearn email and password, not your Al Kamal account.",
     tipComeBack: "CambriLearn opens in a new tab. To come back, switch to the Al Kamal tab.",
   },
   chatbot: {

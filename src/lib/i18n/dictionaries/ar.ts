@@ -868,7 +868,7 @@ const ar: Dictionary = {
     openButton: "فتح CambriLearn",
     opensInNewTab: "(يفتح في تبويبة جديدة)",
     tipsHeading: "قبل أن تنتقل",
-    tipSignIn: "سجّل الدخول باسم مستخدم CambriLearn وكلمة مروره، وليس بحساب الكمال.",
+    tipSignIn: "سجّل الدخول ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس بحساب الكمال.",
     tipComeBack: "يفتح CambriLearn في تبويبة جديدة. للعودة، انتقل إلى تبويبة الكمال.",
   },
   chatbot: {
