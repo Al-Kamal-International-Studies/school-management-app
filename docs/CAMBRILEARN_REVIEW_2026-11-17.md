@@ -1,5 +1,45 @@
 # CambriLearn review — Jack to Mark
 
+## Same-window review — 17 November 2026, `d8c83c2`
+
+**Verdict: the link change is sound for the chosen same-window fallback; release acceptance remains pending installed-device evidence and a complete build.** This is a new behavior change after the earlier approved release (`2e8b87f`). Earlier approval does not certify this change's installed-app behavior. Jack corrected the two wording issues below locally; Mark must review and commit those corrections.
+
+### Findings
+
+**SW1 — P2, corrected locally: unconditional installed-window promise.** `cambrilearnText.ts`, the practice toast and FEATURE_MAP asserted that the portal stays inside the installed app's window. The code only removes the new-window target from an ordinary external link. It adds neither an internal tab manager nor a controlled browser view. The installed browser decides how to present an out-of-scope origin. Official web.dev guidance supports the intended in-app-browser approach, but neither Mark nor Jack has tested the actual installed device on this branch. The three source checks cannot establish that outcome. Jack replaced categorical claims with accurate browser-versus-installed-app wording in English and Arabic and corrected the test comment. Link behavior itself remains as Mark implemented it.
+
+**SW2 — P2, corrected locally: ambiguous close-button instruction.** The page, lesson and practice all told users to use the close button at the top of the screen. In a normal same-tab browser, that can close the only Al Kamal tab/window instead of returning. Mobile Back controls are not necessarily at the top either. Jack changed all EN/AR copies to use Back, dismiss only a separate portal view if one opens, and reopen Al Kamal if needed. This avoids instructing everyone to close the containing window. Verify the longer Arabic copy at narrow widths.
+
+**SW3 — acceptance gap, OPEN: the requested installed-app result has not been demonstrated.** Mark explicitly reports no actual installed-phone/desktop check. Dev preview deliberately does not navigate, so it cannot validate the fix to the user's complaint. Keep this open until an installed build is tested on the device/browser where the original unwanted browser handoff occurred. Do not mark it verified from source inspection or responsive desktop emulation.
+
+### What is correct
+
+- The anchor has the fixed HTTPS CambriLearn URL, no new-window target, and `rel="noreferrer"`. Normal primary activation requests navigation in the current browsing context. No script popup, iframe, credential proxy, manifest change or authentication change.
+- Parent exclusion and existing security gates are unchanged. The migration/run-isolation fixes from `9acac47` are retained. No new database or environment requirements.
+- Both language dictionaries rename the screen-reader notice consistently to `leavesApp`; the real destination remains disclosed. Practice stays simulated and completes the existing `open-portal` task.
+- `public/manifest.json` is still standalone with scope `/` on Al Kamal's own origin. CambriLearn is a different origin. `public/sw.js` ignores cross-origin requests; it does not keep the provider inside the app or inspect its credentials.
+- The selected fallback is same-window navigation. It does not create the user's originally requested independent internal tab, retain a visible school sidebar over CambriLearn, or make CambriLearn part of Al Kamal's origin.
+
+### Evidence and checks
+
+- Independent typecheck, full lint and 2,185 onboarding checks passed during this review. After Jack's edits, the onboarding suite again passed 2,185/2,185 and typechecking passed.
+- `git diff --check` passed. Working tree was clean at review start. Jack's changes are wording/documentation/test-comment edits only, not navigation changes.
+- No new production build attempted in this round: Mark already reports two full builds failing at page generation from memory exhaustion after successful compilation, and Jack's earlier build attempts stalled. A compile message alone is not a complete build. Obtain a successful full build on the final committed change in a suitable environment; retain the log. The earlier successful deployed `2e8b87f` build does not validate this branch.
+- No fresh browser/device/signed-in run by Jack. Mark reports dev-preview English/Arabic and 390px checks before Jack's copy corrections. These are not installed-PWA evidence. No production data touched, no commit/push/deployment by Jack.
+- Sources consulted on 17 November: [web.dev Window management, Browse other sites](https://web.dev/learn/pwa/windows#browse_other_sites) describes out-of-scope in-app browsing and its return controls; [W3C Web Application Manifest](https://www.w3.org/TR/appmanifest/#navigation-scope) defines navigation scope (working draft). The web.dev page also limits its `_blank` external-browser statement to desktop PWAs, so do not retain a blanket claim that every installed mobile app necessarily sends `_blank` to the system browser. Documentation is supporting design evidence, not a device test.
+
+### Mark's exact next step
+
+1. Review Jack's local EN/AR copy changes, FEATURE_MAP correction and test-comment correction; fix anything you find, then commit them with attribution.
+2. On the original affected installed device, record OS/browser versions and installation mode. Open the real launcher, activate Open CambriLearn, record whether the external browser opens or an in-app view appears, then return to Al Kamal. Confirm school navigation/session and onboarding progress remain usable. If testing provider login/redirects, use an authorized test account; never put credentials in the report.
+3. Check a normal browser's same-tab behavior and Back; installed Chrome/Edge desktop, Android and iOS only to the extent these are claimed supported. Record unsupported/untested platforms explicitly. Do not demand another signed-in admin onboarding walkthrough; that waiver remains.
+4. Check updated Arabic/English at 320/390/430 px, light/dark and keyboard activation. Obtain a complete successful final build and rerun checks after any further fixes.
+5. Return the final commit and device/build evidence for release acceptance. If the original device still hands off to the browser, this has not solved the reported problem: report the observed limitation before deploying. Do not bypass CambriLearn's framing policy or introduce a proxy.
+
+**Message for Mark:** Jack has completed the same-window review. The navigation implementation is acceptable for the chosen fallback, and Jack corrected overpromising/return wording locally. Review those edits, fix any resulting failures, and immediately complete the real installed-device and full-build verification. Deployment approval remains pending that evidence; no new feature redesign is requested.
+
+---
+
 ## Re-review — 17 November 2026, commit `9acac47`
 
 **Code review approved: F1, F2 and F3 are closed.** No new blocking defect found in this diff. This supersedes the initial changes-requested verdict below. Production build verification and the explicitly listed manual checks remain separate release limitations; no merge or deployment performed by Jack.

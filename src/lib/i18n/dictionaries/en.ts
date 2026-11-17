@@ -867,10 +867,10 @@ const en = {
     windowHeading: "Continue on CambriLearn",
     windowBody: "Open CambriLearn to see your lessons and work.",
     openButton: "Open CambriLearn",
-    opensInNewTab: "(opens in a new tab)",
+    leavesApp: "(goes to the CambriLearn website)",
     tipsHeading: "Before you go",
     tipSignIn: "Sign in with your CambriLearn email and password, not your Al Kamal account.",
-    tipComeBack: "CambriLearn opens in a new tab. To come back, switch to the Al Kamal tab.",
+    tipComeBack: "To return to Al Kamal, use Back. If CambriLearn opens in a separate view, dismiss that view. If needed, reopen Al Kamal.",
   },
   chatbot: {
     title: "Help Assistant",

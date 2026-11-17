@@ -45,12 +45,11 @@ export default async function CambriLearnPage() {
 
             <a
               href={CAMBRILEARN_LOGIN_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              rel="noreferrer"
               className="btn-primary w-full sm:w-auto"
             >
               {t.openButton}
-              <span className="sr-only"> {t.opensInNewTab}</span>
+              <span className="sr-only"> {t.leavesApp}</span>
               <ExternalLink className="h-4 w-4 shrink-0 rtl:-scale-x-100" strokeWidth={1.75} aria-hidden="true" />
             </a>
 

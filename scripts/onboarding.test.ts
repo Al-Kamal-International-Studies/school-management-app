@@ -513,6 +513,24 @@ for (const file of walk(path.join(SRC, "components/onboarding"))) {
   check("the banner counts progress for the right run", /progressForRun\(raw, lessonsSinceFloor\(profile\)\)/.test(read("components/onboarding/OnboardingGate.tsx")));
 }
 
+/* ------------------- CambriLearn opens in the same window ------------------- */
+
+{
+  // Verify the link requests current-context navigation. Installed-app window
+  // handling belongs to the browser and requires a real device check.
+  const read = (rel: string) => fs.readFileSync(path.join(SRC, rel), "utf8");
+  const page = read("app/(dashboard)/cambrilearn/page.tsx");
+  check("CambriLearn page link has no new-tab target", /href=\{CAMBRILEARN_LOGIN_URL\}/.test(page) && !/target=/.test(page));
+  check("CambriLearn page link still hides the referrer", /rel="noreferrer"/.test(page));
+  const sources = [
+    read("lib/i18n/dictionaries/en.ts").split("chatbot: {")[0]!.split("  cambrilearn: {")[1] ?? "",
+    read("lib/i18n/dictionaries/ar.ts").split("chatbot: {")[0]!.split("  cambrilearn: {")[1] ?? "",
+    read("components/onboarding/lessons/shared/CambriLearnPractice.tsx"),
+    read("components/onboarding/lessons/shared/cambrilearnText.ts"),
+  ];
+  check("no CambriLearn wording promises a new tab", sources.every((s) => s.length > 0 && !/new (browser )?tab|تبويبة جديدة|تبويبة الكمال/i.test(s)));
+}
+
 /* ----------------------------------- result ----------------------------------- */
 
 if (fail) {

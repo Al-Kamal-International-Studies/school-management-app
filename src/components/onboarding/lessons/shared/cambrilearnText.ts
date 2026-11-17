@@ -3,10 +3,10 @@ import type { LessonTexts } from "@/lib/onboarding/types";
 export const cambrilearnText: LessonTexts = {
   en: {
     title: "CambriLearn",
-    oneLiner: "Open the CambriLearn login page in a new browser tab.",
+    oneLiner: "Open CambriLearn's login page from inside the app.",
     what: [
-      "CambriLearn is a separate website. This page is a launcher: press Open CambriLearn and its own login page opens in a new browser tab.",
-      "Sign in there with your CambriLearn email and password, not your Al Kamal account. CambriLearn opens in a new tab, so switch back to the Al Kamal tab when you want to return here.",
+      "CambriLearn is a separate website. Press Open CambriLearn to go to its login page. In a browser, this replaces the current page. In the installed app, how it opens depends on your device and browser.",
+      "Sign in there with your CambriLearn email and password, not your Al Kamal account. To return to Al Kamal, use Back. If CambriLearn opens in a separate view, dismiss that view. If needed, reopen Al Kamal.",
     ],
     useWhen: "you want to go to CambriLearn from inside the app.",
     visibility: {
@@ -21,10 +21,10 @@ export const cambrilearnText: LessonTexts = {
   },
   ar: {
     title: "CambriLearn",
-    oneLiner: "افتح صفحة تسجيل الدخول إلى CambriLearn في تبويبة جديدة بالمتصفح.",
+    oneLiner: "افتح صفحة تسجيل الدخول إلى CambriLearn من داخل التطبيق.",
     what: [
-      "CambriLearn موقع مستقل. هذه الصفحة مجرد بوابة: اضغط «فتح CambriLearn» لتفتح صفحة تسجيل الدخول الخاصة به في تبويبة جديدة بالمتصفح.",
-      "سجّل الدخول هناك ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس ببيانات الكمال. يفتح CambriLearn في تبويبة جديدة، فعد إلى تبويبة الكمال عندما تريد الرجوع إلى هنا.",
+      "CambriLearn موقع مستقل. اضغط «فتح CambriLearn» للانتقال إلى صفحة تسجيل الدخول الخاصة به. في المتصفح، تحلّ صفحة CambriLearn محل الصفحة الحالية. وفي التطبيق المثبّت، تختلف طريقة الفتح حسب جهازك ومتصفحك.",
+      "سجّل الدخول هناك ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس ببيانات الكمال. للعودة إلى الكمال، استخدم زر الرجوع. إذا فتح CambriLearn في نافذة منفصلة، أغلق تلك النافذة. ويمكنك إعادة فتح تطبيق الكمال عند الحاجة.",
     ],
     useWhen: "تريد الانتقال إلى CambriLearn من داخل التطبيق.",
     visibility: {
