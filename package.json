@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:onboarding": "node scripts/onboarding.test.ts",
+    "test:chat": "node scripts/chat-keyboard.test.ts",
     "create-admin": "node scripts/create-admin.mjs"
   },
   "dependencies": {
