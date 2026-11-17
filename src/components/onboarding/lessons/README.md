@@ -120,4 +120,4 @@ shows hints, so keep the practice itself the same for every level. Lay out for
    `role` is `admin | teacher | student | parent`, `locale` is `en | ar`,
    `overseer=1` adds the Chat oversight lesson. Check light, dark, Arabic, a
    390 px viewport, and the keyboard. Nothing is saved on the server; progress
-   goes to `localStorage` under `onboarding:v11:preview-<role>`.
+   goes to `localStorage` under `onboarding:progress:preview-<role>` (the key no longer changes with `ONBOARDING_VERSION`).

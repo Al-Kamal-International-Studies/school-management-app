@@ -6,8 +6,8 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { fill, framework } from "@/lib/onboarding/i18n/framework";
-import { gettingStartedHref, markSessionHandled, parseProgress, readRaw, sessionHandled } from "@/lib/onboarding/storage";
-import { needsOnboarding } from "@/lib/onboarding/version";
+import { gettingStartedHref, markSessionHandled, progressForRun, readRaw, sessionHandled } from "@/lib/onboarding/storage";
+import { lessonsSinceFloor, needsOnboarding } from "@/lib/onboarding/version";
 import type { Profile } from "@/lib/types/database.types";
 
 function subscribeStorage(onChange: () => void) {
@@ -50,7 +50,7 @@ export function OnboardingGate({ profile }: { profile: Pick<Profile, "id" | "rol
     () => sessionHandled(profile.id),
     () => false,
   );
-  const progress = useMemo(() => parseProgress(raw), [raw]);
+  const progress = useMemo(() => progressForRun(raw, lessonsSinceFloor(profile)), [raw, profile]);
   const [dismissedOn, setDismissedOn] = useState<string | null>(null);
 
   useEffect(() => {

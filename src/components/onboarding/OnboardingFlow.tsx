@@ -19,7 +19,7 @@ import {
   emptyProgress,
   lastSaveOk,
   markSessionHandled,
-  parseProgress,
+  progressForRun,
   readRaw,
   subscribeSaveStatus,
   writeProgress,
@@ -47,6 +47,12 @@ export interface OnboardingFlowProps {
    * is behind and sees only lessons newer than that version.
    */
   sinceFloor: number;
+  /**
+   * Which run saved progress must belong to (the account's lessonsSinceFloor):
+   * 0 for a first run, N after finishing version N. Progress saved by another
+   * run is ignored. Defaults to 0.
+   */
+  progressBase?: number;
   /** Same-site page to return to on "Continue later" and Finish; null = the role's dashboard. */
   returnTo?: string | null;
   /** Dev preview: never calls the server action and never leaves the page. */
@@ -87,7 +93,7 @@ function subscribeStorage(onChange: () => void) {
 }
 const subscribeNothing = () => () => {};
 
-export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, returnTo = null, preview = false }: OnboardingFlowProps) {
+export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, progressBase = 0, returnTo = null, preview = false }: OnboardingFlowProps) {
   const { locale, dict } = useLocale();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
@@ -99,8 +105,8 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, retu
   // Follows every write, autosave included: false after a failed save, true again once one succeeds.
   const progressSaved = useSyncExternalStore(subscribeSaveStatus, lastSaveOk, () => true);
   const raw = useSyncExternalStore(subscribeStorage, () => readRaw(userId), () => null);
-  const stored = useMemo(() => parseProgress(raw), [raw]);
-  const blank = useMemo(() => emptyProgress(), []);
+  const stored = useMemo(() => progressForRun(raw, progressBase), [raw, progressBase]);
+  const blank = useMemo(() => emptyProgress(progressBase), [progressBase]);
   const [override, setOverride] = useState<Progress | null>(null);
   const progress = override ?? stored ?? blank;
 
@@ -172,8 +178,10 @@ export function OnboardingFlow({ userId, role, canOverseeChats, sinceFloor, retu
     if (!hydrated || seeded.current) return;
     seeded.current = true;
     markSessionHandled(userId);
-    if (raw === null) writeProgress(userId, { ...blank, total: lessons.length });
-  }, [hydrated, raw, userId, blank, lessons.length]);
+    // Nothing usable for this run (none saved, unreadable, or another run's):
+    // start this run's record. A usable legacy record is moved on its first save.
+    if (stored === null) writeProgress(userId, { ...blank, total: lessons.length });
+  }, [hydrated, stored, userId, blank, lessons.length]);
 
   // Move focus to the screen and scroll to the top whenever the step changes.
   const mainRef = useRef<HTMLElement>(null);

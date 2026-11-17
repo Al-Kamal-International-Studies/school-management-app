@@ -43,6 +43,7 @@ export default async function OnboardingPreviewPage({
         role={role}
         canOverseeChats={role === "admin" && one("overseer") === "1"}
         sinceFloor={one("behind") === "1" && Number.isFinite(seen) && seen >= 10 ? seen : 0}
+        progressBase={Number.isFinite(seen) && seen >= 10 ? seen : 0}
       />
     </LocaleProvider>
   );

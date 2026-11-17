@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getLocale } from "@/lib/i18n/getLocale";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
-import { floorForVisit } from "@/lib/onboarding/version";
+import { floorForVisit, lessonsSinceFloor } from "@/lib/onboarding/version";
 import { safeReturnPath } from "@/lib/onboarding/storage";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,6 +40,7 @@ export default async function GettingStartedPage({
       role={profile.role}
       canOverseeChats={canOverseeChats}
       sinceFloor={floorForVisit(profile)}
+      progressBase={lessonsSinceFloor(profile)}
       returnTo={returnTo}
     />
   );

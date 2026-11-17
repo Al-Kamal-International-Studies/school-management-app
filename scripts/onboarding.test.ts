@@ -413,6 +413,106 @@ for (const file of walk(path.join(SRC, "components/onboarding"))) {
   check("account script has no admin role", !/ROLES = \[[^\]]*admin/.test(script));
 }
 
+/* ------------------- progress survives a lesson-release bump (Jack F1) ------------------- */
+
+{
+  type P = { v: 1; base: number; position: { chapter: string; question: number; lessonId: string | null }; tasks: Record<string, string[]>; completed: string[]; total: number };
+  const st = await load<{
+    storageKey: (id: string) => string;
+    readRaw: (id: string) => string | null;
+    writeProgress: (id: string, p: unknown) => boolean;
+    clearProgress: (id: string) => void;
+    emptyProgress: (base?: number) => P;
+    parseProgress: (raw: string | null) => P | null;
+    progressForRun: (raw: string | null, base: number) => P | null;
+    LEGACY_STORAGE_KEYS: (id: string) => string[];
+  }>("lib/onboarding/storage.ts");
+  const g = globalThis as unknown as { window?: unknown };
+  const prev = g.window;
+  let blocked = false;
+  const m = new Map<string, string>();
+  g.window = {
+    localStorage: {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        if (blocked) throw new Error("QuotaExceededError");
+        m.set(k, v);
+      },
+      removeItem: (k: string) => void m.delete(k),
+    },
+  };
+  const legacyKey = (id: string) => `onboarding:v10:${id}`;
+  // A real v10 record (no `base` field), as the live app wrote it before v11.
+  const v10Record = (lessonId: string, completed: string[]) =>
+    JSON.stringify({ v: 1, answers: { focus: [] }, position: { chapter: "lessons", question: 0, lessonId }, tasks: Object.fromEntries(completed.map((c) => [c, ["t"]])), completed, total: 9, updatedAt: 1 });
+
+  check("the progress key no longer carries the lesson-release version", !st.storageKey("u").includes(`v${ONBOARDING_VERSION}`) && st.storageKey("u") === st.storageKey("u"));
+  check("the v10 key is a known legacy key", st.LEGACY_STORAGE_KEYS("u").includes(legacyKey("u")));
+
+  // Unfinished first-time users (base 0) of every role keep their v10 work.
+  const firstLesson: Record<Role, string> = { admin: "overview", teacher: "my-classes", student: "dashboard", parent: "dashboard" };
+  for (const role of ["teacher", "student", "parent"] as Role[]) {
+    m.clear();
+    const id = `${role}-1`;
+    m.set(legacyKey(id), v10Record("messages", ["messages", firstLesson[role]]));
+    const run = st.progressForRun(st.readRaw(id), 0);
+    check(`${role}: unfinished v10 progress is read after the bump`, !!run && run.completed.includes("messages") && run.position.lessonId === "messages");
+    check(`${role}: the new CambriLearn lesson is not marked done by old progress`, !!run && !run.completed.includes("cambrilearn") && !(run.tasks["cambrilearn"] ?? []).length);
+    check(`${role}: legacy data is kept until a new write succeeds`, m.has(legacyKey(id)) && !m.has(st.storageKey(id)));
+    blocked = true;
+    check(`${role}: a denied write fails and keeps the legacy data`, st.writeProgress(id, run) === false && m.has(legacyKey(id)));
+    blocked = false;
+    check(`${role}: a successful write moves progress to the new key`, st.writeProgress(id, run) === true && m.has(st.storageKey(id)) && !m.has(legacyKey(id)));
+    const again = st.progressForRun(st.readRaw(id), 0);
+    check(`${role}: moved progress still resumes`, !!again && again.completed.includes("messages") && again.base === 0);
+  }
+  check("parent: no CambriLearn lesson to resume into", !lessonsForRole("parent", { canOverseeChats: false }).some((l) => l.id === "cambrilearn"));
+
+  // Finished v10 accounts: "what's new" (base 10) shows only the new lesson and
+  // ignores any leftover first-run record, so old completion can't satisfy it.
+  for (const role of ["teacher", "student"] as Role[]) {
+    m.clear();
+    const id = `${role}-done`;
+    m.set(legacyKey(id), v10Record("cambrilearn", ["cambrilearn", "messages"]));
+    const newOnly = lessonsForRole(role, { canOverseeChats: false, sinceFloor: lessonsSinceFloor({ has_seen_tour: true, tour_version_seen: 10 }) });
+    check(`${role}: finished v10 gets exactly the CambriLearn lesson`, newOnly.length === 1 && newOnly[0]!.id === "cambrilearn");
+    check(`${role}: a leftover first-run record is ignored by "what's new"`, st.progressForRun(st.readRaw(id), 10) === null);
+    check(`${role}: and by a full replay after finishing (base 10)`, st.progressForRun(st.readRaw(id), 10) === null);
+  }
+  check("parent: finished v10 is not sent back", !needsOnboarding({ role: "parent", has_seen_tour: true, tour_version_seen: 10 }));
+
+  // Current progress wins over legacy.
+  m.clear();
+  m.set(legacyKey("c"), v10Record("messages", ["messages"]));
+  m.set(st.storageKey("c"), JSON.stringify({ ...st.emptyProgress(0), position: { chapter: "lessons", question: 0, lessonId: "calendar" }, completed: ["calendar"] }));
+  const cur = st.progressForRun(st.readRaw("c"), 0);
+  check("valid current progress takes precedence over legacy", !!cur && cur.position.lessonId === "calendar" && !cur.completed.includes("messages"));
+
+  // Malformed legacy fails safely (fresh start, no throw).
+  m.clear();
+  m.set(legacyKey("bad"), "{not json");
+  check("malformed legacy progress yields a fresh start", st.progressForRun(st.readRaw("bad"), 0) === null);
+  m.set(legacyKey("bad"), JSON.stringify({ v: 1, position: { chapter: "nowhere" } }));
+  check("legacy with an unknown chapter yields a fresh start", st.progressForRun(st.readRaw("bad"), 0) === null);
+
+  // Finishing clears both keys, so v10 can never be reloaded afterwards.
+  m.clear();
+  m.set(legacyKey("f"), v10Record("messages", ["messages"]));
+  st.writeProgress("f", st.emptyProgress(0));
+  m.set(legacyKey("f"), v10Record("messages", ["messages"]));
+  st.clearProgress("f");
+  check("finish clears current and legacy progress (no resurrection)", st.readRaw("f") === null && !m.has(legacyKey("f")));
+  check("records written now carry their run base", st.parseProgress(JSON.stringify(st.emptyProgress(10)))?.base === 10);
+  check("records without a base are first-run records", st.parseProgress(v10Record("x", []))?.base === 0);
+  g.window = prev;
+
+  const read = (rel: string) => fs.readFileSync(path.join(SRC, rel), "utf8");
+  const flow = read("components/onboarding/OnboardingFlow.tsx");
+  check("the flow reads progress for its own run", /progressForRun\(raw, progressBase\)/.test(flow) && /emptyProgress\(progressBase\)/.test(flow));
+  check("getting-started passes the run base", /progressBase=\{lessonsSinceFloor\(profile\)\}/.test(read("app/(onboarding)/getting-started/page.tsx")));
+  check("the banner counts progress for the right run", /progressForRun\(raw, lessonsSinceFloor\(profile\)\)/.test(read("components/onboarding/OnboardingGate.tsx")));
+}
+
 /* ----------------------------------- result ----------------------------------- */
 
 if (fail) {
