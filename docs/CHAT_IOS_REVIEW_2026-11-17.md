@@ -1,5 +1,40 @@
 # Chat and iPhone input review — Jack
 
+## Re-review — Jack, 17 November 2026, `ea36f6d`
+
+**APPROVED FOR MERGE. IOS-1 and IOS-2 are closed.** No new blocking code defect found. This supersedes the initial changes-required verdict below. IOS-3 remains an open device-acceptance item: approval of the code is not a claim that the actual iPhone keyboard gap has been resolved. Deployment still requires the user's approval.
+
+### Fixes verified
+
+- IOS-1: the production hook delegates to `attachKeyboardViewport`; its actual decision checks scale against 1 with a 0.01 tolerance. Zoom without a keyboard no longer pins the frame. Zooming while pinned clears the override; returning to scale 1 can pin again. Native pinch zoom remains enabled. Unpinned layout while zoomed is explicitly documented as the supported fallback.
+- IOS-2: one reset function clears the attribute and both CSS properties on close and cleanup. Initial state is applied on attachment. Breakpoint changes are observed and the listener is removed on cleanup. The queued animation frame is cancelled too.
+- The extraction introduces no server calls, account access or message writes. The global 16px rule, send behavior, status-bar change and earlier approved scope are unchanged by the fix commit.
+
+### Independent verification
+
+- `npm run test:chat`: 24/24 pass.
+- `npm run typecheck`: pass.
+- Full `npm run lint`: pass.
+- `npm run test:onboarding`: 2,185/2,185 pass, 44 lessons.
+- `git diff --check`: pass.
+- Additional probe against the actual transpiled production module, with a queued rather than synchronous requestAnimationFrame: burst events coalesce to one pending callback; the latest viewport offset is used; zoom resets the state; cleanup cancels a pending update and clears all properties; no-visualViewport fallback is safe. All assertions passed. Ran from stdin, no fixture or temporary file retained.
+
+The new regression tests exercise the real module, not a duplicated decision. Their synchronous requestAnimationFrame fake does not by itself test cancellation; the additional queued probe above covers that gap. Mark can promote that case into the committed suite as a nonblocking improvement. Existing Node module-type warnings are informational.
+
+### Build and remaining limits
+
+Mark records a complete successful production build on `ea36f6d` (exit 0, 66/66 pages, log `build-ea36f6d.txt` in his scratchpad). Jack read that handoff but did not access the raw log or independently repeat the build. The build result is therefore attributed to Mark, not counted as Jack's independently reproduced result.
+
+No real iPhone/Android keyboard or status-bar test, signed-in compact-form layout check, or production operation was performed. The 100px height threshold and device-reported scale behavior still need the original-device check. A preview accessible from the iPhone can be installed as its own Home Screen app from the preview origin for standalone testing; ordinary Safari alone does not test standalone behavior. The existing production icon will continue to load the production origin. Do not require production deployment merely because the existing icon cannot open a preview.
+
+### Handoff to Mark
+
+Jack's re-review of `ea36f6d` is complete: APPROVED FOR MERGE, IOS-1/IOS-2 closed. Record this result and proceed to the user's deployment/preview decision. Keep IOS-3 explicitly open, then run the actual-iPhone acceptance checklist from the original report on the approved reachable build. Verify focus/no auto-zoom, keyboard gap, multiline typing, send/return, deliberate pinch zoom, reading-position preservation and status-bar layout. Fix any observed regression before claiming the phone issue resolved. No further code redesign requested.
+
+No application code changed, no commit/merge/push/deploy performed by Jack. Only this report was updated; shared TEAM/HANDOVER remain outside the session's writable roots.
+
+---
+
 Date: 17 November 2026 (Dubai). Branch `mark/chat-composer-ios`, commits `2c30dae` and `146cc47`, base `4eb620e`. Working tree was clean at review start.
 
 ## Verdict: CHANGES REQUIRED
