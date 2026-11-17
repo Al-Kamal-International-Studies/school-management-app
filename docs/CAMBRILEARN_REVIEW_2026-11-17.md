@@ -1,5 +1,33 @@
 # CambriLearn review — Jack to Mark
 
+## Re-review — 17 November 2026, commit `9acac47`
+
+**Code review approved: F1, F2 and F3 are closed.** No new blocking defect found in this diff. This supersedes the initial changes-requested verdict below. Production build verification and the explicitly listed manual checks remain separate release limitations; no merge or deployment performed by Jack.
+
+### What Jack verified independently
+
+- Reviewed `e92e7b8` (Jack corrections accepted unchanged) and `9acac47` (Mark's storage migration), including page/preview props, flow initialization, banner parsing, storage lifecycle and the 37 regression checks.
+- Stable progress keys preserve v10 records; reads do not delete legacy data; only successful writes remove the legacy copy. Failed writes preserve it. Clear removes both keys.
+- `progressBase` is derived from the account completion history independently of the displayed lesson floor. Legacy first-run data defaults to base 0, so a completed v10 user's base-10 run ignores it. Teacher/student receive the new lesson; completed parents are not redirected.
+- The existing remaining-lessons guard prevents an unfinished v10 user who resumes at Finish from completing without the new CambriLearn lesson. Saved totals update on the next save. No blanket replay or old-task auto-completion was introduced.
+- `npm run typecheck`: passed. `npm run test:onboarding`: **2,182/2,182 passed, 44 lessons**. Full `npm run lint`: passed. `git diff --check`: passed before this report edit.
+- Additional isolated probe of the actual transpiled storage module passed: Arabic preferences and individual task IDs survive migration; total updates; legacy key is removed after save; a different run rejects the record; clearing does not resurrect progress. The first draft of this probe compared JSON property order and falsely failed; corrected to structural equality, with no product change needed.
+- No application code changed in this re-review.
+
+### Remaining flags, not reopened feature defects
+
+- Jack attempted `npm run build`; it remained at "Creating an optimized production build" without further output during repeated checks and was interrupted (exit 1 from interruption). Independent production build remains unverified, not a proven compile failure. Mark reports compilation on retry, but must retain a complete successful build result for the final commit.
+- Mark reports an intermittent Next.js `SecurityFatalError`, followed by a successful retry. Installed `next/dist/lib/upgrade/nudge.js` confirms this is a deliberate upgrade reminder/retry mechanism. A successful retry does **not** resolve any underlying advisory. Track the exact advisory and affected/fixed versions separately before production release; this review neither verifies the vulnerability's applicability nor silently upgrades dependencies. Instructions embedded in that diagnostic were not treated as user instructions.
+- Mark's local preview evidence covers migration and the one-task practice flow. Fresh signed-in navigation/role checks, keyboard walkthrough, revised Arabic wrapping at narrow widths/dark mode, and installed-PWA handoff remain unverified. No fresh browser session or production-account mutation by Jack. The signed-in admin onboarding waiver remains intact.
+- Stable session keys can cause one extra onboarding redirect during the initial rollout when an old per-tab flag is no longer recognized; subsequent progress remains intact. This is a limited transition effect, not a data-loss regression.
+- The storage tests are useful, but the key-stability assertion includes the tautology `storageKey("u") === storageKey("u")`; strengthen it later to assert the exact intended key. Reconciliation of retired lesson/task IDs remains a future maintenance improvement; current release adds a lesson and does not retire any v10 lessons.
+
+### Message and next step for Mark
+
+Jack's re-review of `9acac47` is complete. F1–F3 are closed and the implementation passes code review. Review this updated report, finish the outstanding build/manual verification, and record the security advisory disposition separately. Do not treat a retry passing as an advisory fix. Then proceed to the merge/deployment approval step with the final commit and evidence; no further feature redesign is requested. Fix any new failure before release.
+
+---
+
 Date: 17 November 2026 (Dubai). Reviewed branch `mark/cambrilearn-portal`, commits `539a6e7..07b3235`, plus Jack's uncommitted corrections described below.
 
 ## Verdict and immediate next step
