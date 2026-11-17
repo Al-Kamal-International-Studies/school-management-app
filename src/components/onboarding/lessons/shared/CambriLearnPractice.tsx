@@ -12,8 +12,8 @@ const UI = {
     addressLabel: "Web address",
     open: "Open CambriLearn",
     tip1: "Sign in with your CambriLearn email and password, not your Al Kamal account.",
-    tip2: "CambriLearn opens in a new tab. Switch back to the Al Kamal tab to return.",
-    fake: "Practice only: nothing opened. In the real app, CambriLearn opens in a new tab.",
+    tip2: "To come back to Al Kamal, use the back arrow or the close button at the top of the screen.",
+    fake: "Practice only: nothing opened. In the real app, CambriLearn opens in this window.",
     newHint: "Check the web address, then press Open CambriLearn.",
   },
   ar: {
@@ -21,8 +21,8 @@ const UI = {
     addressLabel: "عنوان الموقع",
     open: "فتح CambriLearn",
     tip1: "سجّل الدخول ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس بحساب الكمال.",
-    tip2: "يفتح CambriLearn في تبويبة جديدة. عد إلى تبويبة الكمال للرجوع.",
-    fake: "للتدريب فقط: لم يُفتح شيء. في التطبيق الحقيقي يفتح CambriLearn في تبويبة جديدة.",
+    tip2: "للعودة إلى الكمال، استخدم سهم الرجوع أو زر الإغلاق في أعلى الشاشة.",
+    fake: "للتدريب فقط: لم يُفتح شيء. في التطبيق الحقيقي يفتح CambriLearn في هذه النافذة.",
     newHint: "تحقّق من عنوان الموقع ثم اضغط «فتح CambriLearn».",
   },
 } as const;

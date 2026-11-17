@@ -866,10 +866,10 @@ const ar: Dictionary = {
     windowHeading: "تابع على CambriLearn",
     windowBody: "افتح CambriLearn لمشاهدة دروسك وأعمالك.",
     openButton: "فتح CambriLearn",
-    opensInNewTab: "(يفتح في تبويبة جديدة)",
+    leavesApp: "(ينقلك إلى موقع CambriLearn)",
     tipsHeading: "قبل أن تنتقل",
     tipSignIn: "سجّل الدخول ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس بحساب الكمال.",
-    tipComeBack: "يفتح CambriLearn في تبويبة جديدة. للعودة، انتقل إلى تبويبة الكمال.",
+    tipComeBack: "للعودة إلى الكمال، استخدم سهم الرجوع أو زر الإغلاق في أعلى الشاشة.",
   },
   chatbot: {
     title: "المساعد",

@@ -3,10 +3,10 @@ import type { LessonTexts } from "@/lib/onboarding/types";
 export const cambrilearnText: LessonTexts = {
   en: {
     title: "CambriLearn",
-    oneLiner: "Open the CambriLearn login page in a new browser tab.",
+    oneLiner: "Open CambriLearn's login page from inside the app.",
     what: [
-      "CambriLearn is a separate website. This page is a launcher: press Open CambriLearn and its own login page opens in a new browser tab.",
-      "Sign in there with your CambriLearn email and password, not your Al Kamal account. CambriLearn opens in a new tab, so switch back to the Al Kamal tab when you want to return here.",
+      "CambriLearn is a separate website. This page is a launcher: press Open CambriLearn and its own login page opens in the same window. In the installed Al Kamal app, it stays inside the app's window.",
+      "Sign in there with your CambriLearn email and password, not your Al Kamal account. To come back to Al Kamal, use the back arrow or the close button at the top of the screen.",
     ],
     useWhen: "you want to go to CambriLearn from inside the app.",
     visibility: {
@@ -21,10 +21,10 @@ export const cambrilearnText: LessonTexts = {
   },
   ar: {
     title: "CambriLearn",
-    oneLiner: "افتح صفحة تسجيل الدخول إلى CambriLearn في تبويبة جديدة بالمتصفح.",
+    oneLiner: "افتح صفحة تسجيل الدخول إلى CambriLearn من داخل التطبيق.",
     what: [
-      "CambriLearn موقع مستقل. هذه الصفحة مجرد بوابة: اضغط «فتح CambriLearn» لتفتح صفحة تسجيل الدخول الخاصة به في تبويبة جديدة بالمتصفح.",
-      "سجّل الدخول هناك ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس ببيانات الكمال. يفتح CambriLearn في تبويبة جديدة، فعد إلى تبويبة الكمال عندما تريد الرجوع إلى هنا.",
+      "CambriLearn موقع مستقل. هذه الصفحة مجرد بوابة: اضغط «فتح CambriLearn» لتفتح صفحة تسجيل الدخول الخاصة به في النافذة نفسها. وفي تطبيق الكمال المثبّت، يبقى داخل نافذة التطبيق.",
+      "سجّل الدخول هناك ببريدك الإلكتروني وكلمة مرورك لحساب CambriLearn، وليس ببيانات الكمال. للعودة إلى الكمال، استخدم سهم الرجوع أو زر الإغلاق في أعلى الشاشة.",
     ],
     useWhen: "تريد الانتقال إلى CambriLearn من داخل التطبيق.",
     visibility: {
